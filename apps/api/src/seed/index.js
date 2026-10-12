@@ -1,4 +1,5 @@
 // Idempotent seed: wipes Nivar collections and recreates demo data (spec section 8).
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
@@ -35,14 +36,17 @@ export async function runSeed({ log = console.log, now = new Date() } = {}) {
 
   // ---------- catalog ----------
   const services = await Service.insertMany(SERVICES);
-  const packages = await Package.insertMany(PACKAGES.map((p) => ({ ...p, isActive: true })));
+  // Package and user ids are derived from a natural key so they survive a reseed: a booking
+  // wizard or a signed-in tab that was open before `pnpm seed` ran keeps working.
+  const stableId = (key) => new mongoose.Types.ObjectId(createHash('sha1').update(key).digest('hex').slice(0, 24));
+  const packages = await Package.insertMany(PACKAGES.map((p) => ({ ...p, _id: stableId(`package:${p.slug}`), isActive: true })));
   const priceOf = Object.fromEntries(services.map((s) => [s.code, s.price]));
   const pkgBySlug = Object.fromEntries(packages.map((p) => [p.slug, p]));
 
   // ---------- users ----------
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
   const staffCreated = new Date(now.getTime() - 120 * DAY);
-  const mkStaff = (u, role) => ({ ...u, role, passwordHash, isActive: true, _id: oid(), createdAt: staffCreated, updatedAt: staffCreated });
+  const mkStaff = (u, role) => ({ ...u, role, passwordHash, isActive: true, _id: stableId(`user:${u.email}`), createdAt: staffCreated, updatedAt: staffCreated });
   const admin = mkStaff(ADMIN, 'admin');
   const doctors = DOCTORS.map((d) => mkStaff(d, 'doctor'));
   const nurses = NURSES.map((n) => mkStaff(n, 'nurse'));
@@ -52,7 +56,7 @@ export async function runSeed({ log = console.log, now = new Date() } = {}) {
       ...c,
       role: 'customer',
       isActive: true,
-      _id: oid(),
+      _id: stableId(`user:${c.phone}`),
       dob: c.dob ? new Date(`${c.dob}T00:00:00Z`) : undefined,
       addresses: c.addresses.map((a) => ({ ...a, _id: oid() })),
       createdAt: created,

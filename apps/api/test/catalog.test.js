@@ -115,3 +115,15 @@ test('express slot: bookable today regardless of the hour, rejected for other da
   const tomorrow = await request(app).get(`/api/slots?date=${daysFromToday(1)}`);
   assert.ok(tomorrow.body.slots.every((s) => s.slot !== 'express'));
 });
+
+test('package ids are stable across reseeds and a slug is accepted as packageId', async () => {
+  const { token } = await customerToken(app, '9811100010', 'Slug Tester');
+  const c = as(app, token);
+  const bySlug = await c.post('/api/bookings', sampleBooking({ scheduledDate: daysFromToday(2), slot: '11:00-12:00', packageId: 'heart-check', serviceCodes: [] }));
+  assert.equal(bySlug.status, 201, JSON.stringify(bySlug.body));
+  assert.equal(bySlug.body.booking.packageId?.slug ?? bySlug.body.booking.packageId, bySlug.body.booking.packageId);
+
+  const missing = await c.post('/api/bookings', sampleBooking({ scheduledDate: daysFromToday(2), slot: '11:00-12:00', packageId: 'no-such-package', serviceCodes: [] }));
+  assert.equal(missing.status, 400);
+  assert.equal(missing.body.error.code, 'invalid_package');
+});

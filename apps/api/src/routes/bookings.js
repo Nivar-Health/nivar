@@ -80,7 +80,7 @@ const createSchema = z
       relation: z.enum(RELATIONS).optional().default('self'),
     }),
     address: addressInputSchema,
-    packageId: objectIdSchema.optional().nullable(),
+    packageId: z.string().trim().min(1).max(64).optional().nullable(),
     serviceCodes: z.array(z.enum(SERVICE_CODES)).optional().default([]),
     scheduledDate: dateSchema,
     slot: slotSchema,
@@ -106,8 +106,10 @@ router.post('/', requireRole('customer'), validate(createSchema), async (req, re
 
   let pkg = null;
   if (body.packageId) {
-    pkg = await Package.findOne({ _id: body.packageId, isActive: true });
-    if (!pkg) throw badRequest('That package is not available', 'invalid_package');
+    // Accept the id or the slug (the landing page links by slug when the catalogue was unreachable).
+    const byId = /^[a-f0-9]{24}$/i.test(body.packageId) ? { _id: body.packageId } : { slug: body.packageId };
+    pkg = await Package.findOne({ ...byId, isActive: true });
+    if (!pkg) throw badRequest('That package is no longer available. Please pick it again.', 'invalid_package');
   }
   const codes = [...new Set([...(pkg?.serviceCodes || []), ...body.serviceCodes])].filter((c) => c in priceOf);
   if (!codes.length) throw badRequest('Choose at least one test', 'no_tests');

@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { api, errorMessage } from "@/lib/api";
+import { api, ApiError, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { EXPRESS_SLOT, formatINR, slotLabel, todayISO } from "@/lib/format";
 import type { Booking, Catalog, Gender, Package, Relation, ServiceCode, Slot, SlotsResponse } from "@/lib/types";
@@ -199,6 +199,11 @@ export function BookWizard({
         api.post(`/bookings/${stale.id}/cancel`, { reason: "Booking details changed before payment" }).catch(() => {});
       }
     } catch (err) {
+      if (err instanceof ApiError && err.code === "invalid_package") {
+        // The catalogue changed under us (for example after a data reset): refresh it and re-select.
+        reloadCatalog();
+        setStep(0);
+      }
       toast.error("Couldn't place your booking", { description: errorMessage(err) });
     } finally {
       setPlacing(false);
