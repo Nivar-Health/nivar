@@ -128,8 +128,12 @@ function hm12(h: number, m: number): { text: string; period: "AM" | "PM" } {
 }
 
 /** "09:00-10:00" -> "9:00 - 10:00 AM"; "11:00-12:00" -> "11:00 AM - 12:00 PM". */
+/** Same-day visit where the nurse arrives within 60 minutes (API slot value). */
+export const EXPRESS_SLOT = "express";
+
 export function slotLabel(slot: string | null | undefined): string {
   if (!slot) return "";
+  if (slot === EXPRESS_SLOT) return "Express, within 60 min";
   const [startRaw, endRaw] = slot.split("-");
   const start = startRaw ? parseHM(startRaw) : null;
   const end = endRaw ? parseHM(endRaw) : null;

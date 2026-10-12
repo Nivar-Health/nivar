@@ -217,8 +217,9 @@ export interface Booking {
 }
 
 export interface Slot {
-  slot: string; // "09:00-10:00"
+  slot: string; // "09:00-10:00", or "express" (today only, nurse within 60 minutes)
   available: boolean;
+  express?: boolean;
 }
 
 export interface SlotsResponse {
