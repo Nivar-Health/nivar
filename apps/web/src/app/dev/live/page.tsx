@@ -1,5 +1,7 @@
 "use client";
 
+import { API_ORIGIN } from "@/lib/api";
+
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { io, type Socket } from "socket.io-client";
@@ -24,7 +26,7 @@ import {
 
 const INDIRANAGAR: LatLng = { lat: 12.9719, lng: 77.6412 };
 const KORAMANGALA: LatLng & { label: string } = { lat: 12.9352, lng: 77.6245, label: "Patient home" };
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4100";
+const API_URL = API_ORIGIN;
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (

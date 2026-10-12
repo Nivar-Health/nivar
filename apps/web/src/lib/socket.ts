@@ -32,7 +32,8 @@ const instanceListeners = new Set<() => void>();
 const bookingRooms = new Map<string, number>();
 
 function createSocket(token: string): Socket {
-  const s = io(API_ORIGIN, {
+  // An empty origin means same origin, which socket.io-client takes as `undefined`.
+  const s = io(API_ORIGIN || undefined, {
     auth: { token },
     transports: ["websocket", "polling"],
     reconnection: true,

@@ -1,6 +1,6 @@
+import { API_ORIGIN } from "@/lib/api";
 import type { Catalog, Package, Service } from "@/lib/types";
 
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4100").replace(/\/+$/, "");
 
 /**
  * Snapshot of the seeded catalogue, shown only when the API cannot be reached

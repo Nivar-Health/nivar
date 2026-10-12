@@ -1,9 +1,22 @@
 // Typed fetch wrapper for the Nivar API, plus the per-tab session token store.
 
-export const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4100").replace(
-  /\/+$/,
-  "",
-);
+/**
+ * Where the API lives.
+ * - On the server (SSR, server components): the `API_URL` binding injected by the host
+ *   (Vercel services), then `NEXT_PUBLIC_API_URL`.
+ * - In the browser: `NEXT_PUBLIC_API_URL` when set, otherwise the same origin, where the
+ *   host rewrites `/api/*` and `/socket.io/*` to the API service.
+ * - Local development falls back to the API dev server on port 4100.
+ */
+function resolveApiOrigin(): string {
+  const isServer = typeof window === "undefined";
+  const configured = (isServer && process.env.API_URL) || process.env.NEXT_PUBLIC_API_URL;
+  if (configured) return configured.replace(/\/+$/, "");
+  return process.env.NODE_ENV === "production" ? "" : "http://localhost:4100";
+}
+
+/** API origin without a trailing slash; empty string means "same origin". */
+export const API_ORIGIN = resolveApiOrigin();
 export const API_BASE = `${API_ORIGIN}/api`;
 
 // ---------------------------------------------------------------------------
