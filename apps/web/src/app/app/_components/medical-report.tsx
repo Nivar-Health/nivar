@@ -22,6 +22,9 @@ const PRINT_CSS = `
   .report-root { margin: 0 !important; }
   .report-sheet { box-shadow: none !important; border: 0 !important; border-radius: 0 !important; padding: 0 !important; }
   .report-avoid { break-inside: avoid; }
+  /* Keep each section's heading with its content (e.g. the ECG strip) instead of stranding it at a page end. */
+  .report-sheet section { break-inside: avoid; }
+  .report-sheet section > h2 { break-after: avoid; }
   .report-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 `;
