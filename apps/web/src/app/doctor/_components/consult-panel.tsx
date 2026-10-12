@@ -28,8 +28,8 @@ function Participant({ name, role, tone }: { name: string; role: string; tone: "
         className={cn(
           "grid size-16 place-items-center rounded-full text-lg font-semibold ring-4",
           tone === "patient"
-            ? "bg-[#E6F2EE] text-[#0E5E52] ring-white/10"
-            : "bg-[#F2A33A] text-[#132321] ring-white/10",
+            ? "bg-white text-[#0a0a0a] ring-white/10"
+            : "bg-white/10 text-white ring-white/10",
         )}
       >
         {name
@@ -52,11 +52,10 @@ function Stage({ children, className }: { children: React.ReactNode; className?:
   return (
     <div
       className={cn(
-        "relative flex min-h-[340px] flex-1 flex-col items-center justify-center gap-6 overflow-hidden rounded-2xl bg-[radial-gradient(120%_90%_at_50%_0%,#17423B,#0B1513_70%)] px-6 py-8 text-center text-white",
+        "relative flex min-h-[340px] flex-1 flex-col items-center justify-center gap-6 overflow-hidden rounded-2xl bg-ink px-6 py-8 text-center text-white",
         className,
       )}
     >
-      <div className="absolute inset-0 bg-ecg-grid-dark opacity-60" aria-hidden />
       <div className="relative flex w-full flex-col items-center gap-6">{children}</div>
     </div>
   );
@@ -124,7 +123,7 @@ export function ConsultPanel({
     <section
       className={cn(
         "flex min-h-0 flex-1 flex-col gap-3 rounded-2xl border bg-card p-4 shadow-soft transition-shadow",
-        inConsult && !showCall && "border-saffron/60 ring-4 ring-saffron/20",
+        inConsult && !showCall && "border-foreground",
       )}
     >
       <div className="flex items-center justify-between gap-3">
@@ -132,7 +131,7 @@ export function ConsultPanel({
           <span
             className={cn(
               "grid size-8 shrink-0 place-items-center rounded-lg [&_svg]:size-4",
-              inConsult ? "bg-primary text-primary-foreground" : "bg-secondary text-primary",
+              inConsult ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
             )}
           >
             <Video />
@@ -147,7 +146,7 @@ export function ConsultPanel({
         </div>
         {inConsult ? (
           <span className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full bg-primary px-2.5 text-xs font-medium text-primary-foreground">
-            <span className="live-dot size-1.5 text-saffron" />
+            <span className="live-dot size-1.5 text-signal" />
             {showCall ? "On call" : "Waiting for you"}
           </span>
         ) : (
@@ -188,7 +187,7 @@ export function ConsultPanel({
             size="lg"
             onClick={() => setJoined(true)}
             disabled={!socket || !connected}
-            className="h-11 gap-2 rounded-full bg-saffron px-6 text-[15px] font-semibold text-ink hover:bg-[#F5B456]"
+            className="h-11 gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#0a0a0a] hover:bg-white/90"
           >
             <Camera className="size-[18px]" />
             {connected ? "Join consult" : "Connecting"}
@@ -196,7 +195,7 @@ export function ConsultPanel({
         </Stage>
       ) : waiting ? (
         <Stage className="min-h-[300px]">
-          <span className="grid size-14 place-items-center rounded-2xl bg-white/8 text-[#3BE3B4] ring-1 ring-white/10 [&_svg]:size-6">
+          <span className="grid size-14 place-items-center rounded-2xl bg-white/8 text-white ring-1 ring-white/10 [&_svg]:size-6">
             {waiting.icon}
           </span>
           <div className="flex flex-col items-center gap-1.5">

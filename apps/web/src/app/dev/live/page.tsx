@@ -86,7 +86,7 @@ function DevicesDemo() {
             max={150}
             value={hr}
             onChange={(e) => onHr(Number(e.target.value))}
-            className="h-1.5 w-full cursor-pointer accent-[#0E5E52]"
+            className="h-1.5 w-full cursor-pointer accent-[#0a0a0a]"
           />
           <span className="w-16 shrink-0 text-right font-medium text-foreground tabular-nums">{hr} bpm</span>
         </label>
@@ -221,7 +221,7 @@ export default function LiveDevPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8 sm:px-6 sm:py-12">
       <header className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">Dev showcase</span>
+        <span className="text-[13px] font-medium text-muted-foreground">Dev showcase</span>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">Live components</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Smart ECG and stethoscope monitors, report strip, live nurse tracking and the consult video call. Device

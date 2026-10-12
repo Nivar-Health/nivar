@@ -10,10 +10,11 @@ import type { AdminStats, BookingStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 
-// Nivar chart palette: one hue (teal) for magnitude, the latest period in full
-// strength and earlier periods a lighter step of the same ramp.
-const TEAL = "var(--chart-1)";
-const TEAL_SOFT = "#B9D6CE";
+// Nivar chart palette: black for magnitude (latest period full strength, earlier
+// periods a soft grey step), signal green reserved for revenue.
+const INK = "var(--chart-1)";
+const INK_SOFT = "var(--chart-5)";
+const SIGNAL = "var(--chart-2)";
 
 // ---------------------------------------------------------------------------
 // KPI tile
@@ -47,8 +48,8 @@ function DeltaChip({ delta }: { delta: Delta }) {
     dir === "flat"
       ? "text-muted-foreground"
       : (dir === "up") === good
-        ? "text-emerald-700"
-        : "text-red-700";
+        ? "text-success"
+        : "text-danger";
   const Icon = dir === "up" ? ArrowUpRight : dir === "down" ? ArrowDownRight : Minus;
   const fmt = delta.format ?? formatNumber;
   const text =
@@ -66,7 +67,7 @@ function DeltaChip({ delta }: { delta: Delta }) {
 
 function Sparkline({ data, id }: { data: number[]; id: string }) {
   const rows = data.map((v, i) => ({ i, v }));
-  const config = { v: { label: "Value", color: TEAL } } satisfies ChartConfig;
+  const config = { v: { label: "Value", color: INK } } satisfies ChartConfig;
   return (
     <ChartContainer id={id} config={config} className="-mb-1 hidden aspect-auto h-9 w-24 shrink-0 sm:flex">
       <AreaChart data={rows} margin={{ top: 4, right: 4, bottom: 2, left: 2 }}>
@@ -126,14 +127,14 @@ export function KpiCard({
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground sm:text-[13px]">
-          <span className="hidden size-6 shrink-0 place-items-center rounded-md bg-secondary text-primary sm:grid [&_svg]:size-3.5">
+          <span className="hidden size-6 shrink-0 place-items-center rounded-md border border-border bg-card text-foreground sm:grid [&_svg]:size-3.5">
             {icon}
           </span>
           <span className="truncate">{label}</span>
         </span>
         {live && (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10.5px] font-semibold tracking-wide text-emerald-800 uppercase sm:px-2">
-            <span className="live-dot size-1.5 text-success" />
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-background text-foreground ring-1 ring-border ring-inset px-1.5 py-0.5 text-[10.5px] font-medium sm:px-2">
+            <span className="live-dot size-1.5 text-signal" />
             <span className="hidden sm:inline">Live</span>
           </span>
         )}
@@ -213,8 +214,8 @@ export function TrendCharts({ stats, loading }: { stats: AdminStats | null; load
   const totalBookings = data.reduce((s, d) => s + d.bookings, 0);
   const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
   const lastIdx = data.length - 1;
-  const bookingsConfig = { bookings: { label: "Bookings", color: TEAL } } satisfies ChartConfig;
-  const revenueConfig = { revenue: { label: "Revenue", color: TEAL } } satisfies ChartConfig;
+  const bookingsConfig = { bookings: { label: "Bookings", color: INK } } satisfies ChartConfig;
+  const revenueConfig = { revenue: { label: "Revenue", color: SIGNAL } } satisfies ChartConfig;
 
   if (loading) {
     return (
@@ -246,7 +247,7 @@ export function TrendCharts({ stats, loading }: { stats: AdminStats | null; load
             />
             <Bar dataKey="bookings" radius={[4, 4, 0, 0]} maxBarSize={24} isAnimationActive={false}>
               {data.map((d, i) => (
-                <Cell key={d.date} fill={i === lastIdx ? TEAL : TEAL_SOFT} />
+                <Cell key={d.date} fill={i === lastIdx ? INK : INK_SOFT} />
               ))}
             </Bar>
           </BarChart>
@@ -341,12 +342,12 @@ export function StatusBreakdown({
                 aria-label={`${meta.staffLabel}: ${n}`}
               >
                 <span className="flex min-w-0 items-center gap-2 text-[13px]">
-                  <span className={cn("size-2 shrink-0 rounded-full", meta.dotClass)} />
+                  <span className={cn("size-2 shrink-0 rounded-full bg-current", meta.dotClass)} />
                   <span className={cn("truncate", n === 0 && "text-muted-foreground")}>{meta.staffLabel}</span>
                 </span>
                 <span className="h-2 overflow-hidden rounded-full bg-muted">
                   <span
-                    className="block h-full rounded-full bg-primary/85 transition-[width] duration-500 group-hover:bg-primary"
+                    className="block h-full rounded-full bg-foreground transition-[width] duration-500"
                     style={{ width: n ? `${Math.max(4, (n / max) * 100)}%` : 0 }}
                   />
                 </span>
@@ -360,15 +361,15 @@ export function StatusBreakdown({
       </ul>
       <div className="mt-auto grid grid-cols-3 divide-x divide-border/70 border-t border-border/70">
         <div className="px-4 py-3">
-          <div className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Completed</div>
+          <div className="text-xs font-medium text-muted-foreground">Completed</div>
           <div className="mt-0.5 text-lg font-semibold">{formatNumber(completed)}</div>
         </div>
         <div className="px-4 py-3">
-          <div className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Cancelled</div>
+          <div className="text-xs font-medium text-muted-foreground">Cancelled</div>
           <div className="mt-0.5 text-lg font-semibold">{formatNumber(cancelled)}</div>
         </div>
         <div className="px-4 py-3">
-          <div className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Success</div>
+          <div className="text-xs font-medium text-muted-foreground">Success</div>
           <div className="mt-0.5 text-lg font-semibold">{completionRate}%</div>
         </div>
       </div>

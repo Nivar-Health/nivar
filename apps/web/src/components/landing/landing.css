@@ -1,0 +1,48 @@
+/* Landing page motion. One orchestrated hero reveal plus the ECG traces.
+   Durations collapse under prefers-reduced-motion via the global rule. */
+
+@keyframes landing-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-reveal {
+  animation: landing-reveal 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+/* A repeating ECG strip scrolling leftwards inside its clip. */
+@keyframes landing-trace {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* One strip width, in SVG user units. */
+    transform: translateX(-240px);
+  }
+}
+
+.landing-trace {
+  animation: landing-trace 3.6s linear infinite;
+}
+
+/* The nurse ETA bar fills once on load, in step with the hero reveal. */
+@keyframes landing-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.landing-progress {
+  transform-origin: left center;
+  animation: landing-progress 1.2s cubic-bezier(0.22, 1, 0.36, 1) 500ms both;
+}

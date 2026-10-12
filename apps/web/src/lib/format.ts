@@ -185,9 +185,9 @@ export interface StatusMeta {
   /** Short label for nurse, doctor and admin screens. */
   staffLabel: string;
   icon: LucideIcon;
-  /** Badge classes (background, text, ring). */
+  /** Pill classes (background, text, ring). Pills are neutral; the dot carries the colour. */
   badgeClass: string;
-  /** Solid dot colour class. */
+  /** Dot colour as a text-* class (use with `bg-current` or `live-dot`). */
   dotClass: string;
   /** Text colour class. */
   textClass: string;
@@ -203,9 +203,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Complete payment to confirm your visit.",
     staffLabel: "Awaiting payment",
     icon: CreditCard,
-    badgeClass: "bg-amber-50 text-amber-800 ring-amber-200",
-    dotClass: "bg-amber-500",
-    textClass: "text-amber-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-saffron",
+    textClass: "text-saffron",
     step: 0,
     live: false,
   },
@@ -214,9 +214,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Booking confirmed. We are assigning your care team.",
     staffLabel: "Needs assignment",
     icon: CircleCheck,
-    badgeClass: "bg-orange-50 text-orange-800 ring-orange-200",
-    dotClass: "bg-orange-500",
-    textClass: "text-orange-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-saffron",
+    textClass: "text-saffron",
     step: 1,
     live: false,
   },
@@ -225,9 +225,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Your nurse and doctor are assigned for this visit.",
     staffLabel: "Assigned",
     icon: UserRoundCheck,
-    badgeClass: "bg-violet-50 text-violet-800 ring-violet-200",
-    dotClass: "bg-violet-500",
-    textClass: "text-violet-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-foreground",
+    textClass: "text-foreground",
     step: 2,
     live: false,
   },
@@ -236,9 +236,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Your nurse is on the way. Track them live on the map.",
     staffLabel: "En route",
     icon: Navigation,
-    badgeClass: "bg-sky-50 text-sky-800 ring-sky-200",
-    dotClass: "bg-sky-500",
-    textClass: "text-sky-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-signal",
+    textClass: "text-success",
     step: 3,
     live: true,
   },
@@ -247,9 +247,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Your nurse has arrived and is setting up.",
     staffLabel: "Arrived",
     icon: House,
-    badgeClass: "bg-cyan-50 text-cyan-800 ring-cyan-200",
-    dotClass: "bg-cyan-500",
-    textClass: "text-cyan-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-signal",
+    textClass: "text-success",
     step: 4,
     live: true,
   },
@@ -258,9 +258,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Your nurse is recording vitals. Readings appear here live.",
     staffLabel: "Testing",
     icon: Activity,
-    badgeClass: "bg-teal-50 text-teal-800 ring-teal-200",
-    dotClass: "bg-teal-500",
-    textClass: "text-teal-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-signal",
+    textClass: "text-success",
     step: 5,
     live: true,
   },
@@ -269,9 +269,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Your doctor is ready. Join the video consult.",
     staffLabel: "In consult",
     icon: Video,
-    badgeClass: "bg-primary text-primary-foreground ring-primary",
-    dotClass: "bg-primary",
-    textClass: "text-primary",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-signal",
+    textClass: "text-success",
     step: 6,
     live: true,
   },
@@ -280,9 +280,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Your doctor is preparing your report.",
     staffLabel: "Reporting",
     icon: FilePenLine,
-    badgeClass: "bg-indigo-50 text-indigo-800 ring-indigo-200",
-    dotClass: "bg-indigo-500",
-    textClass: "text-indigo-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-foreground",
+    textClass: "text-foreground",
     step: 7,
     live: true,
   },
@@ -291,9 +291,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "Your report is ready.",
     staffLabel: "Completed",
     icon: BadgeCheck,
-    badgeClass: "bg-emerald-50 text-emerald-800 ring-emerald-200",
-    dotClass: "bg-emerald-500",
-    textClass: "text-emerald-700",
+    badgeClass: "bg-background text-foreground ring-border",
+    dotClass: "text-success",
+    textClass: "text-success",
     step: 8,
     live: false,
   },
@@ -302,9 +302,9 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     patientDescription: "This booking was cancelled.",
     staffLabel: "Cancelled",
     icon: CircleX,
-    badgeClass: "bg-red-50 text-red-700 ring-red-200",
-    dotClass: "bg-red-500",
-    textClass: "text-red-700",
+    badgeClass: "bg-background text-muted-foreground ring-border",
+    dotClass: "text-danger",
+    textClass: "text-danger",
     step: -1,
     live: false,
   },
@@ -380,14 +380,14 @@ export function sugarNormalRange(type: SugarType | undefined): string {
 }
 
 export const VITAL_LEVEL_META: Record<VitalLevel, { label: string; className: string; dotClass: string }> = {
-  normal: { label: "Normal", className: "bg-emerald-50 text-emerald-800 ring-emerald-200", dotClass: "bg-emerald-500" },
-  high: { label: "High", className: "bg-red-50 text-red-700 ring-red-200", dotClass: "bg-red-500" },
-  low: { label: "Low", className: "bg-amber-50 text-amber-800 ring-amber-200", dotClass: "bg-amber-500" },
+  normal: { label: "Normal", className: "bg-background text-foreground ring-border", dotClass: "bg-success" },
+  high: { label: "High", className: "bg-background text-danger ring-danger/30", dotClass: "bg-danger" },
+  low: { label: "Low", className: "bg-background text-saffron ring-saffron/35", dotClass: "bg-saffron" },
 };
 
 /** Classes for a vital assessment; "Elevated" BP gets a softer amber tone than "High". */
 export function vitalToneClass(a: VitalAssessment): string {
-  if (a.label === "Elevated") return "bg-amber-50 text-amber-800 ring-amber-200";
+  if (a.label === "Elevated") return "bg-background text-saffron ring-saffron/35";
   return VITAL_LEVEL_META[a.level].className;
 }
 

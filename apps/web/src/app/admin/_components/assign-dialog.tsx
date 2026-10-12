@@ -27,12 +27,14 @@ function LoadPill({ n }: { n: number }) {
   return (
     <span
       className={cn(
-        "inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-medium tabular",
-        n === 0 && "bg-emerald-50 text-emerald-800",
-        n > 0 && n < 3 && "bg-amber-50 text-amber-800",
-        n >= 3 && "bg-red-50 text-red-700",
+        "inline-flex h-5 shrink-0 items-center gap-1.5 rounded-full px-2 text-[11px] font-medium tabular ring-1 ring-border ring-inset",
+        "bg-background text-foreground",
       )}
     >
+      <span
+        aria-hidden
+        className={cn("size-1.5 rounded-full", n === 0 ? "bg-success" : n < 3 ? "bg-saffron" : "bg-danger")}
+      />
       {n === 0 ? "Free" : `${n} active`}
     </span>
   );
@@ -52,7 +54,7 @@ function StaffOption({ option, tag }: { option: Option; tag?: string }) {
         <span className="flex items-center gap-1.5">
           <span className="truncate text-[13px] font-medium">{option.member.name}</span>
           {tag && (
-            <span className="rounded bg-secondary px-1 text-[10px] font-semibold tracking-wide text-secondary-foreground uppercase">
+            <span className="rounded bg-muted px-1 text-[10px] font-medium text-muted-foreground">
               {tag}
             </span>
           )}
@@ -201,7 +203,7 @@ export function AssignDialog({
 
         {booking && (
           <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-card text-primary ring-1 ring-border">
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-card text-foreground ring-1 ring-border">
               <MapPin className="size-4" />
             </span>
             <div className="min-w-0 flex-1 text-[13px] leading-snug">

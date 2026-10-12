@@ -172,7 +172,7 @@ export function PackageDialog({
                       onClick={() => toggleCode(s.code)}
                       className={cn(
                         "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-                        on ? "border-primary bg-secondary/60" : "border-border hover:border-foreground/20",
+                        on ? "border-foreground bg-muted" : "border-border hover:border-foreground/40",
                       )}
                     >
                       <span

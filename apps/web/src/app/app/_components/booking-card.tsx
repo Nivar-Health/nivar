@@ -13,7 +13,7 @@ export function BookingCard({ booking, catalog, past }: { booking: Booking; cata
   return (
     <Link
       href={`/app/bookings/${booking.id}`}
-      className="group flex items-stretch gap-3.5 rounded-2xl border border-border bg-card p-4 shadow-soft transition-all outline-none hover:border-primary/30 hover:shadow-lift focus-visible:ring-3 focus-visible:ring-ring/40"
+      className="group flex items-stretch gap-3.5 rounded-2xl border border-border bg-card p-4 shadow-soft transition-all outline-none hover:border-foreground/40 focus-visible:ring-3 focus-visible:ring-ring/40"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
@@ -28,9 +28,9 @@ export function BookingCard({ booking, catalog, past }: { booking: Booking; cata
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-dashed border-border pt-3">
           <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-medium">
             {express ? (
-              <Zap className="size-3.5 shrink-0 fill-saffron text-saffron" aria-hidden />
+              <Zap className="size-3.5 shrink-0 fill-current text-foreground" aria-hidden />
             ) : (
-              <CalendarDays className="size-3.5 shrink-0 text-primary" aria-hidden />
+              <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
             )}
             <span className="truncate">
               {past ? formatDate(booking.scheduledDate) : dayLabel(booking.scheduledDate)}, {slotLabel(booking.slot)}

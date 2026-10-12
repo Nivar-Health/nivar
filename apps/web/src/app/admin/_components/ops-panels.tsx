@@ -53,10 +53,10 @@ function WhenBlock({ date, slot }: { date: string; slot: string }) {
     <div
       className={cn(
         "flex w-[4.5rem] shrink-0 flex-col items-center justify-center rounded-lg border px-1 py-1.5 text-center leading-tight",
-        isToday ? "border-saffron/40 bg-saffron/10" : "border-border bg-muted/40",
+        isToday ? "border-foreground bg-card" : "border-border bg-muted/40",
       )}
     >
-      <span className={cn("text-[10.5px] font-semibold tracking-wide uppercase", isToday ? "text-[#9A5B07]" : "text-muted-foreground")}>
+      <span className={cn("text-[10.5px] font-medium", isToday ? "text-foreground" : "text-muted-foreground")}>
         {day.split(",")[0]}
       </span>
       <span className="mt-0.5 text-[12px] font-semibold text-foreground tabular">
@@ -67,7 +67,7 @@ function WhenBlock({ date, slot }: { date: string; slot: string }) {
           </>
         ) : (
           <span className="inline-flex items-center gap-0.5">
-            <Zap className="size-3 fill-current text-saffron" />
+            <Zap className="size-3 fill-current text-foreground" />
             60 min
           </span>
         )}
@@ -95,7 +95,7 @@ export function NeedsAssignment({
       className={className}
       action={
         bookings.length > 0 ? (
-          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-100 px-2 text-xs font-semibold text-orange-800 tabular">
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-foreground px-2 text-xs font-semibold text-background tabular">
             {bookings.length}
           </span>
         ) : undefined

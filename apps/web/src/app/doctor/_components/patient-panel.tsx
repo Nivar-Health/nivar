@@ -28,7 +28,7 @@ export function Panel({
   return (
     <section className={cn("rounded-2xl border bg-card p-4 shadow-soft", className)}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-muted-foreground uppercase [&_svg]:size-4 [&_svg]:text-primary">
+        <h2 className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground [&_svg]:size-4">
           {icon}
           {title}
         </h2>
@@ -45,10 +45,10 @@ function PatientCard({ booking }: { booking: Booking }) {
   const bookedBySomeoneElse = patient.relation !== "self" && customer && customer.name !== patient.name;
   return (
     <section className="overflow-hidden rounded-2xl border bg-card shadow-soft">
-      <div className="flex items-center gap-3.5 bg-[linear-gradient(135deg,var(--mint),#ffffff_75%)] p-4">
-        <UserAvatar name={patient.name} size="lg" className="size-12 text-base ring-2 ring-white" />
+      <div className="flex items-center gap-3.5 p-4">
+        <UserAvatar name={patient.name} size="lg" className="size-12 text-base" />
         <div className="min-w-0">
-          <p className="truncate font-display text-xl leading-tight font-medium">{patient.name}</p>
+          <p className="truncate font-display text-xl leading-tight">{patient.name}</p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
             {patient.age} yrs · {genderLabel(patient.gender)} · {RELATION_LABEL[patient.relation]}
           </p>
@@ -87,14 +87,14 @@ function PatientCard({ booking }: { booking: Booking }) {
         </div>
       </dl>
       <div className="border-t px-4 py-3.5">
-        <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        <p className="mb-2 text-xs font-medium text-muted-foreground">
           {scheduleLabel(booking.scheduledDate, booking.slot)}
         </p>
         <ul className="flex flex-wrap gap-1.5">
           {booking.serviceCodes.map((code) => (
             <li
               key={code}
-              className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+              className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
             >
               {SERVICE_LABEL[code]}
             </li>
@@ -102,11 +102,11 @@ function PatientCard({ booking }: { booking: Booking }) {
         </ul>
       </div>
       {booking.notes?.trim() && (
-        <div className="border-t bg-amber-50/60 px-4 py-3.5">
-          <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-amber-800 uppercase">
+        <div className="border-t bg-muted/60 px-4 py-3.5">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <NotebookPen className="size-3.5" /> Symptoms and notes
           </p>
-          <p className="text-[13px] leading-relaxed text-amber-950">{booking.notes}</p>
+          <p className="text-[13px] leading-relaxed text-foreground">{booking.notes}</p>
         </div>
       )}
     </section>
@@ -155,7 +155,7 @@ function CareTeam({ booking }: { booking: Booking }) {
             <p className="truncate text-sm font-semibold">{nurse.name}</p>
             <p className="truncate text-xs text-muted-foreground">{nurse.qualifications ?? "Nivar nurse"}</p>
           </div>
-          <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
+          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
             {statusText[booking.status] ?? "Nurse"}
           </span>
         </div>

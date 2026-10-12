@@ -2,32 +2,32 @@
 
 .nivar-map .leaflet-container {
   font-family: inherit;
-  background: #eef1ec;
+  background: #f4f4f1;
 }
 
 .nivar-map .leaflet-control-attribution {
   font-size: 10px;
-  background: rgba(250, 247, 242, 0.85);
-  color: #5b6b67;
+  background: rgba(255, 255, 255, 0.85);
+  color: #6a6a66;
   border-top-left-radius: 8px;
   padding: 1px 6px;
 }
 
 .nivar-map .leaflet-control-attribution a {
-  color: #0e5e52;
+  color: #0a0a0a;
 }
 
 .nivar-map .leaflet-bar {
-  border: 1px solid #e5e0d6 !important;
+  border: 1px solid #e4e4df !important;
   border-radius: 10px !important;
   overflow: hidden;
-  box-shadow: 0 6px 16px -8px rgba(19, 35, 33, 0.35) !important;
+  box-shadow: 0 6px 16px -8px rgba(10, 10, 10, 0.25) !important;
 }
 
 .nivar-map .leaflet-bar a {
-  color: #132321;
-  background: #fffdf9;
-  border-bottom-color: #e5e0d6;
+  color: #0a0a0a;
+  background: #ffffff;
+  border-bottom-color: #e4e4df;
 }
 
 .nivar-icon {
@@ -40,7 +40,7 @@
   position: relative;
   width: 38px;
   height: 48px;
-  filter: drop-shadow(0 6px 8px rgba(14, 94, 82, 0.35));
+  filter: drop-shadow(0 6px 8px rgba(10, 10, 10, 0.3));
 }
 
 .nivar-home svg {
@@ -58,7 +58,7 @@
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  background: rgba(242, 163, 58, 0.45);
+  background: rgba(25, 195, 125, 0.4);
   animation: nivar-pulse 1.8s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
 }
 
@@ -73,13 +73,13 @@
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: #f2a33a;
-  border: 3px solid #fffdf9;
-  color: #132321;
-  font-weight: 700;
+  background: #0a0a0a;
+  border: 3px solid #ffffff;
+  color: #ffffff;
+  font-weight: 600;
   font-size: 13px;
   letter-spacing: 0.02em;
-  box-shadow: 0 6px 14px -4px rgba(19, 35, 33, 0.45);
+  box-shadow: 0 6px 14px -4px rgba(10, 10, 10, 0.45);
 }
 
 .nivar-nurse__name {
@@ -90,11 +90,11 @@
   white-space: nowrap;
   padding: 2px 8px;
   border-radius: 9999px;
-  background: #132321;
-  color: #faf7f2;
+  background: #0a0a0a;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 600;
-  box-shadow: 0 4px 10px -4px rgba(19, 35, 33, 0.5);
+  box-shadow: 0 4px 10px -4px rgba(10, 10, 10, 0.5);
 }
 
 .nivar-home__label {
@@ -105,12 +105,12 @@
   white-space: nowrap;
   padding: 2px 8px;
   border-radius: 9999px;
-  background: #fffdf9;
-  color: #0e5e52;
-  border: 1px solid #e5e0d6;
+  background: #ffffff;
+  color: #0a0a0a;
+  border: 1px solid #e4e4df;
   font-size: 11px;
   font-weight: 600;
-  box-shadow: 0 4px 10px -6px rgba(19, 35, 33, 0.4);
+  box-shadow: 0 4px 10px -6px rgba(10, 10, 10, 0.3);
 }
 
 @keyframes nivar-pulse {
@@ -133,7 +133,7 @@
 
 /* Calm the busy OSM palette so brand markers stand out. */
 .nivar-map .leaflet-tile {
-  filter: saturate(0.55) contrast(0.92) brightness(1.04);
+  filter: saturate(0.2) contrast(0.92) brightness(1.04);
 }
 
 /* Nurse has reached the home: avoid the avatar sitting on top of the home label. */

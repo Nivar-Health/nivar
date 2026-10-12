@@ -75,9 +75,7 @@ export function StaffLoginForm({ next }: { next: string | null }) {
       <p className="mt-2 text-[15px] text-muted-foreground">Use your Nivar work account.</p>
 
       <div className="mt-7">
-        <p className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Demo accounts
-        </p>
+        <p className="mb-2.5 text-[13px] font-medium text-muted-foreground">Demo accounts</p>
         <div className="grid grid-cols-3 gap-2">
           {DEMO_ACCOUNTS.map((acc) => {
             const selected = email === acc.email;
@@ -89,16 +87,14 @@ export function StaffLoginForm({ next }: { next: string | null }) {
                 aria-pressed={selected}
                 title={`${acc.name} (${acc.email})`}
                 className={cn(
-                  "group flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-card p-2.5 text-left transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
-                  selected
-                    ? "border-primary shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_14%,transparent)]"
-                    : "border-border hover:border-primary/40 hover:shadow-soft",
+                  "group flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-card p-2.5 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
+                  selected ? "border-foreground" : "border-border hover:border-foreground/40",
                 )}
               >
                 <span
                   className={cn(
                     "grid size-7 place-items-center rounded-lg transition-colors",
-                    selected ? "bg-primary text-primary-foreground" : "bg-secondary text-primary",
+                    selected ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
                   )}
                 >
                   <acc.icon className="size-4" />

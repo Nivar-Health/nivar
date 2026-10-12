@@ -185,12 +185,13 @@ export function serviceIcon(service: Pick<Service, "icon" | "code"> | ServiceCod
 /** Initials avatar for care team members. */
 export function PersonAvatar({
   name,
-  tone = "teal",
+  tone = "ink",
   size = "md",
   className,
 }: {
   name: string | null | undefined;
-  tone?: "teal" | "saffron" | "mint";
+  /** ink: black on white text (nurses). outline: white with a 1px border (doctors). muted: grey. */
+  tone?: "ink" | "outline" | "muted";
   size?: "xs" | "sm" | "md" | "lg";
   className?: string;
 }) {
@@ -203,9 +204,9 @@ export function PersonAvatar({
         size === "sm" && "size-9 text-xs",
         size === "md" && "size-12 text-sm",
         size === "lg" && "size-14 text-base",
-        tone === "teal" && "bg-primary text-primary-foreground",
-        tone === "saffron" && "bg-saffron text-ink",
-        tone === "mint" && "bg-secondary text-secondary-foreground",
+        tone === "ink" && "bg-foreground text-background",
+        tone === "outline" && "border border-border bg-card text-foreground",
+        tone === "muted" && "bg-muted text-foreground",
         className,
       )}
     >
@@ -234,7 +235,7 @@ export function ErrorState({
         className,
       )}
     >
-      <span className="grid size-11 place-items-center rounded-full bg-red-50 text-danger">
+      <span className="grid size-11 place-items-center rounded-full border border-border bg-card text-danger">
         <CircleAlert className="size-5" aria-hidden />
       </span>
       <div className="space-y-1">

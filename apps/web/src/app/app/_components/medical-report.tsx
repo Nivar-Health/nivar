@@ -66,7 +66,7 @@ export function MedicalReport({ id }: { id: string }) {
           <ChevronLeft className="size-4" aria-hidden /> Back to visit
         </Link>
         {published && (
-          <Button onClick={() => window.print()} className="h-10 rounded-full px-4 font-semibold shadow-lift">
+          <Button onClick={() => window.print()} className="h-10 rounded-full px-4 font-semibold">
             <Download aria-hidden /> Download PDF
           </Button>
         )}
@@ -74,7 +74,7 @@ export function MedicalReport({ id }: { id: string }) {
 
       {!published ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
-          <span className="grid size-12 place-items-center rounded-full bg-secondary text-primary">
+          <span className="grid size-12 place-items-center rounded-full border border-border bg-card text-foreground">
             <FilePenLine className="size-5" aria-hidden />
           </span>
           <p className="font-semibold">Your report isn&apos;t ready yet</p>
@@ -116,9 +116,9 @@ function ReportSheet({
           <LogoMark className="size-12" />
           <div>
             <p className="font-display text-[1.65rem] leading-none font-semibold tracking-[-0.03em]">
-              nivar<span className="text-saffron">.</span>
+              nivar.
             </p>
-            <p className="mt-1 text-[11px] font-medium tracking-wide text-primary uppercase">Doctor-led health check-ups at home</p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">Doctor-led health check-ups at home</p>
           </div>
         </div>
         <div className="space-y-0.5 text-[11px] leading-relaxed text-muted-foreground sm:text-right">
@@ -170,7 +170,7 @@ function ReportSheet({
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-y border-border bg-secondary/60 text-[11px] font-semibold tracking-wide text-secondary-foreground uppercase">
+                <tr className="border-y border-border bg-muted text-xs font-medium text-muted-foreground">
                   <th className="py-2 pr-2 pl-3">Test</th>
                   <th className="px-2 py-2 text-right">Result</th>
                   <th className="hidden px-2 py-2 sm:table-cell">Unit</th>
@@ -197,8 +197,8 @@ function ReportSheet({
                       <td className="py-2.5 pr-3 pl-2 text-right">
                         <span
                           className={cn(
-                            "text-[11px] font-bold tracking-wide uppercase",
-                            !abnormal ? "text-emerald-700" : v.assessment?.label === "Elevated" ? "text-amber-700" : "text-danger",
+                            "text-[11px] font-semibold",
+                            !abnormal ? "text-success" : v.assessment?.label === "Elevated" ? "text-saffron" : "text-danger",
                           )}
                         >
                           {v.assessment?.label ?? "-"}
@@ -268,7 +268,7 @@ function ReportSheet({
       {/* Clinical impression */}
       <ReportSection title="Clinical impression">
         <div className="report-avoid">
-          <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Diagnosis</p>
+          <p className="text-xs font-medium text-muted-foreground">Diagnosis</p>
           <p className="mt-0.5 text-[15px] font-semibold">{report.diagnosis}</p>
           {report.summary && <p className="mt-2 leading-relaxed whitespace-pre-line">{report.summary}</p>}
         </div>
@@ -286,7 +286,7 @@ function ReportSheet({
           <>
             <table className="hidden w-full border-collapse text-left sm:table">
               <thead>
-                <tr className="border-y border-border bg-secondary/60 text-[11px] font-semibold tracking-wide text-secondary-foreground uppercase">
+                <tr className="border-y border-border bg-muted text-xs font-medium text-muted-foreground">
                   <th className="w-8 py-2 pl-3">#</th>
                   <th className="px-2 py-2">Medicine</th>
                   <th className="px-2 py-2">Dosage</th>
@@ -343,7 +343,7 @@ function ReportSheet({
               </ul>
             ) : null}
             {report.followUp && (
-              <p className="mt-3 rounded-lg border-l-4 border-saffron bg-[#FFFAF1] px-3 py-2">
+              <p className="mt-3 rounded-lg border border-border bg-muted px-3 py-2">
                 <span className="font-semibold">Follow-up: </span>
                 {report.followUp}
               </p>
@@ -384,7 +384,7 @@ function ReportSheet({
 function Info({ label, value, strong, mono }: { label: string; value: string; strong?: boolean; mono?: boolean }) {
   return (
     <div className="min-w-0">
-      <p className="text-[10.5px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
       <p className={cn("mt-0.5 text-[13px]", strong ? "font-semibold" : "font-medium", mono && "tabular font-mono")}>{value}</p>
     </div>
   );
@@ -393,7 +393,7 @@ function Info({ label, value, strong, mono }: { label: string; value: string; st
 function ReportSection({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="mb-2.5 flex items-center gap-3 text-[12px] font-bold tracking-[0.08em] text-primary uppercase">
+      <h2 className="mb-2.5 flex items-center gap-3 text-[13px] font-semibold text-foreground">
         {title}
         <span className="h-px flex-1 bg-border" aria-hidden />
       </h2>

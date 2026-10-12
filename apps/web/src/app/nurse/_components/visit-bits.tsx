@@ -27,7 +27,7 @@ export function TestChips({
           <li
             key={code}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full bg-secondary font-medium text-secondary-foreground",
+              "inline-flex items-center gap-1 rounded-full bg-muted font-medium text-foreground",
               size === "sm" ? "h-6 px-2 text-[11px] [&_svg]:size-3" : "h-7 px-2.5 text-xs [&_svg]:size-3.5",
             )}
           >
@@ -64,19 +64,20 @@ export function VisitHeroCard({ booking }: { booking: Booking }) {
   const ongoing = ONGOING.includes(booking.status);
   const express = booking.slot === EXPRESS_SLOT;
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-primary/15 bg-card shadow-lift">
-      <div className="bg-ecg-grid border-b border-border/70 bg-mint/60 px-5 pt-4 pb-3.5">
+    <article className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+      <div className="border-b border-border px-5 pt-4 pb-3.5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold tracking-[0.12em] text-primary uppercase">
+          <p className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
+            {ongoing && <span className="live-dot size-1.5 text-signal" aria-hidden />}
             {ongoing ? "Visit in progress" : "Next visit"}
           </p>
           <StatusBadge status={booking.status} audience="staff" />
         </div>
         <div className="mt-2 flex items-center gap-2">
           {express ? (
-            <Zap className="size-4 fill-saffron text-saffron" aria-hidden />
+            <Zap className="size-4 fill-current text-foreground" aria-hidden />
           ) : (
-            <Clock className="size-4 text-primary" aria-hidden />
+            <Clock className="size-4 text-muted-foreground" aria-hidden />
           )}
           <p className="text-base font-semibold text-foreground tabular-nums">{slotLabel(booking.slot)}</p>
         </div>
@@ -84,7 +85,7 @@ export function VisitHeroCard({ booking }: { booking: Booking }) {
       <div className="flex flex-col gap-4 px-5 pt-4 pb-5">
         <div>
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="truncate font-display text-2xl font-medium tracking-tight">{booking.patient.name}</h2>
+            <h2 className="truncate font-display text-2xl">{booking.patient.name}</h2>
             <span className="shrink-0 font-mono text-xs text-muted-foreground">{booking.code}</span>
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">{ageGender(booking.patient)}</p>
@@ -115,16 +116,16 @@ export function VisitRow({ booking, showDay = false }: { booking: Booking; showD
   return (
     <Link
       href={`/nurse/visits/${booking.id}`}
-      className="group flex items-stretch gap-3.5 rounded-2xl border border-border bg-card p-3.5 shadow-soft transition-colors outline-none hover:border-primary/30 focus-visible:ring-3 focus-visible:ring-ring/40 active:bg-muted/40"
+      className="group flex items-stretch gap-3.5 rounded-2xl border border-border bg-card p-3.5 shadow-soft transition-colors outline-none hover:border-foreground/40 focus-visible:ring-3 focus-visible:ring-ring/40 active:bg-muted/40"
     >
       <div className="flex w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-muted/70 px-1 py-2 text-center">
         {showDay && (
-          <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+          <span className="text-[10px] font-medium text-muted-foreground">
             {dayLabel(booking.scheduledDate)}
           </span>
         )}
         {express ? (
-          <Zap className="size-4 fill-saffron text-saffron" aria-label="Express" />
+          <Zap className="size-4 fill-current text-foreground" aria-label="Express" />
         ) : (
           <span className="text-sm leading-tight font-semibold tabular-nums">
             {slotStart(booking.slot).split(" ")[0]}

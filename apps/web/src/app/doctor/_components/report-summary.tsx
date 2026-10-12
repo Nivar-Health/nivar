@@ -16,16 +16,16 @@ export function ReportSummary({
   const doctor = populated(booking.doctor);
   return (
     <article className={cn("overflow-hidden rounded-2xl border bg-card shadow-soft", className)}>
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b bg-[linear-gradient(135deg,var(--mint),#ffffff_70%)] px-5 py-4">
+      <header className="flex flex-wrap items-start justify-between gap-4 border-b px-5 py-4">
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">Diagnosis</p>
-          <h3 className="mt-1 font-display text-2xl leading-tight font-medium">
+          <p className="text-xs font-medium text-muted-foreground">Diagnosis</p>
+          <h3 className="mt-1 font-display text-2xl leading-tight">
             {report.diagnosis || "Not specified"}
           </h3>
         </div>
         {report.publishedAt && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200 ring-inset">
-            <CheckCircle2 className="size-3.5" /> Published {formatDateTime(report.publishedAt)}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-border ring-inset">
+            <CheckCircle2 className="size-3.5 text-success" /> Published {formatDateTime(report.publishedAt)}
           </span>
         )}
       </header>
@@ -34,14 +34,14 @@ export function ReportSummary({
         <div className="flex min-w-0 flex-col gap-5">
           {report.summary && (
             <section>
-              <h4 className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              <h4 className="mb-1.5 text-[13px] font-medium text-muted-foreground">
                 Clinical summary
               </h4>
               <p className="text-sm leading-relaxed whitespace-pre-line">{report.summary}</p>
             </section>
           )}
           <section>
-            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <h4 className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
               <Pill className="size-3.5" /> Prescription
             </h4>
             {report.prescription?.length ? (
@@ -77,14 +77,14 @@ export function ReportSummary({
         </div>
         <div className="flex min-w-0 flex-col gap-5">
           <section>
-            <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <h4 className="mb-1.5 flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
               <Sparkles className="size-3.5" /> Advice
             </h4>
             {report.advice?.length ? (
               <ul className="flex flex-col gap-1.5">
                 {report.advice.map((a, i) => (
                   <li key={i} className="flex gap-2 text-sm">
-                    <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-primary" />
+                    <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-foreground" />
                     {a}
                   </li>
                 ))}
@@ -94,10 +94,10 @@ export function ReportSummary({
             )}
           </section>
           {report.followUp && (
-            <section className="flex items-start gap-2.5 rounded-xl bg-secondary px-3.5 py-3">
-              <CalendarCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+            <section className="flex items-start gap-2.5 rounded-xl border border-border bg-muted px-3.5 py-3">
+              <CalendarCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <div>
-                <h4 className="text-xs font-semibold text-secondary-foreground">Follow-up</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">Follow-up</h4>
                 <p className="text-sm">{report.followUp}</p>
               </div>
             </section>

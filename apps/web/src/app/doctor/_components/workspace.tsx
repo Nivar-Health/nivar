@@ -60,9 +60,9 @@ function LiveIndicator({ live }: { live: boolean }) {
   }
   if (!live) return null;
   return (
-    <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-red-50 px-2.5 text-[11px] font-semibold tracking-[0.12em] text-red-700 ring-1 ring-red-200 ring-inset">
-      <span className="live-dot size-1.5 text-danger" />
-      LIVE
+    <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-background px-2.5 text-[11px] font-medium text-foreground ring-1 ring-border ring-inset">
+      <span className="live-dot size-1.5 text-signal" />
+      Live
     </span>
   );
 }
@@ -156,14 +156,14 @@ function WorkspaceBody({
       <div className="min-w-0 xl:col-span-2">
         {completed && booking.report ? (
           <div className="flex scroll-mt-24 flex-col gap-4" ref={publishedRef}>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4">
               <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-full bg-emerald-600 text-white">
-                  <BadgeCheck className="size-5" />
+                <span className="grid size-10 place-items-center rounded-full bg-foreground text-background">
+                  <BadgeCheck className="size-5 text-signal" />
                 </span>
                 <div>
-                  <p className="text-[15px] font-semibold text-emerald-950">Report published</p>
-                  <p className="text-[13px] text-emerald-900/75">
+                  <p className="text-[15px] font-semibold text-foreground">Report published</p>
+                  <p className="text-[13px] text-muted-foreground">
                     {booking.patient.name} can view and download it in the Nivar app
                     {booking.report.publishedAt ? `, sent ${formatDateTime(booking.report.publishedAt)}` : ""}.
                   </p>
@@ -226,10 +226,10 @@ export function ConsultWorkspace({ bookingId }: { bookingId: string }) {
       ) : (
         <div className="grid flex-1 place-items-center px-4 py-16">
           <div className="flex max-w-sm flex-col items-center gap-3 text-center">
-            <span className="grid size-12 place-items-center rounded-full bg-red-50 text-destructive">
+            <span className="grid size-12 place-items-center rounded-full border border-border bg-card text-destructive">
               <ShieldAlert className="size-6" />
             </span>
-            <h1 className="font-display text-2xl font-medium">
+            <h1 className="font-display text-2xl">
               {errorStatus === 403
                 ? "Not your consult"
                 : errorStatus === 404

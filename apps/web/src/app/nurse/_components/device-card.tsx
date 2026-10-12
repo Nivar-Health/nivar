@@ -107,20 +107,20 @@ function ProgressRing({ progressRef }: { progressRef: React.RefObject<number> })
 
 function PairingAnimation({ model }: { model: string }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl bg-[#071B18] px-4 py-8 text-center">
+    <div className="flex flex-col items-center gap-4 rounded-2xl bg-[#0f0f0f] px-4 py-8 text-center">
       <span className="relative flex size-16 items-center justify-center">
-        <span className="absolute inset-0 animate-ping rounded-full bg-[#3BE3B4]/25" />
+        <span className="absolute inset-0 animate-ping rounded-full bg-signal/25" />
         <span
-          className="absolute inset-2 animate-ping rounded-full bg-[#3BE3B4]/20"
+          className="absolute inset-2 animate-ping rounded-full bg-signal/20"
           style={{ animationDelay: "400ms" }}
         />
-        <span className="relative flex size-12 items-center justify-center rounded-full bg-[#3BE3B4] text-[#071B18]">
+        <span className="relative flex size-12 items-center justify-center rounded-full bg-signal text-[#0a0a0a]">
           <Bluetooth className="size-6" />
         </span>
       </span>
       <div>
-        <p className="text-sm font-semibold text-[#CFEFE6]">Pairing with {model}</p>
-        <p className="mt-0.5 text-xs text-[#6E8F87]">Keep the device close to your phone</p>
+        <p className="text-sm font-semibold text-white/90">Pairing with {model}</p>
+        <p className="mt-0.5 text-xs text-white/50">Keep the device close to your phone</p>
       </div>
     </div>
   );
@@ -344,7 +344,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
         <span
           className={cn(
             "flex size-11 shrink-0 items-center justify-center rounded-xl",
-            live ? "bg-[#071B18] text-[#3BE3B4]" : "bg-mint text-primary",
+            live ? "bg-foreground text-signal" : "border border-border bg-card text-foreground",
           )}
         >
           <Icon className="size-5" />
@@ -354,15 +354,15 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
             <h3 className="font-semibold whitespace-nowrap">{meta.title}</h3>
             <span
               className={cn(
-                "rounded-full px-1.5 py-px text-[10px] font-semibold tracking-wide uppercase",
-                booked ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground",
+                "rounded-full px-1.5 py-px text-[10px] font-medium",
+                booked ? "bg-muted text-foreground" : "bg-muted text-muted-foreground",
               )}
             >
               {booked ? "Booked" : "Optional"}
             </span>
           </div>
           <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-            {live && <span className="live-dot size-1.5 text-danger" aria-hidden />}
+            {live && <span className="live-dot size-1.5 text-signal" aria-hidden />}
             {subtitle}
           </p>
         </div>
@@ -402,11 +402,11 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
       )}
 
       {savedAt && (
-        <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900 ring-1 ring-emerald-200 ring-inset">
+        <div className="flex items-start gap-2.5 rounded-xl bg-muted px-3 py-2.5 text-sm text-foreground ring-1 ring-border ring-inset">
           <CircleCheck className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="font-medium">10s reading saved at {formatTime(savedAt)}</p>
-            <p className="text-emerald-800/80">{savedSummary}</p>
+            <p className="text-muted-foreground">{savedSummary}</p>
           </div>
         </div>
       )}
@@ -428,7 +428,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
           {capturing || saving ? (
             <div
               role="status"
-              className="flex h-12 flex-1 items-center justify-center gap-2.5 rounded-xl bg-[#071B18] text-base font-semibold text-[#3BE3B4]"
+              className="flex h-12 flex-1 items-center justify-center gap-2.5 rounded-xl bg-foreground text-base font-semibold text-background"
             >
               {capturing ? (
                 <ProgressRing progressRef={progressRef} />

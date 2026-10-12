@@ -342,18 +342,18 @@ export function StethMonitor({
   return (
     <div
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-2xl border border-[#14332E] bg-[#071B18] text-[#CFEFE6] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-12px_rgba(7,27,24,0.55)]",
+        "relative flex flex-col overflow-hidden rounded-2xl border border-[#262626] bg-[#0a0a0a] text-[#F2F2EE] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-12px_rgba(0,0,0,0.55)]",
         className,
       )}
       style={{ height }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3.5 py-2">
         <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] tracking-wide whitespace-nowrap">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-[#F2C14E]">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[#E6E6E1]">
             <Stethoscope className="size-3.5" /> PCG
           </span>
-          <span className="truncate rounded border border-[#F2C14E]/25 px-1.5 py-px font-medium text-[#F7D88E]">{site}</span>
-          <span className="hidden text-[#6E8F87] sm:inline">20 to 400 Hz</span>
+          <span className="truncate rounded border border-[#E6E6E1]/25 px-1.5 py-px font-medium text-[#F7D88E]">{site}</span>
+          <span className="hidden text-[#7A7A75] sm:inline">20 to 400 Hz</span>
         </div>
         <LiveBadge live={live} />
       </div>
@@ -366,15 +366,15 @@ export function StethMonitor({
 
         <div className="flex w-[92px] shrink-0 flex-col justify-between gap-2 border-l border-white/5 bg-[#0A221E] px-3 py-2.5 sm:w-[124px]">
           <div className="flex flex-col">
-            <span className="text-[10px] font-semibold tracking-[0.14em] text-[#F2C14E]">HR</span>
+            <span className="text-[10px] font-semibold tracking-[0.14em] text-[#E6E6E1]">HR</span>
             <span
               ref={hrTextRef}
-              className="mt-0.5 font-mono text-[34px] leading-none font-semibold tracking-tight text-[#F2C14E] tabular-nums sm:text-[40px]"
+              className="mt-0.5 font-mono text-[34px] leading-none font-semibold tracking-tight text-[#E6E6E1] tabular-nums sm:text-[40px]"
               style={{ textShadow: "0 0 16px rgba(242,193,78,0.3)" }}
             >
               --
             </span>
-            <span className="mt-1 text-[10px] tracking-wider text-[#6E8F87]">bpm</span>
+            <span className="mt-1 text-[10px] tracking-wider text-[#7A7A75]">bpm</span>
           </div>
 
           {!hideListen && (
@@ -384,10 +384,10 @@ export function StethMonitor({
                 onClick={toggleListen}
                 aria-pressed={listening}
                 className={cn(
-                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#F2C14E]/60",
+                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#E6E6E1]/60",
                   listening
-                    ? "border-[#F2C14E] bg-[#F2C14E] text-[#132321] hover:bg-[#F5CD6A]"
-                    : "border-[#F2C14E]/40 bg-transparent text-[#F7D88E] hover:bg-[#F2C14E]/10",
+                    ? "border-[#E6E6E1] bg-[#E6E6E1] text-[#132321] hover:bg-[#FFFFFF]"
+                    : "border-[#E6E6E1]/40 bg-transparent text-[#F7D88E] hover:bg-[#E6E6E1]/10",
                 )}
               >
                 {listening ? <HeadphoneOff className="size-3.5" /> : <Headphones className="size-3.5" />}
@@ -404,10 +404,10 @@ export function StethMonitor({
                     className={cn(
                       "w-[5px] rounded-[1px] bg-white/10 transition-colors duration-75",
                       i >= METER_BARS - 2
-                        ? "data-[on=1]:bg-[#FF6B5E]"
+                        ? "data-[on=1]:bg-[#19C37D]"
                         : i >= METER_BARS - 4
-                          ? "data-[on=1]:bg-[#F2C14E]"
-                          : "data-[on=1]:bg-[#3BE3B4]",
+                          ? "data-[on=1]:bg-[#E6E6E1]"
+                          : "data-[on=1]:bg-[#19C37D]",
                     )}
                     style={{ height: `${40 + (i / (METER_BARS - 1)) * 60}%` }}
                   />

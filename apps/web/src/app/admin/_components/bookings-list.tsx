@@ -72,8 +72,8 @@ function StaffMini({ name, role }: { name?: string; role: "N" | "D" }) {
     <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] leading-5">
       <span
         className={cn(
-          "grid size-4 shrink-0 place-items-center rounded text-[9px] font-bold",
-          role === "N" ? "bg-sky-50 text-sky-800" : "bg-violet-50 text-violet-800",
+          "grid size-4 shrink-0 place-items-center rounded text-[9px] font-semibold",
+          role === "N" ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
         )}
         title={role === "N" ? "Nurse" : "Doctor"}
       >
@@ -172,7 +172,7 @@ export function BookingsList() {
               <SelectValue>
                 {(v: StatusFilter) => (
                   <span className="flex items-center gap-2">
-                    {v in STATUS_META && <span className={cn("size-2 rounded-full", STATUS_META[v as BookingStatus].dotClass)} />}
+                    {v in STATUS_META && <span className={cn("size-2 rounded-full bg-current", STATUS_META[v as BookingStatus].dotClass)} />}
                     {statusFilterLabel(v)}
                   </span>
                 )}
@@ -196,7 +196,7 @@ export function BookingsList() {
                 {BOOKING_STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
                     <span className="flex w-full items-center gap-2">
-                      <span className={cn("size-2 shrink-0 rounded-full", STATUS_META[s].dotClass)} />
+                      <span className={cn("size-2 shrink-0 rounded-full bg-current", STATUS_META[s].dotClass)} />
                       <span className="flex-1">{STATUS_META[s].staffLabel}</span>
                       <span className="text-xs text-muted-foreground tabular">{counts[s] ?? 0}</span>
                     </span>
@@ -297,7 +297,7 @@ export function BookingsList() {
                     }}
                     className={cn(
                       "cursor-pointer border-border/70 transition-colors duration-700",
-                      flashing.has(b.id) && "bg-saffron/10 duration-150",
+                      flashing.has(b.id) && "bg-muted duration-150",
                     )}
                   >
                     <TableCell className="py-3 pl-5">
@@ -323,7 +323,7 @@ export function BookingsList() {
                         {dayLabel(b.scheduledDate)}
                       </div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground tabular">
-                        {b.slot === EXPRESS_SLOT && <Zap className="size-3 fill-saffron text-saffron" />}
+                        {b.slot === EXPRESS_SLOT && <Zap className="size-3 fill-current text-foreground" />}
                         {b.slot === EXPRESS_SLOT ? "Express" : slotLabel(b.slot)}
                       </div>
                     </TableCell>
@@ -335,7 +335,7 @@ export function BookingsList() {
                       <div
                         className={cn(
                           "text-[11px]",
-                          b.payment?.status === "paid" ? "text-muted-foreground" : b.payment?.status === "refunded" ? "text-violet-700" : "text-amber-700",
+                          b.payment?.status === "paid" ? "text-muted-foreground" : b.payment?.status === "refunded" ? "text-muted-foreground" : "text-saffron",
                         )}
                       >
                         {b.payment?.status === "paid" ? "Paid" : b.payment?.status === "refunded" ? "Refunded" : "Unpaid"}

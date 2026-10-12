@@ -5,15 +5,15 @@ import { cn } from "@/lib/utils";
 
 /** Bedside monitor palette (canvas needs literal colours). */
 export const MONITOR = {
-  bg: "#071B18",
-  bgEdge: "#0B2622",
-  trace: "#3BE3B4",
-  traceRgb: "59, 227, 180",
-  steth: "#F2C14E",
-  stethRgb: "242, 193, 78",
-  text: "#CFEFE6",
-  dim: "#6E8F87",
-  danger: "#FF6B5E",
+  bg: "#0a0a0a",
+  bgEdge: "#141414",
+  trace: "#19C37D",
+  traceRgb: "25, 195, 125",
+  steth: "#E6E6E1",
+  stethRgb: "230, 230, 225",
+  text: "#F2F2EE",
+  dim: "#7A7A75",
+  danger: "#19C37D",
 } as const;
 
 export type MonitorStatus = "connecting" | "streaming" | "stopped";
@@ -106,12 +106,12 @@ export function LiveBadge({ live, label = "LIVE" }: { live: boolean; label?: str
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] transition-colors",
-        live ? "bg-[#FF6B5E]/15 text-[#FF8A7F]" : "bg-white/5 text-[#6E8F87]",
+        live ? "bg-[#19C37D]/15 text-[#FF8A7F]" : "bg-white/5 text-[#7A7A75]",
       )}
     >
       <span className="relative flex size-1.5">
-        {live && <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#FF6B5E] opacity-75" />}
-        <span className={cn("relative inline-flex size-1.5 rounded-full", live ? "bg-[#FF6B5E]" : "bg-[#6E8F87]")} />
+        {live && <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#19C37D] opacity-75" />}
+        <span className={cn("relative inline-flex size-1.5 rounded-full", live ? "bg-[#19C37D]" : "bg-[#7A7A75]")} />
       </span>
       {live ? label : "OFFLINE"}
     </span>
@@ -122,7 +122,7 @@ export function MonitorOverlay({ show, children }: { show: boolean; children: Re
   if (!show) return null;
   return (
     <div className="pointer-events-none absolute inset-0 flex animate-in items-center justify-center duration-300 fade-in">
-      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#071B18]/90 px-3.5 py-1.5 text-xs font-medium text-[#CFEFE6]">
+      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#0a0a0a]/90 px-3.5 py-1.5 text-xs font-medium text-[#F2F2EE]">
         {children}
       </div>
     </div>
@@ -135,7 +135,7 @@ export function WaitingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="size-1 animate-pulse rounded-full bg-[#3BE3B4]"
+          className="size-1 animate-pulse rounded-full bg-[#19C37D]"
           style={{ animationDelay: `${i * 180}ms` }}
         />
       ))}

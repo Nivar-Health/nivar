@@ -100,13 +100,13 @@ export function BookingDetail({ id }: { id: string }) {
             <span className="tabular font-mono text-xs font-semibold tracking-wider text-muted-foreground">{booking.code}</span>
             <StatusBadge status={status} audience="patient" />
           </div>
-          <h1 className="mt-1.5 font-display text-[1.65rem] leading-tight font-medium tracking-tight md:text-3xl">
+          <h1 className="mt-1.5 font-display text-[1.65rem] leading-tight md:text-3xl">
             {bookingTitle(booking, catalog)}
           </h1>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               {booking.slot === EXPRESS_SLOT ? (
-                <Zap className="size-3.5 fill-saffron text-saffron" aria-hidden />
+                <Zap className="size-3.5 fill-current text-foreground" aria-hidden />
               ) : (
                 <CalendarDays className="size-3.5" aria-hidden />
               )}
@@ -184,7 +184,7 @@ function StatusPanel({ booking, setBooking }: { booking: Booking; setBooking: (b
       return (
         <HeroCard
           icon={House}
-          tone="cyan"
+          tone="outline"
           title={`${firstName(nurse?.name) || "Your nurse"} has arrived`}
           body="She is setting up the smart ECG and stethoscope. Your readings will appear below as they are recorded."
         />
@@ -193,7 +193,7 @@ function StatusPanel({ booking, setBooking }: { booking: Booking; setBooking: (b
       return (
         <HeroCard
           icon={STATUS_META.testing.icon}
-          tone="teal"
+          tone="ink"
           live
           title="Tests in progress"
           body={`${firstName(nurse?.name) || "Your nurse"} is recording your vitals. ${doctor ? `${doctor.name} is watching your readings live.` : "Your doctor will review them live."}`}
@@ -211,17 +211,15 @@ function StatusPanel({ booking, setBooking }: { booking: Booking; setBooking: (b
 }
 
 const TONES = {
-  teal: "bg-primary text-primary-foreground",
-  cyan: "bg-cyan-600 text-white",
-  saffron: "bg-saffron text-ink",
-  mint: "bg-secondary text-primary",
+  ink: "bg-foreground text-background",
+  outline: "border border-border bg-card text-foreground",
 } as const;
 
 function HeroCard({
   icon: Icon,
   title,
   body,
-  tone = "mint",
+  tone = "outline",
   live,
   children,
   className,
@@ -238,7 +236,7 @@ function HeroCard({
     <Surface className={cn("animate-fade-up overflow-hidden p-4 sm:p-5", className)}>
       <div className="flex items-start gap-3.5">
         <span className={cn("relative grid size-11 shrink-0 place-items-center rounded-2xl", TONES[tone])}>
-          {live && <span aria-hidden className="absolute -top-0.5 -right-0.5 z-10 flex rounded-full ring-2 ring-card"><span className="live-dot size-2.5 text-saffron" /></span>}
+          {live && <span aria-hidden className="absolute -top-0.5 -right-0.5 z-10 flex rounded-full ring-2 ring-card"><span className="live-dot size-2.5 text-signal" /></span>}
           <Icon className="relative size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -255,19 +253,19 @@ function PendingPaymentPanel({ booking, setBooking }: { booking: Booking; setBoo
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   return (
-    <Surface className="animate-fade-up overflow-hidden border-saffron/50 bg-[#FFFAF1] p-4 sm:p-5">
+    <Surface className="animate-fade-up overflow-hidden p-4 sm:p-5">
       <div className="flex items-start gap-3.5">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-saffron text-ink">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-foreground text-background">
           <CreditCard className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold">Complete payment to confirm</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-[#7A4A0E]">
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
             Your slot is held. Pay now and we will assign a nurse and doctor right away.
           </p>
         </div>
       </div>
-      <Button onClick={() => setOpen(true)} className="mt-4 h-12 w-full rounded-xl text-[15px] font-semibold shadow-lift">
+      <Button onClick={() => setOpen(true)} className="mt-4 h-12 w-full rounded-xl text-[15px] font-semibold">
         Complete payment {formatINR(booking.amount)}
       </Button>
       <CheckoutDialog
@@ -290,18 +288,17 @@ function ConfirmedPanel({ booking }: { booking: Booking }) {
   return (
     <Surface className="animate-fade-up overflow-hidden">
       <div className="relative flex flex-col items-center px-5 pt-7 pb-6 text-center">
-        <div aria-hidden className="absolute inset-0 bg-ecg-grid opacity-70" />
         <div className="relative flex items-center">
-          <span className="relative z-10 grid size-14 place-items-center rounded-full bg-secondary ring-4 ring-card">
-            <span className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-ring" />
-            <UserRound className="size-6 text-primary" aria-hidden />
+          <span className="relative z-10 grid size-14 place-items-center rounded-full border border-border bg-card ring-4 ring-card">
+            <span className="absolute inset-0 rounded-full bg-foreground/10 animate-pulse-ring" />
+            <UserRound className="size-6 text-foreground" aria-hidden />
           </span>
-          <span className="relative -ml-3 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground ring-4 ring-card">
+          <span className="relative -ml-3 grid size-14 place-items-center rounded-full bg-foreground text-background ring-4 ring-card">
             <LoaderCircle className="size-6 animate-spin [animation-duration:1.6s]" aria-hidden />
           </span>
-          <span className="relative z-10 -ml-3 grid size-14 place-items-center rounded-full bg-[#FFF1DC] ring-4 ring-card">
-            <span className="absolute inset-0 rounded-full bg-saffron/25 animate-pulse-ring [animation-delay:0.6s]" />
-            <ShieldCheck className="size-6 text-[#B86E0B]" aria-hidden />
+          <span className="relative z-10 -ml-3 grid size-14 place-items-center rounded-full border border-border bg-card ring-4 ring-card">
+            <span className="absolute inset-0 rounded-full bg-foreground/10 animate-pulse-ring [animation-delay:0.6s]" />
+            <ShieldCheck className="size-6 text-foreground" aria-hidden />
           </span>
         </div>
         <p className="relative mt-4 text-base font-semibold">Booking confirmed. Assigning your care team</p>
@@ -310,8 +307,8 @@ function ConfirmedPanel({ booking }: { booking: Booking }) {
             ? "Express visit: we are matching the nearest Nivar nurse. She will be at your door within 60 minutes."
             : "We are matching a certified Nivar nurse and doctor for your visit. This usually takes a few minutes."}
         </p>
-        <span className="relative mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200 ring-inset">
-          <BadgeCheck className="size-3.5" aria-hidden /> {formatINR(booking.amount)} paid via {METHOD_LABEL[booking.payment.method ?? "upi"]}
+        <span className="relative mt-4 inline-flex items-center gap-1.5 rounded-full bg-background px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border ring-inset">
+          <BadgeCheck className="size-3.5 text-success" aria-hidden /> {formatINR(booking.amount)} paid via {METHOD_LABEL[booking.payment.method ?? "upi"]}
         </span>
       </div>
     </Surface>
@@ -324,15 +321,15 @@ function StaffCard({ person, kind }: { person: UserSummary; kind: "nurse" | "doc
       ? [person.specialization, person.yearsExperience ? `${person.yearsExperience} yrs exp` : null]
       : [person.yearsExperience ? `${person.yearsExperience} yrs exp` : null, "Nivar certified"];
   return (
-    <div className="flex items-start gap-3.5 rounded-2xl border border-border bg-background/60 p-3.5">
-      <PersonAvatar name={person.name} tone={kind === "nurse" ? "saffron" : "teal"} size="md" />
+    <div className="flex items-start gap-3.5 rounded-2xl border border-border bg-background p-3.5">
+      <PersonAvatar name={person.name} tone={kind === "nurse" ? "ink" : "outline"} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        <p className="text-xs font-medium text-muted-foreground">
           {kind === "nurse" ? "Your nurse" : "Your doctor"}
         </p>
         <p className="mt-0.5 flex items-center gap-1.5 text-[15px] font-semibold">
           <span className="truncate">{person.name}</span>
-          <BadgeCheck className="size-4 shrink-0 text-primary" aria-label="Verified" />
+          <BadgeCheck className="size-4 shrink-0 text-success" aria-label="Verified" />
         </p>
         {person.qualifications && <p className="text-[13px] leading-snug text-muted-foreground">{person.qualifications}</p>}
         <p className="mt-0.5 text-xs text-muted-foreground">{meta.filter(Boolean).join(" · ")}</p>
@@ -363,7 +360,7 @@ function AssignedPanel({
   return (
     <Surface className="animate-fade-up p-4 sm:p-5">
       <div className="flex items-start gap-3.5">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-600 text-white">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-border bg-card text-foreground">
           <BadgeCheck className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -392,8 +389,8 @@ function EnRoutePanel({ booking, nurse }: { booking: Booking; nurse: UserSummary
   return (
     <Surface className="animate-fade-up overflow-hidden">
       <div className="flex items-center gap-3 px-4 pt-4 pb-3 sm:px-5">
-        <span className="relative grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-600 text-white">
-          <span aria-hidden className="absolute -top-0.5 -right-0.5 z-10 flex rounded-full ring-2 ring-card"><span className="live-dot size-2.5 text-saffron" /></span>
+        <span className="relative grid size-11 shrink-0 place-items-center rounded-2xl bg-foreground text-background">
+          <span aria-hidden className="absolute -top-0.5 -right-0.5 z-10 flex rounded-full ring-2 ring-card"><span className="live-dot size-2.5 text-signal" /></span>
           <STATUS_META.en_route.icon className="relative size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -423,7 +420,7 @@ function EnRoutePanel({ booking, nurse }: { booking: Booking; nurse: UserSummary
       <LiveMap home={home} nurse={live} nurseName={nurse?.name} height={300} showEta={false} className="mx-0 rounded-none border-x-0" />
       {nurse && (
         <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
-          <PersonAvatar name={nurse.name} tone="saffron" size="sm" />
+          <PersonAvatar name={nurse.name} tone="ink" size="sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{nurse.name}</p>
             <p className="truncate text-xs text-muted-foreground">{nurse.qualifications || "Nivar certified nurse"}</p>
@@ -462,15 +459,14 @@ function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSumma
 
   return (
     <>
-      <div className="relative animate-fade-up overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground shadow-lift">
-        <div aria-hidden className="absolute inset-0 bg-ecg-grid-dark" />
-        <EcgLine beats={4} className="pointer-events-none absolute inset-x-0 top-3 h-14 opacity-40" strokeClassName="stroke-white" glowClassName="stroke-saffron" />
+      <div className="relative animate-fade-up overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground">
+        <EcgLine beats={4} thin className="pointer-events-none absolute inset-x-0 top-3 h-14 opacity-60" strokeClassName="stroke-white/30" glowClassName="stroke-signal" />
         <div className="relative">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
-            <span className="live-dot size-1.5 text-saffron" /> Doctor is ready
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-2.5 py-1 text-[11px] font-medium">
+            <span className="live-dot size-1.5 text-signal" /> Doctor is ready
           </span>
           <div className="mt-4 flex items-center gap-3.5">
-            <PersonAvatar name={doctor?.name} tone="saffron" size="lg" className="ring-white/20" />
+            <PersonAvatar name={doctor?.name} tone="outline" size="lg" className="border-0 ring-white/20" />
             <div className="min-w-0">
               <p className="font-display text-xl leading-tight font-medium">{docName}</p>
               <p className="text-[13px] text-primary-foreground/75">
@@ -484,7 +480,7 @@ function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSumma
           <Button
             onClick={() => setInCall(true)}
             disabled={!socket}
-            className="mt-5 h-auto min-h-12 w-full rounded-xl bg-saffron px-4 py-3 text-[15px] leading-snug font-semibold whitespace-normal text-ink shadow-lg hover:bg-saffron/90"
+            className="mt-5 h-auto min-h-12 w-full rounded-xl bg-white px-4 py-3 text-[15px] leading-snug font-semibold whitespace-normal text-foreground hover:bg-white/90"
           >
             <Video className="size-5" aria-hidden /> Join video consult with {doctor ? `Dr. ${firstName(doctor.name)}` : "your doctor"}
           </Button>
@@ -496,7 +492,7 @@ function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSumma
           role="dialog"
           aria-modal="true"
           aria-label={`Video consult with ${docName}`}
-          className="fixed inset-x-0 top-0 z-[60] flex h-dvh flex-col bg-[#071210] pb-safe sm:p-6"
+          className="fixed inset-x-0 top-0 z-[60] flex h-dvh flex-col bg-[#0a0a0a] pb-safe sm:p-6"
         >
           <div className="mx-auto flex h-full w-full max-w-5xl flex-col">
             <div className="flex items-center justify-between gap-3 px-4 py-3 text-white sm:px-0 sm:pt-0">
@@ -530,8 +526,8 @@ function ReportingPanel({ doctor }: { doctor: UserSummary | null }) {
   return (
     <Surface className="animate-fade-up overflow-hidden">
       <div className="flex items-start gap-3.5 p-4 sm:p-5">
-        <span className="relative grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white">
-          <span aria-hidden className="absolute -top-0.5 -right-0.5 z-10 flex rounded-full ring-2 ring-card"><span className="live-dot size-2.5 text-saffron" /></span>
+        <span className="relative grid size-11 shrink-0 place-items-center rounded-2xl border border-border bg-card text-foreground">
+          <span aria-hidden className="absolute -top-0.5 -right-0.5 z-10 flex rounded-full ring-2 ring-card"><span className="live-dot size-2.5 text-signal" /></span>
           <FilePenLine className="relative size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -541,7 +537,7 @@ function ReportingPanel({ doctor }: { doctor: UserSummary | null }) {
           </p>
         </div>
       </div>
-      <div className="space-y-2 border-t border-border bg-background/60 px-4 py-4 sm:px-5" aria-hidden>
+      <div className="space-y-2 border-t border-border px-4 py-4 sm:px-5" aria-hidden>
         {["w-3/4", "w-full", "w-5/6", "w-2/5"].map((w, i) => (
           <div key={w} className={cn("h-2.5 animate-pulse rounded-full bg-muted", w)} style={{ animationDelay: `${i * 150}ms` }} />
         ))}
@@ -564,10 +560,9 @@ function CompletedPanel({
   return (
     <div className="space-y-4">
       <Surface className="animate-fade-up overflow-hidden">
-        <div className="relative bg-secondary/60 px-4 pt-4 pb-4 sm:px-5">
-          <div aria-hidden className="absolute inset-0 bg-ecg-grid opacity-60" />
+        <div className="relative border-b border-border px-4 pt-4 pb-4 sm:px-5">
           <div className="relative flex items-start gap-3.5">
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-success text-white">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-foreground text-background">
               <FileHeart className="size-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
@@ -582,25 +577,25 @@ function CompletedPanel({
         <div className="space-y-3 px-4 py-4 sm:px-5">
           {report?.diagnosis && (
             <div>
-              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Diagnosis</p>
+              <p className="text-xs font-medium text-muted-foreground">Diagnosis</p>
               <p className="mt-0.5 text-[15px] leading-snug font-semibold">{report.diagnosis}</p>
             </div>
           )}
           {report?.summary && <p className="line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">{report.summary}</p>}
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-              <Pill className="size-3.5 text-primary" aria-hidden />
+              <Pill className="size-3.5 text-muted-foreground" aria-hidden />
               {rxCount ? `${rxCount} medicine${rxCount === 1 ? "" : "s"} prescribed` : "No medicines prescribed"}
             </span>
             {report?.followUp && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-                <CalendarDays className="size-3.5 text-primary" aria-hidden /> Follow-up advised
+                <CalendarDays className="size-3.5 text-muted-foreground" aria-hidden /> Follow-up advised
               </span>
             )}
           </div>
           <Link
             href={`/app/bookings/${booking.id}/report`}
-            className={cn(buttonVariants({ size: "lg" }), "mt-1 h-12 w-full rounded-xl text-[15px] font-semibold shadow-lift")}
+            className={cn(buttonVariants({ size: "lg" }), "mt-1 h-12 w-full rounded-xl text-[15px] font-semibold")}
           >
             View full report <ChevronRight aria-hidden />
           </Link>
@@ -641,7 +636,7 @@ function RatingCard({ booking, setBooking }: { booking: Booking; setBooking: (b:
       <Surface className="flex items-center gap-3.5 p-4 sm:p-5">
         <div className="flex gap-0.5" aria-label={`You rated ${rated} out of 5`}>
           {[1, 2, 3, 4, 5].map((i) => (
-            <Star key={i} className={cn("size-5", i <= rated ? "fill-saffron text-saffron" : "text-border")} aria-hidden />
+            <Star key={i} className={cn("size-5", i <= rated ? "fill-foreground text-foreground" : "text-border")} aria-hidden />
           ))}
         </div>
         <div className="min-w-0 flex-1">
@@ -672,7 +667,7 @@ function RatingCard({ booking, setBooking }: { booking: Booking; setBooking: (b:
               className="grid size-10 place-items-center rounded-full transition-transform outline-none hover:scale-110 focus-visible:ring-3 focus-visible:ring-ring/40 active:scale-95"
             >
               <Star
-                className={cn("size-7 transition-colors", i <= shown ? "fill-saffron text-saffron" : "text-input")}
+                className={cn("size-7 transition-colors", i <= shown ? "fill-foreground text-foreground" : "text-input")}
                 strokeWidth={1.75}
                 aria-hidden
               />
@@ -706,7 +701,7 @@ function CancelledPanel({ booking }: { booking: Booking }) {
   return (
     <Surface className="animate-fade-up p-4 sm:p-5">
       <div className="flex items-start gap-3.5">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-red-50 text-danger">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-border bg-card text-danger">
           <CircleX className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -737,8 +732,8 @@ function TeamStrip({ nurse, doctor }: { nurse: UserSummary | null; doctor: UserS
   return (
     <Surface className="grid grid-cols-2 divide-x divide-border">
       {[
-        { p: nurse, role: "Nurse", tone: "saffron" as const },
-        { p: doctor, role: "Doctor", tone: "teal" as const },
+        { p: nurse, role: "Nurse", tone: "ink" as const },
+        { p: doctor, role: "Doctor", tone: "outline" as const },
       ].map(({ p, role, tone }) =>
         p ? (
           <div key={role} className="flex min-w-0 items-center gap-2.5 p-3.5">
@@ -773,7 +768,7 @@ function DetailsAccordion({ booking }: { booking: Booking }) {
                 const Icon = serviceIcon(c);
                 return (
                   <li key={c} className="flex items-center gap-3">
-                    <span className="grid size-8 place-items-center rounded-lg bg-secondary text-primary">
+                    <span className="grid size-8 place-items-center rounded-lg border border-border bg-card text-foreground">
                       <Icon className="size-4" aria-hidden />
                     </span>
                     <span className="text-sm">{services[c]?.name ?? c}</span>

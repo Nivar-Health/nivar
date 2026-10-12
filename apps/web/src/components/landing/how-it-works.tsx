@@ -1,77 +1,51 @@
-import { CalendarCheck, FileText, HeartPulse, MonitorPlay, type LucideIcon } from "lucide-react";
-import { EcgLine } from "@/components/brand/ecg-line";
-import { Container, SectionHeading } from "./primitives";
+import { Container, Section, SectionTitle } from "./primitives";
 
-const STEPS: { icon: LucideIcon; title: string; body: string; when: string }[] = [
+const STEPS = [
   {
-    icon: CalendarCheck,
     title: "Book in two minutes",
-    body: "Pick a package or single tests, add who it is for and choose a slot. Express visits reach you within 60 minutes.",
-    when: "From 7 am to 8 pm, every day",
+    text: "Choose a programme or a few tests, pick a slot and an address. Same-day slots open every morning.",
+    time: "2 min",
   },
   {
-    icon: HeartPulse,
-    title: "A Nivar nurse arrives",
-    body: "She records BP, sugar, SpO2 and heart rate, then places the smart ECG and smart stethoscope. You can track her on the way.",
-    when: "About 20 minutes at home",
+    title: "A nurse arrives with the devices",
+    text: "A certified Nivar nurse comes with a smart ECG, a digital stethoscope, a BP monitor and a glucometer.",
+    time: "~45 min",
   },
   {
-    icon: MonitorPlay,
     title: "Your doctor joins live",
-    body: "A Nivar doctor in our clinic watches your ECG and listens to your heart as it streams, then talks to you on video.",
-    when: "During the visit",
+    text: "Readings stream to a Nivar doctor as they are taken. She reviews them and speaks with you on video.",
+    time: "15 min",
   },
   {
-    icon: FileText,
     title: "Report in your app",
-    body: "Diagnosis, prescription and advice, signed by the doctor, with your ECG strip attached. Share it or download a PDF.",
-    when: "Usually within the hour",
+    text: "A signed report and prescription, with every reading explained in plain words, lands in the app.",
+    time: "Within the hour",
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-20 py-20 sm:py-24 lg:py-32">
+    <Section id="how-it-works">
       <Container>
-        <SectionHeading
-          id="how-title"
-          title="One visit. Nurse at your side, doctor on screen."
-          lede="Most home check-ups end with a lab report you have to take to a doctor. With Nivar, the doctor is part of the visit."
+        <SectionTitle
+          title="One visit."
+          grey="The whole check-up."
+          lede="Nothing to download before the nurse arrives, nothing to carry to a lab. Here is what happens, in order."
         />
 
-        <div className="relative mt-14 lg:mt-20">
-          <EcgLine
-            beats={8}
-            amplitude={0.5}
-            className="pointer-events-none absolute top-0 left-0 hidden h-11 lg:block"
-            strokeClassName="stroke-primary"
-          />
-          <ol className="grid grid-cols-1 gap-x-8 lg:grid-cols-4">
-            {STEPS.map(({ icon: Icon, title, body, when }, i) => (
-              <li
-                key={title}
-                className="relative grid grid-cols-[44px_minmax(0,1fr)] gap-x-5 pb-10 last:pb-0 lg:block lg:pb-0"
-              >
-                {/* vertical connector on mobile */}
-                {i < STEPS.length - 1 && (
-                  <span aria-hidden className="absolute top-12 bottom-1 left-[21px] w-px bg-primary/20 lg:hidden" />
-                )}
-                <span className="relative z-10 flex size-11 items-center justify-center rounded-full bg-primary font-display text-lg font-semibold text-primary-foreground ring-6 ring-ivory">
-                  {i + 1}
-                </span>
-                <div className="lg:mt-7">
-                  <Icon className="mb-3 hidden size-6 text-primary lg:block" aria-hidden strokeWidth={1.75} />
-                  <h3 className="pt-2 text-lg font-semibold text-ink lg:pt-0">{title}</h3>
-                  <p className="mt-2 text-[0.95rem] leading-relaxed text-muted-foreground">{body}</p>
-                  <p className="mt-4 inline-flex rounded-full bg-mint px-3 py-1 text-[0.8rem] font-medium text-teal-deep">
-                    {when}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
+        <ol className="mt-14 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className="flex flex-col border-t border-border pt-6">
+              <span className="text-sm font-medium text-muted-foreground tabular-nums">0{i + 1}</span>
+              <h3 className="mt-6 text-[1.125rem] leading-snug font-medium tracking-[-0.01em]">{s.title}</h3>
+              <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{s.text}</p>
+              <span className="mt-6 inline-flex w-fit items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground tabular-nums">
+                {s.time}
+              </span>
+            </li>
+          ))}
+        </ol>
       </Container>
-    </section>
+    </Section>
   );
 }

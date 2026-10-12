@@ -83,7 +83,7 @@ export function CancelDialog({
                 className={cn(
                   "rounded-full border px-2.5 py-1 text-xs transition-colors",
                   reason === r
-                    ? "border-primary bg-secondary text-secondary-foreground"
+                    ? "border-foreground bg-muted text-foreground"
                     : "border-border bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground",
                 )}
               >

@@ -87,7 +87,7 @@ export function BookingsList() {
         <ErrorState title="Couldn't load your bookings" message={error} onRetry={reload} />
       ) : list.length === 0 ? (
         <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-card/60 px-6 py-12 text-center">
-          <span className="grid size-14 place-items-center rounded-2xl bg-secondary text-primary">
+          <span className="grid size-14 place-items-center rounded-2xl border border-border bg-card text-foreground">
             <ClipboardList className="size-6" aria-hidden />
           </span>
           <p className="mt-3 font-semibold">{tab === "upcoming" ? "No upcoming visits" : "No past visits yet"}</p>

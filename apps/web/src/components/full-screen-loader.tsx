@@ -14,7 +14,7 @@ export function FullScreenLoader({
       role="status"
       aria-live="polite"
       className={cn(
-        "fixed inset-0 z-40 grid place-items-center bg-background bg-ecg-grid",
+        "fixed inset-0 z-40 grid place-items-center bg-background",
         className,
       )}
     >

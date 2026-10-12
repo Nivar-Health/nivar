@@ -77,7 +77,7 @@ const METHOD: Record<string, string> = { upi: "UPI", card: "Card", netbanking: "
 function Fact({ label, children, icon }: { label: string; children: ReactNode; icon: ReactNode }) {
   return (
     <div className="flex min-w-0 items-start gap-3 px-5 py-4">
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-primary [&_svg]:size-4">
+      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-card text-foreground [&_svg]:size-4">
         {icon}
       </span>
       <div className="min-w-0">
@@ -124,7 +124,7 @@ function StaffCard({
         <UserAvatar name={person.name} src={person.avatarUrl} size="lg" />
         {live && (
           <span className="absolute -right-0.5 -bottom-0.5 grid size-3.5 place-items-center rounded-full bg-card">
-            <span className="live-dot size-2 text-success" />
+            <span className="live-dot size-2 text-signal" />
           </span>
         )}
       </div>
@@ -266,7 +266,7 @@ function ClinicalPanel({ booking }: { booking: Booking }) {
 
           {steth && (
             <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 px-3.5 py-3">
-              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-card text-primary ring-1 ring-border">
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-card text-foreground ring-1 ring-border">
                 <Stethoscope className="size-4" />
               </span>
               <div className="min-w-0 text-sm">
@@ -285,13 +285,13 @@ function ClinicalPanel({ booking }: { booking: Booking }) {
             <div className="rounded-xl border border-border">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-4 py-2.5">
                 <div className="flex items-center gap-2 text-sm font-semibold">
-                  <FileHeart className="size-4 text-primary" />
+                  <FileHeart className="size-4 text-muted-foreground" />
                   Doctor&apos;s report
                 </div>
                 <span
                   className={cn(
-                    "rounded-full px-2 py-0.5 text-[11px] font-medium",
-                    report.publishedAt ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800",
+                    "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+                    report.publishedAt ? "bg-background text-foreground ring-border" : "bg-background text-saffron ring-saffron/35",
                   )}
                 >
                   {report.publishedAt ? `Published ${formatDateTime(report.publishedAt)}` : "Draft"}
@@ -335,7 +335,7 @@ function ClinicalPanel({ booking }: { booking: Booking }) {
                 {Array.from({ length: 5 }, (_, i) => (
                   <Star
                     key={i}
-                    className={cn("size-4", i < booking.rating!.score ? "fill-saffron text-saffron" : "text-border")}
+                    className={cn("size-4", i < booking.rating!.score ? "fill-foreground text-foreground" : "text-border")}
                   />
                 ))}
               </span>
@@ -491,9 +491,9 @@ export function BookingDetail({ id }: { id: string }) {
               <span
                 className={cn(
                   "rounded-full px-1.5 py-px text-[11px] font-medium ring-1 ring-inset",
-                  payStatus === "paid" && "bg-emerald-50 text-emerald-800 ring-emerald-200",
-                  payStatus === "pending" && "bg-amber-50 text-amber-800 ring-amber-200",
-                  payStatus === "refunded" && "bg-violet-50 text-violet-800 ring-violet-200",
+                  payStatus === "paid" && "bg-background text-foreground ring-border",
+                  payStatus === "pending" && "bg-background text-saffron ring-saffron/35",
+                  payStatus === "refunded" && "bg-background text-muted-foreground ring-border",
                 )}
               >
                 {payStatus === "paid" ? `Paid · ${METHOD[b.payment.method ?? "upi"]}` : payStatus === "refunded" ? "Refunded" : "Unpaid"}
@@ -526,8 +526,8 @@ export function BookingDetail({ id }: { id: string }) {
               }
               icon={<Navigation />}
               action={
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold tracking-wide text-emerald-800 uppercase">
-                  <span className="live-dot size-1.5 text-success" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-background text-foreground ring-1 ring-border ring-inset px-2 py-0.5 text-[10.5px] font-medium">
+                  <span className="live-dot size-1.5 text-signal" />
                   Live
                 </span>
               }

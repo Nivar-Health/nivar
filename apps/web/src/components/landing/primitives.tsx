@@ -2,84 +2,163 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type CtaVariant = "primary" | "secondary" | "ghost" | "light" | "saffron";
-type CtaSize = "md" | "lg";
+/* ------------------------------------------------------------------------- */
+/* Buttons                                                                   */
+/* ------------------------------------------------------------------------- */
 
-const CTA_BASE =
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-[background-color,color,box-shadow,transform] duration-200 outline-none select-none focus-visible:ring-3 focus-visible:ring-offset-2 active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "inverse";
 
-const CTA_VARIANT: Record<CtaVariant, string> = {
-  primary:
-    "bg-primary text-primary-foreground shadow-[0_1px_0_rgb(255_255_255/0.12)_inset,0_10px_24px_-12px_rgb(14_94_82/0.7)] hover:bg-teal-deep focus-visible:ring-primary/40 focus-visible:ring-offset-background",
-  secondary:
-    "border border-ink/12 bg-white/70 text-ink hover:border-ink/25 hover:bg-white focus-visible:ring-primary/30 focus-visible:ring-offset-background",
-  ghost: "text-ink hover:bg-ink/5 focus-visible:ring-primary/30 focus-visible:ring-offset-background",
-  light:
-    "bg-ivory text-teal-deep hover:bg-white focus-visible:ring-ivory/50 focus-visible:ring-offset-teal-deep",
-  saffron:
-    "bg-saffron text-saffron-foreground hover:bg-[#F5B358] focus-visible:ring-saffron/50 focus-visible:ring-offset-teal-deep",
+const BUTTON_BASE =
+  "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold whitespace-nowrap transition-colors duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60 [&_svg]:size-4 [&_svg]:shrink-0";
+
+const BUTTON_VARIANT: Record<ButtonVariant, string> = {
+  primary: "bg-primary text-primary-foreground hover:bg-[#262626]",
+  secondary: "border border-border bg-background text-foreground hover:border-[#c8c8c2] hover:bg-muted",
+  ghost: "text-foreground hover:bg-muted",
+  inverse: "bg-white text-foreground hover:bg-[#ededea] focus-visible:ring-white focus-visible:ring-offset-[#0a0a0a]",
 };
 
-const CTA_SIZE: Record<CtaSize, string> = {
-  md: "h-10 px-4.5 text-sm",
-  lg: "h-12 px-6 text-[0.95rem]",
-};
-
-export function ctaClass(variant: CtaVariant = "primary", size: CtaSize = "md", className?: string) {
-  return cn(CTA_BASE, CTA_VARIANT[variant], CTA_SIZE[size], className);
+export function buttonClass(variant: ButtonVariant = "primary", className?: string) {
+  return cn(BUTTON_BASE, BUTTON_VARIANT[variant], className);
 }
 
-export function CtaLink({
+export function ButtonLink({
   variant = "primary",
-  size = "md",
   className,
   ...props
-}: ComponentProps<typeof Link> & { variant?: CtaVariant; size?: CtaSize }) {
-  return <Link className={ctaClass(variant, size, className)} {...props} />;
+}: ComponentProps<typeof Link> & { variant?: ButtonVariant }) {
+  return <Link className={buttonClass(variant, className)} {...props} />;
 }
 
-/** Page-width container with the landing gutters. */
+/* ------------------------------------------------------------------------- */
+/* Layout                                                                    */
+/* ------------------------------------------------------------------------- */
+
+/** Page-width container: 1200px plus 24px gutters. */
 export function Container({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("mx-auto w-full max-w-[1200px] px-5 sm:px-8", className)}>{children}</div>;
+  return <div className={cn("mx-auto w-full max-w-[1248px] px-6", className)}>{children}</div>;
 }
 
-/** Section heading: serif display title with an optional lede. */
-export function SectionHeading({
+/** Vertical rhythm for a page section: 80px on mobile, 140px on desktop. */
+export function Section({
   id,
-  title,
-  lede,
-  align = "left",
-  tone = "dark",
   className,
+  children,
+  dark = false,
 }: {
   id?: string;
+  className?: string;
+  children: ReactNode;
+  dark?: boolean;
+}) {
+  return (
+    <section
+      id={id}
+      className={cn(
+        "scroll-mt-16 py-20 lg:py-[140px]",
+        dark && "bg-[#0a0a0a] text-white",
+        className,
+      )}
+    >
+      {children}
+    </section>
+  );
+}
+
+/** Section title: display type, optional second line in grey, optional lede. */
+export function SectionTitle({
+  title,
+  grey,
+  lede,
+  align = "left",
+  dark = false,
+  className,
+}: {
   title: ReactNode;
+  grey?: ReactNode;
   lede?: ReactNode;
   align?: "left" | "center";
-  tone?: "dark" | "light";
+  dark?: boolean;
   className?: string;
 }) {
   return (
-    <div className={cn("max-w-2xl", align === "center" && "mx-auto text-center", className)}>
+    <div className={cn("flex flex-col gap-5", align === "center" && "items-center text-center", className)}>
       <h2
-        id={id}
         className={cn(
-          "font-display text-[2rem] leading-[1.08] font-medium tracking-[-0.025em] text-balance sm:text-[2.6rem] lg:text-[3rem]",
-          tone === "light" ? "text-ivory" : "text-ink",
+          "font-display max-w-[22ch] text-[2.25rem] leading-[1.05] font-medium tracking-[-0.03em] text-balance sm:text-[2.75rem] lg:text-[3.25rem]",
+          dark ? "text-white" : "text-foreground",
         )}
       >
         {title}
+        {grey && (
+          <>
+            {" "}
+            <span className={dark ? "text-[#8a8a85]" : "text-muted-foreground"}>{grey}</span>
+          </>
+        )}
       </h2>
       {lede && (
-        <p
-          className={cn(
-            "mt-4 text-[1.0625rem] leading-relaxed text-pretty sm:text-lg",
-            tone === "light" ? "text-ivory/75" : "text-muted-foreground",
-          )}
-        >
+        <p className={cn("max-w-[52ch] text-[1.0625rem] leading-[1.6]", dark ? "text-[#a3a39e]" : "text-muted-foreground")}>
           {lede}
         </p>
       )}
     </div>
   );
+}
+
+/* ------------------------------------------------------------------------- */
+/* Small pieces                                                              */
+/* ------------------------------------------------------------------------- */
+
+/** Frosted card that floats over photography. */
+export function GlassCard({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <div
+      className={cn(
+        "rounded-[14px] border border-white/60 bg-white/85 px-3.5 py-3 text-xs leading-[1.35] text-foreground shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)] backdrop-blur-md",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function LiveDot({ className }: { className?: string }) {
+  return <span aria-hidden className={cn("live-dot text-signal", className)} />;
+}
+
+/** 36px icon tile with a 1px border, for feature lists. */
+export function IconTile({ className, children, dark = false }: { className?: string; children: ReactNode; dark?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-[10px] border [&_svg]:size-4",
+        dark ? "border-white/15 text-white" : "border-border text-foreground",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function Avatar({ initials, className }: { initials: string; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold tracking-wide text-white",
+        className,
+      )}
+    >
+      {initials}
+    </span>
+  );
+}
+
+/** Rupee formatting with the Indian grouping. */
+export function inr(amount: number) {
+  return `₹${amount.toLocaleString("en-IN")}`;
 }

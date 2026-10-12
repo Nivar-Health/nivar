@@ -58,8 +58,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className={cn(
                     "inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                     isActive
-                      ? "bg-secondary text-secondary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   )}
                 >
                   <tab.icon className="size-4" aria-hidden />
@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-card/95 pb-safe shadow-[0_-8px_24px_-16px_rgb(19_35_33/0.18)] backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-card/95 pb-safe backdrop-blur-md md:hidden"
       >
         <ul className="mx-auto grid h-16 max-w-md grid-cols-4">
           {TABS.map((tab) => {
@@ -102,7 +102,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <span
                     className={cn(
                       "grid h-7 w-12 place-items-center rounded-full transition-colors",
-                      isActive && "bg-secondary",
+                      isActive && "bg-muted",
                     )}
                   >
                     <tab.icon className="size-[18px]" strokeWidth={isActive ? 2.25 : 2} aria-hidden />

@@ -128,7 +128,7 @@ export function CustomersPage() {
                         <span
                           className={cn(
                             "inline-flex h-5 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular",
-                            c.bookingCount > 1 ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground",
+                            c.bookingCount > 1 ? "bg-muted text-foreground" : "bg-muted text-muted-foreground",
                           )}
                         >
                           {c.bookingCount}
@@ -212,7 +212,7 @@ export function LeadsPage() {
                         <span
                           className={cn(
                             "inline-flex h-5 items-center rounded-full px-2 text-[11px] font-medium",
-                            local ? "bg-secondary text-secondary-foreground" : "bg-amber-50 text-amber-800",
+                            local ? "bg-muted text-foreground" : "bg-background text-saffron ring-1 ring-saffron/35 ring-inset",
                           )}
                         >
                           {l.city}

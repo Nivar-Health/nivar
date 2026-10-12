@@ -95,7 +95,7 @@ function Kpi({
       className={cn(
         "relative flex min-w-0 flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 shadow-soft",
         className,
-        tone === "live" && "border-primary/25 bg-[linear-gradient(160deg,#ffffff_40%,var(--mint))]",
+        tone === "live" && "border-foreground",
       )}
     >
       <div className="flex min-h-5 items-center justify-between gap-2 sm:min-h-8">
@@ -103,19 +103,15 @@ function Kpi({
         <span
           className={cn(
             "hidden size-8 shrink-0 place-items-center rounded-lg sm:grid [&_svg]:size-4",
-            tone === "live"
-              ? "bg-primary text-primary-foreground"
-              : tone === "warn"
-                ? "bg-amber-50 text-amber-700"
-                : "bg-secondary text-primary",
+            tone === "live" ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
           )}
         >
           {icon}
         </span>
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="font-display text-[32px] leading-none font-medium tracking-tight tabular-nums">{value}</span>
-        {tone === "live" && value !== "0" && <span className="live-dot size-2 text-danger" aria-hidden />}
+        <span className="font-display text-[32px] leading-none tabular-nums">{value}</span>
+        {tone === "live" && value !== "0" && <span className="live-dot size-2 text-signal" aria-hidden />}
       </div>
       <span className="text-xs text-muted-foreground sm:truncate">{sub}</span>
     </div>
@@ -139,7 +135,7 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight [&_svg]:size-4 [&_svg]:text-primary">
+      <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight [&_svg]:size-4 [&_svg]:text-muted-foreground">
         {icon}
         {title}
         {typeof count === "number" && (
@@ -178,14 +174,14 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
     <article
       className={cn(
         "@container/live relative flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-soft",
-        inConsult ? "border-primary/40" : "border-border",
-        highlight && "animate-in ring-4 ring-saffron/50 duration-700 fade-in slide-in-from-bottom-3",
+        inConsult ? "border-foreground" : "border-border",
+        highlight && "animate-in ring-4 ring-foreground/15 duration-700 fade-in slide-in-from-bottom-3",
       )}
     >
       {inConsult && (
         <div className="flex items-center justify-between gap-2 bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground">
           <span className="flex items-center gap-2">
-            <span className="live-dot size-2 text-saffron" aria-hidden />
+            <span className="live-dot size-2 text-signal" aria-hidden />
             Patient is ready for your video consult
           </span>
           {started && (
@@ -223,13 +219,13 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
                   key={r.key}
                   className={cn(
                     "flex min-w-0 flex-col rounded-xl border px-3 py-2",
-                    abnormal ? "border-red-200 bg-red-50/50" : "bg-muted/30",
+                    abnormal ? "border-danger/30 bg-card" : "border-border bg-card",
                   )}
                 >
                   <dt className="flex items-center justify-between gap-1 text-[11px] font-medium text-muted-foreground">
                     <span className="truncate">{SHORT_LABEL[r.key] ?? r.label}</span>
                     {abnormal && (
-                      <span className="shrink-0 text-[10px] font-semibold tracking-wide text-red-700 uppercase">
+                      <span className="shrink-0 text-[10px] font-semibold text-danger">
                         {r.assessment?.label}
                       </span>
                     )}
@@ -239,7 +235,7 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
                       className={cn(
                         "text-base font-semibold tabular-nums",
                         r.value === null && "text-muted-foreground/60",
-                        abnormal && "text-red-700",
+                        abnormal && "text-danger",
                       )}
                     >
                       {r.value ?? "--"}
@@ -273,22 +269,13 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
 
 function LiveEmpty() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#14332E] bg-[#071B18] px-6 py-10 text-center text-[#CFEFE6]">
-      <div className="absolute inset-0 bg-ecg-grid-dark opacity-70" aria-hidden />
-      <svg
-        viewBox="0 0 600 60"
-        className="absolute inset-x-0 top-1/2 h-14 w-full -translate-y-1/2 opacity-25"
-        aria-hidden
-        preserveAspectRatio="none"
-      >
-        <path d="M0 30 H600" stroke="#3BE3B4" strokeWidth="1.5" strokeDasharray="6 6" fill="none" />
-      </svg>
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-10 text-center text-foreground">
       <div className="relative flex flex-col items-center gap-2">
-        <span className="grid size-10 place-items-center rounded-full bg-white/5 text-[#3BE3B4]">
+        <span className="grid size-10 place-items-center rounded-full border border-border bg-card text-foreground">
           <Radio className="size-5" />
         </span>
         <p className="text-sm font-semibold">No patients live right now</p>
-        <p className="max-w-sm text-xs text-[#9FB8B1]">
+        <p className="max-w-sm text-xs text-muted-foreground">
           When a nurse starts tests or a video consult, the patient appears here with live vitals and ECG.
         </p>
       </div>
@@ -310,16 +297,16 @@ function NurseProgress({ booking }: { booking: Booking }) {
         ? etaMinutes(haversineKm(loc, { lat: booking.address.lat, lng: booking.address.lng }))
         : null;
     return (
-      <span className="flex items-center gap-1.5 text-sky-700">
-        <span className="live-dot size-1.5" aria-hidden />
+      <span className="flex items-center gap-1.5 text-foreground">
+        <span className="live-dot size-1.5 text-signal" aria-hidden />
         {name} on the way{eta ? `, about ${eta} min` : ""}
       </span>
     );
   }
   if (booking.status === "arrived") {
     return (
-      <span className="flex items-center gap-1.5 text-cyan-700">
-        <span className="live-dot size-1.5" aria-hidden />
+      <span className="flex items-center gap-1.5 text-foreground">
+        <span className="live-dot size-1.5 text-signal" aria-hidden />
         {name} has arrived, setting up
       </span>
     );
@@ -361,7 +348,7 @@ function ReportRow({ booking, now }: { booking: Booking; now: number }) {
   const overdue = mins !== null && mins >= 30;
   return (
     <li className="flex items-center gap-3.5 rounded-2xl border bg-card p-3.5 shadow-soft">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-700">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground">
         <FilePenLine className="size-[18px]" />
       </span>
       <div className="min-w-0 flex-1">
@@ -371,7 +358,7 @@ function ReportRow({ booking, now }: { booking: Booking; now: number }) {
             {booking.code} · {patientLine(booking)}
           </span>
         </p>
-        <p className={cn("mt-0.5 truncate text-xs", overdue ? "text-amber-700" : "text-muted-foreground")}>
+        <p className={cn("mt-0.5 truncate text-xs", overdue ? "text-saffron" : "text-muted-foreground")}>
           {booking.report?.diagnosis ? `Draft: ${booking.report.diagnosis}` : "No draft yet"}
           {mins !== null && ` · consult ended ${mins === 0 ? "just now" : `${mins} min ago`}`}
         </p>
@@ -470,7 +457,7 @@ export function DoctorDashboard() {
           <p className="text-sm font-medium text-muted-foreground">
             {date.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
           </p>
-          <h1 className="mt-1 font-display text-[28px] leading-tight font-medium tracking-tight sm:text-[34px]">
+          <h1 className="mt-1 font-display text-[28px] leading-tight sm:text-[34px]">
             {greeting(date)}, {doctorShortName(user?.name)}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -489,7 +476,7 @@ export function DoctorDashboard() {
       </header>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+        <div className="rounded-xl border border-danger/30 bg-card px-4 py-3 text-sm text-danger">{error}</div>
       )}
 
       {/* KPIs */}
@@ -546,7 +533,7 @@ export function DoctorDashboard() {
             <SectionHeader
               title="Live now"
               count={loading ? undefined : view.live.length}
-              icon={<span className="live-dot size-2 text-danger" />}
+              icon={<span className="live-dot size-2 text-signal" />}
             />
             {loading ? (
               <Skeleton className="h-[230px] rounded-2xl" />

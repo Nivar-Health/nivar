@@ -170,15 +170,15 @@ export function CustomerLoginForm({ next }: { next: string | null }) {
               setPhone(DEMO_PHONE);
               void sendOtp(DEMO_PHONE);
             }}
-            className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/30 bg-secondary/60 px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary"
+            className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
-            <Sparkles className="size-3.5 text-saffron" />
+            <Sparkles className="size-3.5 text-muted-foreground" />
             Use demo patient, Rahul ({formatPhone(DEMO_PHONE)})
           </button>
         </form>
 
         <div className="mt-10 flex items-start gap-2.5 text-xs leading-relaxed text-muted-foreground">
-          <ShieldCheck className="mt-px size-4 shrink-0 text-primary" />
+          <ShieldCheck className="mt-px size-4 shrink-0 text-muted-foreground" />
           We only use your number for visit updates and reports. No spam, ever.
         </div>
         <p className="mt-6 border-t border-border pt-6 text-sm text-muted-foreground">
@@ -216,9 +216,9 @@ export function CustomerLoginForm({ next }: { next: string | null }) {
       </p>
 
       {demoOtp && (
-        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-saffron/40 bg-saffron/10 px-4 py-3">
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-border bg-muted px-4 py-3">
           <div className="text-sm">
-            <span className="text-foreground/70">Demo OTP: </span>
+            <span className="text-muted-foreground">Demo OTP: </span>
             <span className="tabular font-semibold tracking-[0.2em] text-foreground">{demoOtp}</span>
           </div>
           <button

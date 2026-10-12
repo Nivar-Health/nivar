@@ -139,7 +139,7 @@ export function ActivityFeed({ items, loading, className }: { items: FeedItem[];
     <Panel
       title="Live activity"
       description="Every booking update, as it happens"
-      icon={<span className="live-dot size-2 text-success" />}
+      icon={<span className="live-dot size-2 text-signal" />}
       className={className}
       bodyClassName="relative overflow-hidden"
     >

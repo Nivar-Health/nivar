@@ -1,72 +1,119 @@
-import { ArrowDown } from "lucide-react";
-import { formatINR } from "@/lib/format";
-import { HeroVisual } from "./hero-visual";
-import { Container, CtaLink } from "./primitives";
+import Image from "next/image";
+import { Check } from "lucide-react";
+import { Avatar, ButtonLink, Container, GlassCard, LiveDot, inr } from "./primitives";
+import { MiniTrace } from "./mini-trace";
+
+const PROMISES = [
+  "A Nivar nurse comes to you with a smart ECG and stethoscope",
+  "A full-time Nivar doctor watches your readings live and consults on video",
+  "Your report and prescription in the app, usually before she leaves",
+];
 
 export function Hero({ fromPrice }: { fromPrice: number }) {
   return (
-    <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
-      {/* ECG paper, fading out towards the edges */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-ecg-grid [mask-image:radial-gradient(ellipse_80%_70%_at_70%_35%,black,transparent_75%)]"
-      />
-      <Container className="grid grid-cols-1 items-center gap-8 pt-8 pb-16 sm:pt-12 sm:pb-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12 lg:pt-16 lg:pb-28">
-        <div className="max-w-[600px]">
-          <p
-            className="inline-flex animate-fade-up items-center gap-2 rounded-full border border-primary/15 bg-mint/70 py-1 pr-3.5 pl-2.5 text-[0.8rem] font-medium text-teal-deep"
-          >
-            <span className="live-dot text-primary" aria-hidden />
-            Now visiting homes across Bangalore
-          </p>
-          <h1
-            id="hero-title"
-            className="mt-5 animate-fade-up font-display text-[2.6rem] leading-[1.02] font-medium tracking-[-0.035em] text-balance text-ink sm:text-[3.6rem] lg:text-[4.35rem]"
-            style={{ animationDelay: "60ms", fontVariationSettings: '"SOFT" 60, "opsz" 144' }}
-          >
-            Your doctor&apos;s check-up, at home within the hour.
-          </h1>
-          <p
-            className="mt-5 max-w-[34rem] animate-fade-up text-[1.0625rem] leading-relaxed text-pretty text-muted-foreground sm:mt-6 sm:text-lg"
-            style={{ animationDelay: "120ms" }}
-          >
-            A Nivar nurse brings a smart ECG and stethoscope to your door. Your readings stream live to a Nivar doctor,
-            who sees you on video and sends your report and prescription, usually before the nurse has packed up.
-          </p>
-          <div
-            className="mt-8 flex animate-fade-up flex-col gap-3 min-[420px]:flex-row"
-            style={{ animationDelay: "180ms" }}
-          >
-            <CtaLink href="/app/book" size="lg">
-              Book a home check-up
-            </CtaLink>
-            <CtaLink href="#how-it-works" size="lg" variant="secondary">
-              See how it works
-              <ArrowDown aria-hidden />
-            </CtaLink>
+    <section className="pt-10 pb-20 sm:pt-14 lg:pt-20 lg:pb-[140px]">
+      <Container>
+        <div className="grid gap-14 lg:grid-cols-12 lg:items-start lg:gap-10">
+          <div className="landing-reveal flex flex-col lg:col-span-7 lg:pt-6">
+            <p className="inline-flex w-fit items-center gap-2.5 rounded-full border border-border py-1.5 pr-3.5 pl-3 text-[13px] font-medium text-foreground">
+              <LiveDot />
+              Now in Bangalore
+            </p>
+
+            <h1 className="font-display mt-7 text-[2.75rem] leading-[1.02] font-medium tracking-[-0.03em] sm:text-[3.5rem] lg:text-[3.75rem]">
+              Your doctor&apos;s check-up.
+              <br />
+              <span className="text-muted-foreground">At home, within the hour.</span>
+            </h1>
+
+            <p className="mt-7 max-w-[52ch] text-[1.0625rem] leading-[1.6] text-muted-foreground">
+              Nivar brings the clinic to your sofa. A nurse brings the devices, a doctor you can see
+              watches every reading as it is taken, and you get a clear report the same evening. From{" "}
+              {inr(fromPrice)}, all inclusive.
+            </p>
+
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <ButtonLink href="/app/book">Book a check-up</ButtonLink>
+              <a
+                href="#how-it-works"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors outline-none hover:border-[#c8c8c2] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                See how it works
+              </a>
+            </div>
+
+            <ul className="mt-14 max-w-[560px] divide-y divide-border border-y border-border">
+              {PROMISES.map((text) => (
+                <li key={text} className="flex items-start gap-3.5 py-4 text-[15px] leading-[1.5] text-foreground">
+                  <Check aria-hidden className="mt-0.5 size-4 shrink-0" strokeWidth={2.25} />
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <dl
-            className="mt-10 grid max-w-[34rem] animate-fade-up grid-cols-3 gap-4 border-t border-ink/10 pt-6"
-            style={{ animationDelay: "240ms" }}
-          >
-            <Stat value={formatINR(fromPrice)} label="Check-ups from, all inclusive" />
-            <Stat value="60 min" label="Express nurse visit, booked today" />
-            <Stat value="100%" label="Doctors and nurses on our payroll" />
-          </dl>
+
+          <div className="landing-reveal flex flex-col gap-4 [--reveal-delay:120ms] lg:col-span-5">
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-muted">
+              <Image
+                src="/img/hero-nurse.jpg"
+                alt="A Nivar nurse placing a smart ECG patch on a woman seated at home"
+                fill
+                priority
+                sizes="(min-width: 1024px) 480px, (min-width: 640px) 90vw, 100vw"
+                className="object-cover"
+              />
+
+              <GlassCard className="absolute top-4 left-4 w-[200px]">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Smart ECG</span>
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <LiveDot className="size-1.5" />
+                    Lead II
+                  </span>
+                </div>
+                <MiniTrace className="mt-2" />
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-[15px] font-semibold tabular-nums">
+                    82 <span className="text-[11px] font-medium text-muted-foreground">bpm</span>
+                  </span>
+                  <span className="text-muted-foreground">Normal</span>
+                </div>
+              </GlassCard>
+
+              <GlassCard className="absolute right-4 bottom-4 flex items-center gap-3 pr-4">
+                <Avatar initials="AR" />
+                <div>
+                  <p className="font-semibold">Dr. Ananya Rao</p>
+                  <p className="mt-0.5 text-muted-foreground">Cardiologist, on video</p>
+                </div>
+              </GlassCard>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col justify-between gap-6 rounded-2xl bg-[#0a0a0a] p-5 text-white">
+                <p className="text-[13px] leading-snug text-[#a3a39e]">Nurse at your door</p>
+                <div>
+                  <p className="text-[1.375rem] leading-none font-medium tracking-[-0.02em] tabular-nums">
+                    in 48 min
+                  </p>
+                  <div className="mt-3.5 h-1 w-full overflow-hidden rounded-full bg-white/15">
+                    <div className="landing-progress h-full w-[62%] rounded-full bg-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col justify-between gap-6 rounded-2xl border border-border p-5">
+                <p className="text-[13px] leading-snug text-muted-foreground">Starts at</p>
+                <div>
+                  <p className="text-[1.375rem] leading-none font-medium tracking-[-0.02em] tabular-nums">
+                    {inr(fromPrice)}
+                  </p>
+                  <p className="mt-2 text-[13px] text-muted-foreground">all inclusive</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <HeroVisual />
       </Container>
     </section>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <dt className="order-last text-[0.78rem] leading-snug text-muted-foreground sm:text-sm">{label}</dt>
-      <dd className="font-display text-[1.6rem] leading-none font-medium tracking-[-0.02em] text-ink tabular-nums sm:text-[2rem]">
-        {value}
-      </dd>
-    </div>
   );
 }

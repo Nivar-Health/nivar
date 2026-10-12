@@ -4,7 +4,7 @@ import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ChevronDown, CircleCheck, LoaderCircle } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { ctaClass } from "./primitives";
+import { buttonClass } from "./primitives";
 
 const CITIES = ["Bangalore", "Mysuru", "Hyderabad", "Pune", "Chennai", "Other"];
 
@@ -24,7 +24,7 @@ function validate(f: Fields): Errors {
 }
 
 const FIELD =
-  "h-12 w-full scroll-mt-28 rounded-xl border border-ink/15 bg-white px-3.5 text-base text-ink transition-[border-color,box-shadow] outline-none placeholder:text-ink/40 hover:border-ink/25 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/20 aria-invalid:border-danger aria-invalid:ring-danger/15";
+  "h-12 w-full scroll-mt-28 rounded-[10px] border border-input bg-white px-3.5 text-base text-foreground transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground/70 hover:border-[#bdbdb6] focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-foreground/15 aria-invalid:border-danger aria-invalid:ring-danger/15";
 
 export function CallbackForm() {
   const uid = useId();
@@ -77,15 +77,15 @@ export function CallbackForm() {
         className="flex flex-col items-center justify-center px-2 text-center"
         style={{ minHeight: formHeight ?? 460 }}
       >
-        <span className="flex size-14 items-center justify-center rounded-full bg-mint text-primary">
+        <span className="flex size-14 items-center justify-center rounded-full bg-muted text-foreground">
           <CircleCheck className="size-7" aria-hidden />
         </span>
-        <h3 className="mt-5 font-display text-[1.75rem] font-medium tracking-[-0.02em] text-ink">
+        <h3 className="font-display mt-5 text-[1.75rem] font-medium tracking-[-0.02em] text-foreground">
           Thanks, {first}. We will call you soon.
         </h3>
         <p className="mt-3 max-w-sm leading-relaxed text-muted-foreground">
           A Nivar care coordinator will call you on{" "}
-          <span className="font-medium whitespace-nowrap text-ink tabular-nums">
+          <span className="font-medium whitespace-nowrap text-foreground tabular-nums">
             +91 {done.phone.slice(0, 5)} {done.phone.slice(5)}
           </span>
           , usually within 30 minutes between 7 am and 9 pm.
@@ -96,7 +96,7 @@ export function CallbackForm() {
             setDone(null);
             setFields({ name: "", phone: "", city: "Bangalore", message: "" });
           }}
-          className="mt-6 rounded-md text-sm font-medium text-primary underline decoration-primary/30 underline-offset-4 outline-none hover:decoration-primary focus-visible:ring-3 focus-visible:ring-primary/30"
+          className="mt-6 rounded-sm text-sm font-semibold text-foreground underline decoration-border underline-offset-[5px] outline-none hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Send another request
         </button>
@@ -128,7 +128,7 @@ export function CallbackForm() {
         <div className="relative">
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 flex items-center border-r border-ink/10 pr-3 pl-3.5 text-base font-medium text-ink/70"
+            className="pointer-events-none absolute inset-y-0 left-0 flex items-center border-r border-border pr-3 pl-3.5 text-base font-medium text-muted-foreground"
           >
             +91
           </span>
@@ -172,7 +172,7 @@ export function CallbackForm() {
           </select>
           <ChevronDown
             aria-hidden
-            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-ink/50"
+            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground"
           />
         </div>
       </Field>
@@ -198,12 +198,12 @@ export function CallbackForm() {
       </Field>
 
       {serverError && (
-        <p id={id("server")} role="alert" className="rounded-xl bg-danger/8 px-4 py-3 text-sm text-danger">
+        <p id={id("server")} role="alert" className="rounded-[10px] bg-danger/8 px-4 py-3 text-sm text-danger">
           {serverError}
         </p>
       )}
 
-      <button type="submit" disabled={submitting} className={ctaClass("primary", "lg", "w-full disabled:opacity-70")}>
+      <button type="submit" disabled={submitting} className={buttonClass("primary", "w-full")}>
         {submitting ? (
           <>
             <LoaderCircle className="animate-spin" aria-hidden />
@@ -213,7 +213,7 @@ export function CallbackForm() {
           "Request a callback"
         )}
       </button>
-      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         We only use your number to call you about this request.
       </p>
     </form>
@@ -237,13 +237,13 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={htmlFor} className="flex items-baseline justify-between text-sm font-medium text-ink">
+      <label htmlFor={htmlFor} className="flex items-baseline justify-between text-sm font-medium text-foreground">
         {label}
         {optional && <span className="text-xs font-normal text-muted-foreground">Optional</span>}
       </label>
       {children}
       {error && (
-        <p id={errorId} className="text-[0.82rem] text-danger">
+        <p id={errorId} className="text-[13px] text-danger">
           {error}
         </p>
       )}

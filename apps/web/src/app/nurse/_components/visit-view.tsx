@@ -74,8 +74,8 @@ function NurseProgress({ status }: { status: BookingStatus }) {
             <span
               className={cn(
                 "h-1.5 rounded-full",
-                state === "done" && "bg-primary",
-                state === "current" && "bg-saffron",
+                state === "done" && "bg-foreground",
+                state === "current" && "bg-foreground/50",
                 state === "upcoming" && "bg-border",
               )}
             />
@@ -111,7 +111,7 @@ function Panel({
     <section className={cn("flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft", className)}>
       {title && (
         <div className="flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-sm font-semibold [&_svg]:size-4 [&_svg]:text-primary">
+          <h2 className="flex items-center gap-2 text-sm font-semibold [&_svg]:size-4 [&_svg]:text-muted-foreground">
             {icon}
             {title}
           </h2>
@@ -126,7 +126,7 @@ function Panel({
 function SectionHeading({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2 pt-2">
-      <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{children}</h2>
+      <h2 className="text-[13px] font-medium text-muted-foreground">{children}</h2>
       {aside}
     </div>
   );
@@ -180,9 +180,9 @@ function VisitHeader({ booking }: { booking: Booking }) {
           </p>
           <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium">
             {booking.slot === EXPRESS_SLOT ? (
-              <Zap className="size-4 fill-saffron text-saffron" aria-hidden />
+              <Zap className="size-4 fill-current text-foreground" aria-hidden />
             ) : (
-              <Clock className="size-4 text-primary" aria-hidden />
+              <Clock className="size-4 text-muted-foreground" aria-hidden />
             )}
             {scheduleLabel(booking.scheduledDate, booking.slot)}
           </p>
@@ -201,7 +201,7 @@ function VisitHeader({ booking }: { booking: Booking }) {
       {!compact && (
         <>
           <div className="flex items-start gap-2.5 rounded-xl bg-muted/60 px-3.5 py-3">
-            <MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+            <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
             <p className="text-sm leading-snug">
               <span className="font-medium">{booking.address.label || "Home"}</span>
               <span className="text-muted-foreground"> · {addressLine(booking.address)}</span>
@@ -257,7 +257,7 @@ function DoctorCard({ booking, live }: { booking: Booking; live?: boolean }) {
         <UserAvatar name={doctor.name} src={doctor.avatarUrl} size="lg" />
         {live && (
           <span className="absolute -right-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full bg-card">
-            <span className="live-dot size-2 text-success" />
+            <span className="live-dot size-2 text-signal" />
           </span>
         )}
       </span>
@@ -298,11 +298,11 @@ function VisitBrief({ booking }: { booking: Booking }) {
 
 function SimulateToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-saffron/40 bg-saffron/10 px-3.5 py-3">
-      <Route className="size-5 shrink-0 text-saffron-foreground" aria-hidden />
+    <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-input bg-card px-3.5 py-3">
+      <Route className="size-5 shrink-0 text-muted-foreground" aria-hidden />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-saffron-foreground">Simulate drive</span>
-        <span className="block text-xs text-saffron-foreground/75">Demo mode: drive to the patient in 45 seconds</span>
+        <span className="block text-sm font-semibold text-foreground">Simulate drive</span>
+        <span className="block text-xs text-muted-foreground">Demo mode: drive to the patient in 45 seconds</span>
       </span>
       <Switch checked={on} onCheckedChange={(v) => onChange(Boolean(v))} aria-label="Simulate drive" />
     </label>
@@ -341,7 +341,7 @@ function TripPanel({
       );
   } else if (reached) {
     line = (
-      <span className="flex items-center gap-2.5 rounded-xl bg-emerald-50 px-3 py-2.5 font-medium text-emerald-900 ring-1 ring-emerald-200 ring-inset">
+      <span className="flex items-center gap-2.5 rounded-xl bg-muted px-3 py-2.5 font-medium text-foreground ring-1 ring-border ring-inset">
         <CircleCheckBig className="size-4 shrink-0 text-success" aria-hidden />
         You have reached {patientFirst}&apos;s home. Tap I&apos;ve arrived.
       </span>
@@ -349,7 +349,7 @@ function TripPanel({
   } else if (sharing.sharing) {
     line = (
       <span className="flex items-center gap-2">
-        <span className="live-dot size-1.5 text-success" aria-hidden />
+        <span className="live-dot size-1.5 text-signal" aria-hidden />
         Sharing live location with {patientFirst}
       </span>
     );
@@ -446,12 +446,12 @@ function ArrivedPanel({ booking }: { booking: Booking }) {
             const device = code === "ECG" || code === "STETH";
             return (
               <li key={code} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                <span className="flex size-9 items-center justify-center rounded-xl bg-mint text-primary">
+                <span className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-foreground">
                   <Icon className="size-[18px]" aria-hidden />
                 </span>
                 <span className="flex-1 text-sm font-medium">{meta.label}</span>
                 {device && (
-                  <span className="rounded-full bg-[#071B18] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#3BE3B4] uppercase">
+                  <span className="rounded-full bg-foreground px-2 py-0.5 text-[10.5px] font-medium text-background">
                     Smart device
                   </span>
                 )}
@@ -492,7 +492,7 @@ function ReadinessPanel({ booking }: { booking: Booking }) {
               className={cn(
                 "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium ring-1 ring-inset",
                 ok
-                  ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                  ? "bg-foreground text-background ring-foreground"
                   : "bg-background text-muted-foreground ring-border",
               )}
             >
@@ -534,14 +534,14 @@ function Workspace({
   return (
     <>
       {consult && (
-        <Panel className="border-primary/25 bg-mint/50">
-          <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-primary uppercase">
-            <span className="live-dot size-1.5 text-danger" aria-hidden />
+        <Panel className="border-foreground">
+          <p className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+            <span className="live-dot size-1.5 text-signal" aria-hidden />
             Live doctor consult
           </p>
           <DoctorCard booking={booking} live />
-          <p className="text-sm text-secondary-foreground">
-            <span className="font-semibold">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">
               {doctor ? `${doctor.name} is reviewing live.` : "The doctor is reviewing live."}
             </span>{" "}
             Keep devices streaming and update vitals if asked.
@@ -558,7 +558,7 @@ function Workspace({
           <button
             type="button"
             onClick={onFinish}
-            className="self-start text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="self-start text-sm font-medium text-foreground underline-offset-4 hover:underline"
           >
             Doctor finished? Mark visit complete
           </button>
@@ -600,7 +600,7 @@ function SummaryRow({ label, value, flag }: { label: string; value: string; flag
       <span className="flex items-center gap-2 text-right font-medium tabular-nums">
         {value}
         {flag && flag !== "Normal" && (
-          <span className="rounded-full bg-amber-50 px-1.5 py-px text-[10px] font-semibold text-amber-800 ring-1 ring-amber-200 ring-inset">
+          <span className="rounded-full bg-background px-1.5 py-px text-[10px] font-medium text-saffron ring-1 ring-saffron/35 ring-inset">
             {flag}
           </span>
         )}
@@ -659,15 +659,15 @@ function DonePanel({ booking }: { booking: Booking }) {
 
   return (
     <>
-      <section className="flex flex-col items-center gap-3 rounded-3xl border border-primary/15 bg-mint/60 px-6 py-8 text-center">
+      <section className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card px-6 py-8 text-center">
         <span className="relative flex size-16 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-primary/15 [animation-iteration-count:2]" />
-          <span className="relative flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <CircleCheckBig className="size-8" />
+          <span className="absolute inset-0 animate-ping rounded-full bg-signal/20 [animation-iteration-count:2]" />
+          <span className="relative flex size-16 items-center justify-center rounded-full bg-foreground text-background">
+            <CircleCheckBig className="size-8 text-signal" />
           </span>
         </span>
-        <h2 className="font-display text-2xl font-medium tracking-tight">Visit complete</h2>
-        <p className="max-w-xs text-sm text-secondary-foreground">
+        <h2 className="font-display text-2xl">Visit complete</h2>
+        <p className="max-w-xs text-sm text-muted-foreground">
           {completed
             ? `${doctor?.name ?? "The doctor"} has published ${firstName(booking.patient.name)}'s report.`
             : `${doctor?.name ?? "The doctor"} is preparing ${firstName(booking.patient.name)}'s report. Great work.`}

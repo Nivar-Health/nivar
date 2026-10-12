@@ -284,13 +284,13 @@ export function BookWizard({
                         }}
                         className={cn(
                           "flex w-full items-start gap-3.5 rounded-2xl border bg-card p-4 text-left transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-                          selected ? "border-primary shadow-lift ring-1 ring-primary" : "border-border hover:border-primary/40",
+                          selected ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-foreground/40",
                         )}
                       >
                         <span
                           className={cn(
                             "grid size-10 shrink-0 place-items-center rounded-xl",
-                            selected ? "bg-primary text-primary-foreground" : "bg-secondary text-primary",
+                            selected ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
                           )}
                         >
                           <House className="size-[18px]" aria-hidden />
@@ -332,9 +332,9 @@ export function BookWizard({
                 <button
                   type="button"
                   onClick={() => setAddingAddress(true)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-transparent p-4 text-left text-sm font-semibold text-primary transition-colors outline-none hover:bg-secondary/50 focus-visible:ring-3 focus-visible:ring-ring/40"
+                  className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-input p-4 text-left text-sm font-semibold text-foreground transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
                 >
-                  <span className="grid size-10 place-items-center rounded-xl bg-secondary">
+                  <span className="grid size-10 place-items-center rounded-xl border border-border bg-card text-foreground">
                     <Plus className="size-[18px]" aria-hidden />
                   </span>
                   Add new address
@@ -393,7 +393,7 @@ export function BookWizard({
           <Button
             onClick={goNext}
             disabled={placing || (isLast && !catalog)}
-            className="mt-3 h-12 w-full rounded-xl text-[15px] font-semibold shadow-lift"
+            className="mt-3 h-12 w-full rounded-xl text-[15px] font-semibold"
           >
             {placing ? <LoaderCircle className="animate-spin" aria-hidden /> : isLast ? <Lock aria-hidden /> : null}
             {ctaLabel}
@@ -405,7 +405,7 @@ export function BookWizard({
             </Button>
           )}
           <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden /> Free cancellation until the nurse arrives
+            <ShieldCheck className="size-3.5 text-muted-foreground" aria-hidden /> Free cancellation until the nurse arrives
           </p>
         </aside>
       </div>
@@ -435,7 +435,7 @@ export function BookWizard({
           <Button
             onClick={goNext}
             disabled={placing || (isLast && !catalog)}
-            className="h-12 shrink-0 rounded-xl px-5 text-[15px] font-semibold shadow-lift"
+            className="h-12 shrink-0 rounded-xl px-5 text-[15px] font-semibold"
           >
             {placing ? <LoaderCircle className="animate-spin" aria-hidden /> : isLast ? <Lock aria-hidden /> : null}
             {ctaLabel}
@@ -475,7 +475,7 @@ function WizardHeader({ step, onBack }: { step: number; onBack: () => void }) {
           <p className="text-xs font-medium text-muted-foreground">
             Step {step + 1} of {STEPS.length}
           </p>
-          <h1 className="font-display text-[1.6rem] leading-tight font-medium tracking-tight md:text-3xl">
+          <h1 className="font-display text-[1.6rem] leading-tight md:text-3xl">
             {STEPS[step].title}
           </h1>
         </div>
@@ -486,7 +486,7 @@ function WizardHeader({ step, onBack }: { step: number; onBack: () => void }) {
             <span
               className={cn(
                 "block h-1.5 rounded-full transition-colors duration-300",
-                i < step ? "bg-primary" : i === step ? "bg-saffron" : "bg-border",
+                i < step ? "bg-foreground" : i === step ? "bg-foreground/50" : "bg-border",
               )}
             />
             <span
@@ -567,14 +567,14 @@ function TestsStep({
                 className={cn(
                   "relative flex flex-col rounded-2xl border bg-card p-4 text-left transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                   selected
-                    ? "border-primary shadow-lift ring-1 ring-primary"
-                    : "border-border shadow-soft hover:border-primary/40",
+                    ? "border-foreground ring-1 ring-foreground"
+                    : "border-border hover:border-foreground/40",
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     {p.popular && (
-                      <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-saffron/20 px-2 py-0.5 text-[11px] font-semibold text-saffron-foreground">
+                      <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-foreground px-2 py-0.5 text-[11px] font-medium text-background">
                         <Sparkles className="size-3" aria-hidden /> Most popular
                       </span>
                     )}
@@ -597,7 +597,7 @@ function TestsStep({
                     return (
                       <span
                         key={c}
-                        className="inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5 text-[11px] font-medium text-secondary-foreground"
+                        className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
                       >
                         <Icon className="size-3" aria-hidden />
                         {services[c]?.shortName ?? c}
@@ -613,7 +613,7 @@ function TestsStep({
                     )}
                   </p>
                   {save > 0 && (
-                    <span className="tabular rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                    <span className="tabular rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-success">
                       Save {formatINR(save)}
                     </span>
                   )}
@@ -627,7 +627,7 @@ function TestsStep({
       <section aria-label="Individual tests">
         <div className="mb-3 flex items-center gap-3">
           <span className="h-px flex-1 bg-border" />
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          <span className="text-[13px] font-medium text-muted-foreground">
             {pkg ? "Add more tests" : "Or pick individual tests"}
           </span>
           <span className="h-px flex-1 bg-border" />
@@ -653,7 +653,7 @@ function TestsStep({
                 <span
                   className={cn(
                     "grid size-10 shrink-0 place-items-center rounded-xl",
-                    checked ? "bg-primary text-primary-foreground" : "bg-secondary text-primary",
+                    checked ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
                   )}
                 >
                   <Icon className="size-[18px]" aria-hidden />
@@ -774,14 +774,14 @@ function PatientStep(props: {
               onClick={() => setMode(o.id)}
               className={cn(
                 "flex flex-col items-start gap-3 rounded-2xl border bg-card p-4 text-left transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-                selected ? "border-primary shadow-lift ring-1 ring-primary" : "border-border hover:border-primary/40",
+                selected ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-foreground/40",
               )}
             >
               <span className="flex w-full items-start justify-between">
                 <span
                   className={cn(
                     "grid size-10 place-items-center rounded-xl",
-                    selected ? "bg-primary text-primary-foreground" : "bg-secondary text-primary",
+                    selected ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
                   )}
                 >
                   <o.icon className="size-[18px]" aria-hidden />
@@ -984,7 +984,7 @@ function ScheduleStep({
     <div className="space-y-6">
       <div>
         <p className="mb-2.5 flex items-center gap-2 text-sm font-semibold">
-          <CalendarDays className="size-4 text-primary" aria-hidden /> Date
+          <CalendarDays className="size-4 text-muted-foreground" aria-hidden /> Date
         </p>
         <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:px-0">
           <div role="radiogroup" aria-label="Date" className="flex gap-2">
@@ -1000,7 +1000,7 @@ function ScheduleStep({
                   className={cn(
                     "flex h-16 w-[4.75rem] shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                     selected
-                      ? "border-primary bg-primary text-primary-foreground shadow-lift"
+                      ? "border-foreground bg-foreground text-background"
                       : "border-border bg-card hover:border-primary/40",
                   )}
                 >
@@ -1035,24 +1035,21 @@ function ScheduleStep({
               aria-checked={slot === EXPRESS_SLOT}
               onClick={() => onSlot(EXPRESS_SLOT)}
               className={cn(
-                "group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border-2 p-4 text-left transition-all outline-none focus-visible:ring-3 focus-visible:ring-saffron/50",
-                slot === EXPRESS_SLOT
-                  ? "border-saffron bg-[#FFF4E2] shadow-[0_18px_40px_-20px_rgb(242_163_58/0.7)]"
-                  : "border-saffron/50 bg-[#FFFAF1] hover:border-saffron",
+                "group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border bg-card p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                slot === EXPRESS_SLOT ? "border-foreground ring-1 ring-foreground" : "border-border hover:border-foreground/40",
               )}
             >
-              <span aria-hidden className="pointer-events-none absolute -top-10 -right-8 size-32 rounded-full bg-saffron/15" />
-              <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-saffron text-ink shadow-sm">
+              <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-foreground text-background">
                 <Zap className="size-6 fill-current" aria-hidden />
               </span>
               <span className="relative min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-[15px] font-semibold">Express visit</span>
-                  <span className="rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white uppercase">
+                  <span className="rounded-full border border-border px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
                     Fastest
                   </span>
                 </span>
-                <span className="mt-0.5 block text-[13px] leading-snug text-balance text-[#7A4A0E]">
+                <span className="mt-0.5 block text-[13px] leading-snug text-balance text-muted-foreground">
                   Nurse at your door within 60 minutes
                 </span>
               </span>
@@ -1064,7 +1061,7 @@ function ScheduleStep({
 
           <div>
             <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <Clock className="size-4 text-primary" aria-hidden />
+              <Clock className="size-4 text-muted-foreground" aria-hidden />
               {express ? "Or pick a time slot" : "Time slot"}
             </p>
             {!anyHourly && (
@@ -1099,7 +1096,7 @@ function ScheduleStep({
                             className={cn(
                               "tabular h-11 rounded-xl border text-[13px] font-medium transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                               selected
-                                ? "border-primary bg-primary text-primary-foreground shadow-lift"
+                                ? "border-foreground bg-foreground text-background"
                                 : s.available
                                   ? "border-border bg-card hover:border-primary/50"
                                   : "cursor-not-allowed border-transparent bg-muted/70 text-muted-foreground/60 line-through decoration-muted-foreground/40",
@@ -1169,7 +1166,7 @@ function ReviewStep({
             return (
               <span
                 key={c}
-                className="inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5 text-[11px] font-medium text-secondary-foreground"
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
               >
                 <Icon className="size-3" aria-hidden />
                 {services[c]?.shortName ?? c}
@@ -1231,13 +1228,13 @@ function ReviewStep({
           </div>
         </dl>
         {discount > 0 && (
-          <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-800">
+          <p className="mt-3 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] font-medium text-foreground">
             You save {formatINR(discount)} on this booking
           </p>
         )}
       </Surface>
       <p className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
-        <ShieldCheck className="size-3.5 text-primary" aria-hidden /> Free cancellation until the nurse arrives.
+        <ShieldCheck className="size-3.5 text-muted-foreground" aria-hidden /> Free cancellation until the nurse arrives.
       </p>
     </div>
   );
@@ -1247,7 +1244,7 @@ function PriceRow({ label, value, tone }: { label: string; value: string; tone?:
   return (
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={cn("tabular font-medium", tone === "success" && "text-emerald-700")}>{value}</dd>
+      <dd className={cn("tabular font-medium", tone === "success" && "text-success")}>{value}</dd>
     </div>
   );
 }
@@ -1266,17 +1263,17 @@ function ReviewCard({
   accent?: boolean;
 }) {
   return (
-    <Surface className={cn("flex gap-3.5 p-4", accent && "border-saffron/60 bg-[#FFFAF1]")}>
+    <Surface className="flex gap-3.5 p-4">
       <span
         className={cn(
           "grid size-9 shrink-0 place-items-center rounded-xl",
-          accent ? "bg-saffron text-ink" : "bg-secondary text-primary",
+          accent ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
         )}
       >
         <Icon className="size-4" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="mb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{title}</p>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">{title}</p>
         {children}
       </div>
       <button
@@ -1317,7 +1314,7 @@ function Summary({
   const services = serviceMap(catalog);
   return (
     <Surface className="overflow-hidden">
-      <div className="border-b border-border bg-secondary/50 px-4 py-3">
+      <div className="border-b border-border px-4 py-3">
         <p className="text-sm font-semibold">Your booking</p>
         <p className="text-xs text-muted-foreground">
           {testCount ? `${testCount} test${testCount === 1 ? "" : "s"} at home` : "Nothing selected yet"}
@@ -1342,9 +1339,9 @@ function Summary({
         {date && slot && (
           <div className="flex items-center gap-2 rounded-lg bg-muted/70 px-2.5 py-2 text-[13px]">
             {slot === EXPRESS_SLOT ? (
-              <Zap className="size-3.5 fill-saffron text-saffron" aria-hidden />
+              <Zap className="size-3.5 fill-current text-foreground" aria-hidden />
             ) : (
-              <CalendarDays className="size-3.5 text-primary" aria-hidden />
+              <CalendarDays className="size-3.5 text-muted-foreground" aria-hidden />
             )}
             {slot === EXPRESS_SLOT
               ? "Express, within 60 min"
@@ -1357,7 +1354,7 @@ function Summary({
         <span className="text-right">
           <span className="tabular block text-xl leading-none font-semibold">{formatINR(total)}</span>
           {savings > 0 && (
-            <span className="tabular mt-1 block text-xs font-medium text-emerald-700">You save {formatINR(savings)}</span>
+            <span className="tabular mt-1 block text-xs font-medium text-success">You save {formatINR(savings)}</span>
           )}
         </span>
       </div>

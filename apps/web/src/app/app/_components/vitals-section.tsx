@@ -107,12 +107,12 @@ function VitalCard({ card, waiting }: { card: VitalCardModel; waiting: boolean }
     <div
       className={cn(
         "flex min-h-[7.25rem] flex-col rounded-2xl border p-3.5 transition-colors",
-        card.value ? "border-border bg-card shadow-soft" : "border-dashed border-border bg-background/60",
+        card.value ? "border-border bg-card" : "border-dashed border-border bg-background",
       )}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Icon className="size-3.5 shrink-0 text-primary" aria-hidden />
+          <Icon className="size-3.5 shrink-0 text-foreground" aria-hidden />
           <span className="truncate">{card.short}</span>
         </span>
         {card.assessment && (
@@ -177,8 +177,8 @@ export function VitalsSection({ booking }: { booking: Booking }) {
       <SectionTitle
         action={
           capturing ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
-              <span className="live-dot size-1.5" /> Live
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+              <span className="live-dot size-1.5 text-signal" /> Live
             </span>
           ) : booking.vitals?.recordedAt ? (
             <span className="text-xs text-muted-foreground">Recorded {formatTime(booking.vitals.recordedAt)}</span>
@@ -208,8 +208,8 @@ export function VitalsSection({ booking }: { booking: Booking }) {
               <Activity className="size-4 text-primary" aria-hidden /> Smart ECG
             </span>
             {ecgLive ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 ring-1 ring-red-200 ring-inset">
-                <span className="live-dot size-1.5" /> {devices.ecg === "connecting" ? "Pairing..." : "Recording..."}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border ring-inset">
+                <span className="live-dot size-1.5 text-signal" /> {devices.ecg === "connecting" ? "Pairing..." : "Recording..."}
               </span>
             ) : booking.ecg ? (
               <span className="tabular text-xs text-muted-foreground">
@@ -244,15 +244,15 @@ export function VitalsSection({ booking }: { booking: Booking }) {
 
       {(wantsSteth || booking.stethoscope) && (
         <Surface className="mt-2.5 flex items-start gap-3 px-4 py-3.5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground">
             <Stethoscope className="size-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold">Smart stethoscope</p>
               {stethLive && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 ring-1 ring-red-200 ring-inset">
-                  <span className="live-dot size-1.5" /> {devices.stethoscope === "connecting" ? "Pairing..." : "Listening..."}
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border ring-inset">
+                  <span className="live-dot size-1.5 text-signal" /> {devices.stethoscope === "connecting" ? "Pairing..." : "Listening..."}
                 </span>
               )}
             </div>

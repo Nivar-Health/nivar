@@ -92,11 +92,11 @@ function Chip({
         active
           ? "border-primary bg-primary text-primary-foreground"
           : suggested
-            ? "border-saffron/60 bg-saffron/10 text-saffron-foreground hover:bg-saffron/20"
-            : "border-border bg-background text-foreground/80 hover:border-primary/40 hover:bg-secondary hover:text-secondary-foreground",
+            ? "border-foreground/40 bg-muted text-foreground hover:bg-muted/70"
+            : "border-border bg-background text-foreground/80 hover:border-foreground/40 hover:bg-muted hover:text-foreground",
       )}
     >
-      {suggested && !active && <Sparkles className="size-3 text-warning" aria-label="Suggested from vitals" />}
+      {suggested && !active && <Sparkles className="size-3 text-muted-foreground" aria-label="Suggested from vitals" />}
       {active && <Check className="size-3" />}
       {children}
     </button>
@@ -230,7 +230,7 @@ function RxEditor({ rows, onChange, listId }: { rows: RxRow[]; onChange: (rows: 
               size="icon"
               aria-label={`Remove ${r.medicine || "medicine"}`}
               onClick={() => remove(r.key)}
-              className="size-9 justify-self-end text-muted-foreground hover:bg-red-50 hover:text-destructive"
+              className="size-9 justify-self-end text-muted-foreground hover:bg-muted hover:text-destructive"
             >
               <Trash2 />
             </Button>
@@ -241,7 +241,7 @@ function RxEditor({ rows, onChange, listId }: { rows: RxRow[]; onChange: (rows: 
         <button
           type="button"
           onClick={add}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-secondary/50 hover:text-primary"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-input py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/40 hover:bg-muted hover:text-foreground"
         >
           <Plus className="size-4" /> Add a medicine
         </button>
@@ -283,7 +283,7 @@ function AdviceEditor({ advice, onChange }: { advice: string[]; onChange: (a: st
                 type="button"
                 aria-label={`Remove "${a}"`}
                 onClick={() => onChange(advice.filter((_, j) => j !== i))}
-                className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-red-50 hover:text-destructive"
+                className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
               >
                 <X className="size-3.5" />
               </button>
@@ -387,7 +387,7 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
     <section className="rounded-2xl border bg-card shadow-soft" aria-label="Report">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
         <div className="flex items-center gap-2.5">
-          <span className="grid size-8 place-items-center rounded-lg bg-secondary text-primary">
+          <span className="grid size-8 place-items-center rounded-lg border border-border bg-card text-foreground">
             <FilePenLine className="size-4" />
           </span>
           <div>
@@ -398,7 +398,7 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
           </div>
         </div>
         {!canDraft && (
-          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200 ring-inset">
+          <span className="rounded-full bg-background px-2.5 py-1 text-xs font-medium text-saffron ring-1 ring-saffron/35 ring-inset">
             Drafts save once tests begin
           </span>
         )}
@@ -491,7 +491,7 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
           <div>
             <FieldLabel htmlFor={ids.followUp}>
               <span className="inline-flex items-center gap-1.5">
-                <CalendarCheck className="size-3.5 text-primary" /> Follow-up
+                <CalendarCheck className="size-3.5 text-muted-foreground" /> Follow-up
               </span>
             </FieldLabel>
             <Input
@@ -518,7 +518,7 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
         <div className="min-w-0 lg:col-span-2">
           <FieldLabel hint={rxCount ? `${rxCount} ${rxCount === 1 ? "medicine" : "medicines"}` : undefined}>
             <span className="inline-flex items-center gap-1.5">
-              <Pill className="size-3.5 text-primary" /> Prescription
+              <Pill className="size-3.5 text-muted-foreground" /> Prescription
             </span>
           </FieldLabel>
           <RxEditor

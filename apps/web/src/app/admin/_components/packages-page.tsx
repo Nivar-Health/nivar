@@ -40,7 +40,7 @@ function PackageCard({
     <article
       className={cn(
         "relative flex flex-col rounded-[14px] border bg-card shadow-soft",
-        pkg.popular ? "border-primary/40" : "border-border",
+        pkg.popular ? "border-foreground" : "border-border",
       )}
     >
       <div className="flex items-start justify-between gap-3 px-4 pt-4">
@@ -48,7 +48,7 @@ function PackageCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className={cn("text-[15px] leading-tight font-semibold", !pkg.isActive && "text-muted-foreground")}>{pkg.name}</h3>
             {pkg.popular && (
-              <span className="rounded-full bg-saffron/15 px-2 py-px text-[10.5px] font-semibold tracking-wide text-[#9A5B07] uppercase">
+              <span className="rounded-full bg-foreground px-2 py-px text-[10.5px] font-medium text-background">
                 Popular
               </span>
             )}
@@ -71,14 +71,14 @@ function PackageCard({
         {discount > 0 && (
           <>
             <span className="text-sm text-muted-foreground line-through">{formatINR(pkg.mrp)}</span>
-            <span className="text-xs font-semibold text-emerald-700">{discount}% off</span>
+            <span className="text-xs font-medium text-success">{discount}% off</span>
           </>
         )}
       </div>
       <ul className="flex flex-1 flex-col gap-1 px-4 pt-3 pb-4">
         {names.map((n) => (
           <li key={n} className="flex items-center gap-2 text-[13px] text-foreground/85">
-            <Check className="size-3.5 shrink-0 text-primary" strokeWidth={2.5} />
+            <Check className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={2.5} />
             {n}
           </li>
         ))}
@@ -284,7 +284,7 @@ export function PackagesPage() {
                     <TableCell className="py-3 text-[13px]">
                       {s.requiresDevice ? (
                         <span className="inline-flex items-center gap-1.5">
-                          {s.requiresDevice === "ecg" ? <Radio className="size-3.5 text-primary" /> : <Stethoscope className="size-3.5 text-primary" />}
+                          {s.requiresDevice === "ecg" ? <Radio className="size-3.5 text-muted-foreground" /> : <Stethoscope className="size-3.5 text-muted-foreground" />}
                           {s.requiresDevice === "ecg" ? "Smart ECG" : "Digital stethoscope"}
                         </span>
                       ) : (

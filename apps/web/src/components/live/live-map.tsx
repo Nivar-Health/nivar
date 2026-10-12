@@ -52,24 +52,24 @@ export function LiveMap({ home, nurse, nurseName, height = 320, showEta = true, 
   const first = nurseName?.trim().split(/\s+/)[0];
   return (
     <div
-      className={cn("relative isolate overflow-hidden rounded-2xl border border-border bg-[#E9EEE9]", className)}
+      className={cn("relative isolate overflow-hidden rounded-2xl border border-border bg-muted", className)}
       style={{ height }}
     >
       <LiveMapInner home={home} nurse={nurse} nurseName={nurseName} height="100%" />
       {showEta && km !== null && (
-        <div className="pointer-events-none absolute top-3 left-3 z-[500] flex items-center gap-2.5 rounded-xl border border-[#E5E0D6] bg-[#FFFDF9]/95 px-3 py-2 shadow-[0_8px_20px_-10px_rgba(19,35,33,0.45)] backdrop-blur">
-          <span className="flex size-7 items-center justify-center rounded-full bg-[#F2A33A]/20 text-[#B86E0B]">
+        <div className="pointer-events-none absolute top-3 left-3 z-[500] flex items-center gap-2.5 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-soft backdrop-blur">
+          <span className="flex size-7 items-center justify-center rounded-full bg-foreground text-background">
             <Navigation className="size-3.5" />
           </span>
           <div className="leading-tight">
             {km < 0.08 ? (
-              <div className="text-sm font-semibold text-[#132321]">{first ?? "Nurse"} has arrived</div>
+              <div className="text-sm font-semibold text-foreground">{first ?? "Nurse"} has arrived</div>
             ) : (
               <>
-                <div className="text-sm font-semibold text-[#132321] tabular-nums">
+                <div className="text-sm font-semibold text-foreground tabular-nums">
                   {etaMinutes(km)} min away
                 </div>
-                <div className="text-[11px] text-[#5B6B67] tabular-nums">
+                <div className="text-[11px] text-muted-foreground tabular-nums">
                   {first ? `${first} is ` : ""}
                   {formatDistance(km)} from home
                 </div>

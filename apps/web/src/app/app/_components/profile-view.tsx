@@ -101,7 +101,7 @@ export function ProfileView() {
               <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
                 <Phone className="size-3.5" aria-hidden />
                 <span className="tabular">{formatPhone(user.phone)}</span>
-                <span className="rounded-full bg-emerald-50 px-1.5 py-px text-[10.5px] font-semibold text-emerald-700">Verified</span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-px text-[10.5px] font-medium text-foreground"><span className="size-1 rounded-full bg-success" aria-hidden />Verified</span>
               </p>
             </div>
             <Button
@@ -125,7 +125,7 @@ export function ProfileView() {
         <div className="space-y-2.5">
           {addresses.map((a) => (
             <Surface key={a.id} className="flex items-start gap-3.5 p-4">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground">
                 <House className="size-[18px]" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
@@ -161,9 +161,9 @@ export function ProfileView() {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/40 p-4 text-left text-sm font-semibold text-primary transition-colors outline-none hover:bg-secondary/50 focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-input p-4 text-left text-sm font-semibold text-foreground transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
             >
-              <span className="grid size-10 place-items-center rounded-xl bg-secondary">
+              <span className="grid size-10 place-items-center rounded-xl border border-border bg-card text-foreground">
                 <Plus className="size-[18px]" aria-hidden />
               </span>
               Add new address
@@ -175,7 +175,7 @@ export function ProfileView() {
       <Button
         variant="outline"
         onClick={signOut}
-        className="h-12 w-full rounded-2xl border-border bg-card text-[15px] font-semibold text-destructive hover:bg-red-50 hover:text-destructive"
+        className="h-12 w-full rounded-2xl border-border bg-card text-[15px] font-semibold text-destructive hover:bg-muted hover:text-destructive"
       >
         <LogOut aria-hidden /> Sign out
       </Button>

@@ -115,10 +115,10 @@ export function AddressForm({
         disabled={locating}
         className={cn(
           "flex w-full items-center gap-3 rounded-xl border border-dashed px-3.5 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-          coords ? "border-primary/50 bg-secondary/70" : "border-primary/40 bg-card hover:bg-secondary/40",
+          coords ? "border-foreground bg-muted" : "border-input bg-card hover:bg-muted",
         )}
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-primary">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full border border-border bg-card text-foreground">
           {locating ? (
             <LoaderCircle className="size-4 animate-spin" aria-hidden />
           ) : coords ? (
@@ -128,7 +128,7 @@ export function AddressForm({
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-primary">
+          <span className="block text-sm font-semibold text-foreground">
             {coords ? "Location captured" : locating ? "Finding you..." : "Use my current location"}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
@@ -138,7 +138,7 @@ export function AddressForm({
           </span>
         </span>
       </button>
-      {locError && <p className="-mt-2 text-xs text-amber-700">{locError}</p>}
+      {locError && <p className="-mt-2 text-xs text-saffron">{locError}</p>}
 
       <div className="space-y-1.5">
         <span className="block text-xs font-medium text-muted-foreground">Save as</span>
@@ -229,7 +229,7 @@ export function AddressForm({
       </p>
 
       {error && (
-        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-800">
+        <p role="alert" className="rounded-xl border border-danger/30 bg-background px-3.5 py-2.5 text-sm text-danger">
           {error}
         </p>
       )}

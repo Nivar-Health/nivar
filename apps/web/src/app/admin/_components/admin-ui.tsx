@@ -61,7 +61,7 @@ export function Panel({
         <header className="flex min-h-14 items-center justify-between gap-3 border-b border-border/70 px-5 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             {icon && (
-              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-secondary text-primary [&_svg]:size-4">
+              <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-border bg-card text-foreground [&_svg]:size-4">
                 {icon}
               </span>
             )}
@@ -168,9 +168,9 @@ export function SearchInput({
   );
 }
 
-/** Small uppercase label used above values in detail cards. */
+/** Small grey label used above values in detail cards. */
 export function FieldLabel({ children }: { children: ReactNode }) {
-  return <div className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{children}</div>;
+  return <div className="text-xs font-medium text-muted-foreground">{children}</div>;
 }
 
 // ---------------------------------------------------------------------------

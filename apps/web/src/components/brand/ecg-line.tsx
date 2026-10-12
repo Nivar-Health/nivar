@@ -36,6 +36,7 @@ export function EcgLine({
   glowClassName = "stroke-primary",
   amplitude = 1,
   animated = true,
+  thin = false,
 }: {
   beats?: number;
   className?: string;
@@ -43,6 +44,8 @@ export function EcgLine({
   glowClassName?: string;
   amplitude?: number;
   animated?: boolean;
+  /** 1px hairline trace for the monochrome panels. */
+  thin?: boolean;
 }) {
   const width = beats * BEAT;
   const d = ecgPath(beats, 70, amplitude);
@@ -56,8 +59,8 @@ export function EcgLine({
     >
       <path
         d={d}
-        className={cn(strokeClassName, "opacity-25")}
-        strokeWidth={2}
+        className={cn(strokeClassName, thin ? "opacity-60" : "opacity-25")}
+        strokeWidth={thin ? 1 : 2}
         strokeLinejoin="round"
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
@@ -67,7 +70,7 @@ export function EcgLine({
           d={d}
           pathLength={1000}
           className={cn(glowClassName, "animate-ecg-sweep")}
-          strokeWidth={2.5}
+          strokeWidth={thin ? 1.5 : 2.5}
           strokeLinejoin="round"
           strokeLinecap="round"
           strokeDasharray="160 840"

@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       eyebrow="Home health check-ups"
       headline={
         <>
-          Doctor-grade check-ups, <span className="text-saffron italic">at your doorstep.</span>
+          Doctor-grade check-ups, <span className="text-white/55">at your doorstep.</span>
         </>
       }
       points={[

@@ -15,7 +15,7 @@ export default async function StaffLoginPage({ searchParams }: PageProps<"/staff
       eyebrow="Nivar care console"
       headline={
         <>
-          Every visit, from dispatch <span className="text-saffron italic">to diagnosis.</span>
+          Every visit, from dispatch <span className="text-white/55">to diagnosis.</span>
         </>
       }
       points={[

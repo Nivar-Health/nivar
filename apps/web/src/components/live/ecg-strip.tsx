@@ -9,7 +9,7 @@ export type EcgStripProps = {
   lead?: string;
   /** Seconds per printed row (default 5). Long captures wrap into rows. */
   secondsPerRow?: number;
-  /** "paper" = classic pink ECG paper, "brand" = Nivar teal tint. */
+  /** "paper" = classic pink ECG paper, "brand" = Nivar neutral grey paper with a signal trace. */
   variant?: "paper" | "brand";
   /** Optional caption shown on the right of the footer, e.g. capture time. */
   caption?: string;
@@ -23,7 +23,7 @@ const CAL_MM = 7; // calibration pulse block width
 
 const THEMES = {
   paper: { paper: "#FFF8F6", minor: "#F7D4D0", major: "#EBA59D", trace: "#1B1B1B", text: "#7A3B35" },
-  brand: { paper: "#F7FBF9", minor: "#D7EBE4", major: "#9CCBBE", trace: "#0E3B35", text: "#0E5E52" },
+  brand: { paper: "#fafaf8", minor: "#ebebe6", major: "#d4d4ce", trace: "#0a0a0a", text: "#6a6a66" },
 } as const;
 
 /**

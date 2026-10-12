@@ -57,10 +57,10 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const ROLE_STYLE: Record<string, string> = {
-  doctor: "bg-[#0E5E52] text-[#F4FBF8]",
-  nurse: "bg-[#F2A33A] text-[#132321]",
-  customer: "bg-[#E6F2EE] text-[#0E5E52]",
-  patient: "bg-[#E6F2EE] text-[#0E5E52]",
+  doctor: "bg-white text-[#0a0a0a]",
+  nurse: "bg-white/15 text-white ring-1 ring-white/30",
+  customer: "bg-white/15 text-white",
+  patient: "bg-white/15 text-white",
 };
 
 function roleLabel(role: string) {
@@ -160,7 +160,7 @@ function VideoTile({
   const hasVideo = !!stream && stream.getVideoTracks().length > 0 && videoOn;
 
   return (
-    <div className={cn("relative overflow-hidden bg-[#10201D]", small ? "rounded-xl" : "rounded-2xl", className)}>
+    <div className={cn("relative overflow-hidden bg-[#1a1a1a]", small ? "rounded-xl" : "rounded-2xl", className)}>
       <video
         ref={ref}
         autoPlay
@@ -173,10 +173,10 @@ function VideoTile({
         )}
       />
       {!hasVideo && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[radial-gradient(circle_at_50%_40%,#183A34,#0D1C19_70%)]">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#161616]">
           <div
             className={cn(
-              "flex items-center justify-center rounded-full bg-[#0E5E52] font-semibold text-[#F4FBF8] ring-4 ring-white/5",
+              "flex items-center justify-center rounded-full bg-white/10 font-semibold text-white ring-4 ring-white/5",
               small ? "size-10 text-sm" : "size-16 text-xl sm:size-20 sm:text-2xl",
             )}
           >
@@ -218,7 +218,7 @@ function VideoTile({
           onClick={() => {
             ref.current?.play().then(() => setBlocked(false), () => {});
           }}
-          className="absolute inset-x-0 top-3 mx-auto flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#132321] shadow-lg"
+          className="absolute inset-x-0 top-3 mx-auto flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-lg"
         >
           <Volume2 className="size-3.5" /> Tap to enable audio
         </button>
@@ -246,7 +246,7 @@ export function VideoCall(props: VideoCallProps) {
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center gap-3 rounded-2xl bg-[#0B1513] p-8 text-center text-white",
+          "flex flex-col items-center justify-center gap-3 rounded-2xl bg-[#0f0f0f] p-8 text-center text-white",
           props.compact ? "min-h-[280px]" : "min-h-[420px]",
           props.className,
         )}
@@ -258,7 +258,7 @@ export function VideoCall(props: VideoCallProps) {
             setSession((s) => s + 1);
             setLeft(false);
           }}
-          className="inline-flex items-center gap-2 rounded-full bg-[#0E5E52] px-4 py-2 text-sm font-semibold hover:bg-[#127363]"
+          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0a0a0a] hover:bg-white/90"
         >
           <RotateCcw className="size-4" /> Rejoin
         </button>
@@ -539,16 +539,16 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
   const troubled = peers.some((p) => p.state === "disconnected" || p.state === "failed");
 
   const status = !online
-    ? { label: "Reconnecting", dot: "bg-[#F2A33A]", pulse: true }
+    ? { label: "Reconnecting", dot: "bg-saffron", pulse: true }
     : !mediaReady
-      ? { label: "Starting camera", dot: "bg-[#F2A33A]", pulse: true }
+      ? { label: "Starting camera", dot: "bg-saffron", pulse: true }
       : peers.length === 0
         ? { label: "Waiting for others", dot: "bg-white/60", pulse: true }
         : troubled
-          ? { label: "Weak connection", dot: "bg-[#F2A33A]", pulse: true }
+          ? { label: "Weak connection", dot: "bg-saffron", pulse: true }
           : connecting
-            ? { label: "Connecting", dot: "bg-[#F2A33A]", pulse: true }
-            : { label: "Connected", dot: "bg-[#3BE3B4]", pulse: false };
+            ? { label: "Connecting", dot: "bg-saffron", pulse: true }
+            : { label: "Connected", dot: "bg-signal", pulse: false };
 
   const remote = peers.slice(0, 3);
   const alone = remote.length === 0;
@@ -572,7 +572,7 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
   return (
     <div
       className={cn(
-        "relative isolate flex flex-col overflow-hidden rounded-2xl bg-[#0B1513] text-white shadow-[0_18px_40px_-20px_rgba(7,27,24,0.7)]",
+        "relative isolate flex flex-col overflow-hidden rounded-2xl bg-[#0f0f0f] text-white shadow-lift",
         compact ? "h-[420px]" : "h-[520px]",
         className,
       )}
@@ -638,8 +638,8 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
               </span>
             )}
             {mediaError && (
-              <div className="flex max-w-md items-start gap-2 rounded-xl border border-[#F2A33A]/30 bg-[#2A2114]/90 px-3 py-2 text-xs text-[#FCE3BC] backdrop-blur-md">
-                <TriangleAlert className="mt-px size-3.5 shrink-0 text-[#F2A33A]" />
+              <div className="flex max-w-md items-start gap-2 rounded-xl border border-white/15 bg-black/70 px-3 py-2 text-xs text-white/85 backdrop-blur-md">
+                <TriangleAlert className="mt-px size-3.5 shrink-0 text-saffron" />
                 <span>
                   {mediaError}
                   {hasMic || hasCam ? "" : " You can still see and hear others."}

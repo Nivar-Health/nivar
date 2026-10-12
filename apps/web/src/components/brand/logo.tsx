@@ -26,7 +26,7 @@ const GAP: Record<LogoSize, string> = {
 
 /**
  * The Nivar mark: a rounded tile holding a single stroke that reads as both
- * a roof line (home) and an ECG pulse, with a saffron sun on the right.
+ * a roof line (home) and an ECG pulse, with a signal-green dot on the right.
  */
 export function LogoMark({
   className,
@@ -37,8 +37,8 @@ export function LogoMark({
   variant?: LogoVariant;
   title?: string;
 }) {
-  const tile = variant === "light" ? "#F4FBF8" : "#0E5E52";
-  const stroke = variant === "light" ? "#0E5E52" : "#F4FBF8";
+  const tile = variant === "light" ? "#FFFFFF" : "#0A0A0A";
+  const stroke = variant === "light" ? "#0A0A0A" : "#FFFFFF";
   return (
     <svg
       viewBox="0 0 32 32"
@@ -57,7 +57,7 @@ export function LogoMark({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="24.6" cy="10.4" r="2.5" fill="#F2A33A" />
+      <circle cx="24.6" cy="10.4" r="2.5" fill="#19C37D" />
     </svg>
   );
 }
@@ -90,7 +90,7 @@ export function Logo({
           )}
         >
           nivar
-          <span className="text-saffron">.</span>
+          <span className="text-signal">.</span>
         </span>
       )}
     </span>

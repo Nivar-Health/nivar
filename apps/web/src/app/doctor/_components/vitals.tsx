@@ -95,7 +95,7 @@ export function FlagPill({ assessment, className }: { assessment: VitalAssessmen
   return (
     <span
       className={cn(
-        "inline-flex h-[18px] shrink-0 items-center rounded-full px-1.5 text-[9.5px] font-semibold tracking-wide whitespace-nowrap uppercase ring-1 ring-inset",
+        "inline-flex h-[18px] shrink-0 items-center rounded-full px-1.5 text-[10px] font-medium whitespace-nowrap ring-1 ring-inset",
         vitalToneClass(assessment),
         className,
       )}
@@ -118,7 +118,7 @@ function ChangeFlash({ value }: { value: string | null }) {
     <span
       key={flashes}
       aria-hidden
-      className="pointer-events-none absolute inset-0 animate-out rounded-[inherit] bg-saffron/25 ring-2 ring-saffron/60 duration-[2200ms] fade-out fill-mode-forwards ring-inset"
+      className="pointer-events-none absolute inset-0 animate-out rounded-[inherit] bg-foreground/8 ring-2 ring-foreground/30 duration-[2200ms] fade-out fill-mode-forwards ring-inset"
     />
   );
 }
@@ -133,13 +133,13 @@ export function VitalsList({ rows }: { rows: VitalRow[] }) {
         return (
           <div
             key={row.key}
-            className={cn("relative flex items-center gap-3 rounded-lg px-2 py-2", abnormal && "bg-red-50/70")}
+            className={cn("relative flex items-center gap-3 rounded-lg px-2 py-2", abnormal && "bg-muted/60")}
           >
             <ChangeFlash value={row.value} />
             <span
               className={cn(
                 "grid size-8 shrink-0 place-items-center rounded-lg [&_svg]:size-4",
-                abnormal ? "bg-red-100 text-red-700" : "bg-secondary text-primary",
+                abnormal ? "border border-danger/30 bg-card text-danger" : "border border-border bg-card text-foreground",
               )}
             >
               {row.icon}
@@ -156,7 +156,7 @@ export function VitalsList({ rows }: { rows: VitalRow[] }) {
                   <span
                     className={cn(
                       "text-[17px] leading-none font-semibold tracking-tight tabular-nums",
-                      abnormal ? "text-red-700" : "text-foreground",
+                      abnormal ? "text-danger" : "text-foreground",
                     )}
                   >
                     {row.value}

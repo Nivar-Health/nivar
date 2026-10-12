@@ -53,9 +53,8 @@ export function PatientHome() {
     <div className="space-y-7">
       <header>
         <p className="text-sm text-muted-foreground">{greeting()}{name ? "," : ""}</p>
-        <h1 className="font-display text-[2rem] leading-tight font-medium tracking-tight md:text-4xl">
-          {name ? `${name}` : "Welcome to Nivar"}
-          <span className="text-saffron">.</span>
+        <h1 className="font-display text-[2rem] leading-tight md:text-4xl">
+          {name ? `${name}.` : "Welcome to Nivar."}
         </h1>
       </header>
 
@@ -120,7 +119,7 @@ export function PatientHome() {
               const doctor = populated(b.doctor);
               return (
                 <div key={b.id} className="flex items-center gap-3.5 px-4 py-3.5">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground">
                     <FileHeart className="size-[18px]" aria-hidden />
                   </span>
                   <Link href={`/app/bookings/${b.id}`} className="min-w-0 flex-1 outline-none">
@@ -162,15 +161,15 @@ function ActiveHero({ booking, catalog }: { booking: Booking; catalog: Catalog |
   return (
     <Link
       href={`/app/bookings/${booking.id}`}
-      className="group relative block overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground shadow-lift outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+      className="group relative block overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
     >
-      <div aria-hidden className="absolute inset-0 bg-ecg-grid-dark" />
       {meta.live && (
         <EcgLine
           beats={4}
-          className="pointer-events-none absolute inset-x-0 top-10 h-20 opacity-40"
-          strokeClassName="stroke-white"
-          glowClassName="stroke-saffron"
+          thin
+          className="pointer-events-none absolute inset-x-0 top-10 h-20 opacity-60"
+          strokeClassName="stroke-white/30"
+          glowClassName="stroke-signal"
         />
       )}
       <div className="relative">
@@ -178,7 +177,7 @@ function ActiveHero({ booking, catalog }: { booking: Booking; catalog: Catalog |
           <StatusBadge
             status={booking.status}
             audience="patient"
-            className={cn(booking.status !== "consult" && "bg-white/95")}
+            className="bg-white ring-white"
           />
           <span className="tabular font-mono text-[11px] font-medium text-primary-foreground/60">{booking.code}</span>
         </div>
@@ -186,9 +185,9 @@ function ActiveHero({ booking, catalog }: { booking: Booking; catalog: Catalog |
         <p className="mt-1 text-[13px] leading-snug text-primary-foreground/75">{meta.patientDescription}</p>
         <div className="mt-4 flex items-center gap-2 text-[13px] font-medium">
           {express ? (
-            <Zap className="size-4 fill-saffron text-saffron" aria-hidden />
+            <Zap className="size-4 fill-current text-white/80" aria-hidden />
           ) : (
-            <CalendarDays className="size-4 text-saffron" aria-hidden />
+            <CalendarDays className="size-4 text-white/80" aria-hidden />
           )}
           {dayLabel(booking.scheduledDate)}, {slotLabel(booking.slot)}
         </div>
@@ -197,8 +196,8 @@ function ActiveHero({ booking, catalog }: { booking: Booking; catalog: Catalog |
           {nurse || doctor ? (
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex -space-x-2">
-                {nurse && <PersonAvatar name={nurse.name} tone="saffron" size="sm" className="ring-primary" />}
-                {doctor && <PersonAvatar name={doctor.name} tone="mint" size="sm" className="ring-primary" />}
+                {nurse && <PersonAvatar name={nurse.name} tone="ink" size="sm" className="ring-white/40" />}
+                {doctor && <PersonAvatar name={doctor.name} tone="outline" size="sm" className="border-0 ring-primary" />}
               </div>
               <p className="min-w-0 truncate text-xs text-primary-foreground/80">
                 {[firstName(nurse?.name), doctor?.name].filter(Boolean).join(" & ")}
@@ -211,8 +210,7 @@ function ActiveHero({ booking, catalog }: { booking: Booking; catalog: Catalog |
           )}
           <span
             className={cn(
-              "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-transform group-hover:translate-x-0.5",
-              isConsult || isPending ? "bg-saffron text-ink" : "bg-white text-primary",
+              "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-semibold text-foreground transition-transform group-hover:translate-x-0.5",
             )}
           >
             {isConsult && <CtaIcon className="size-4" aria-hidden />}
@@ -230,14 +228,13 @@ function BookCta({ compact }: { compact: boolean }) {
     <Link
       href="/app/book"
       className={cn(
-        "group relative flex items-center gap-4 overflow-hidden rounded-3xl border border-border bg-card shadow-soft transition-all outline-none hover:shadow-lift focus-visible:ring-3 focus-visible:ring-ring/40",
+        "group relative flex items-center gap-4 overflow-hidden rounded-3xl border border-border bg-card shadow-soft transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
         compact ? "p-4" : "p-5",
       )}
     >
-      <div aria-hidden className="absolute inset-0 bg-ecg-grid opacity-70" />
       <div className="relative min-w-0 flex-1">
         {!compact && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-saffron/20 px-2 py-0.5 text-[11px] font-semibold text-saffron-foreground">
+          <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground">
             <Zap className="size-3 fill-current" aria-hidden /> Express visits today
           </span>
         )}
@@ -248,7 +245,7 @@ function BookCta({ compact }: { compact: boolean }) {
           {compact ? "For you or your family" : "A Nivar nurse at your door, a Nivar doctor on video, report within the hour."}
         </p>
       </div>
-      <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lift transition-transform group-hover:scale-105">
+      <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground transition-transform group-hover:scale-105">
         <ArrowRight className="size-5" aria-hidden />
       </span>
     </Link>
@@ -276,16 +273,16 @@ function PackagePicks({ catalog }: { catalog: Catalog | null }) {
             key={p.id}
             href={`/app/book?package=${p.id}`}
             className={cn(
-              "group relative flex flex-col rounded-2xl border bg-card p-3.5 shadow-soft transition-all outline-none hover:shadow-lift focus-visible:ring-3 focus-visible:ring-ring/40",
-              p.popular ? "border-saffron/60" : "border-border hover:border-primary/30",
+              "group relative flex flex-col rounded-2xl border bg-card p-3.5 shadow-soft transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+              p.popular ? "border-foreground" : "border-border hover:border-foreground/40",
             )}
           >
             {p.popular && (
-              <span className="absolute -top-2 right-3 inline-flex items-center gap-0.5 rounded-full bg-saffron px-1.5 py-0.5 text-[10px] font-bold text-ink shadow-sm">
+              <span className="absolute -top-2 right-3 inline-flex items-center gap-0.5 rounded-full bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">
                 <Sparkles className="size-2.5" aria-hidden /> Popular
               </span>
             )}
-            <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary">
+            <span className="grid size-9 place-items-center rounded-xl border border-border bg-card text-foreground">
               <Icon className="size-[18px]" aria-hidden />
             </span>
             <p className="mt-2.5 text-sm leading-snug font-semibold">{p.name}</p>
@@ -308,9 +305,9 @@ function PackagePicks({ catalog }: { catalog: Catalog | null }) {
 function EmptyReports({ hasActive }: { hasActive: boolean }) {
   return (
     <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-card/60 px-6 py-8 text-center">
-      <span className="relative grid size-14 place-items-center rounded-2xl bg-secondary text-primary">
+      <span className="relative grid size-14 place-items-center rounded-2xl border border-border bg-card text-foreground">
         <Stethoscope className="size-6" aria-hidden />
-        <span className="absolute -right-1.5 -bottom-1.5 grid size-6 place-items-center rounded-full bg-saffron text-ink ring-2 ring-card">
+        <span className="absolute -right-1.5 -bottom-1.5 grid size-6 place-items-center rounded-full bg-foreground text-background ring-2 ring-card">
           <FileHeart className="size-3.5" aria-hidden />
         </span>
       </span>
@@ -332,9 +329,9 @@ function TrustStrip() {
         { icon: Stethoscope, label: "Nivar doctors, not gig workers" },
         { icon: FileHeart, label: "Report within 60 minutes" },
       ].map((t) => (
-        <div key={t.label} className="flex flex-col items-center gap-1.5 rounded-2xl bg-secondary/50 px-2 py-3">
-          <t.icon className="size-4 text-primary" aria-hidden />
-          <span className="text-[11px] leading-tight font-medium text-secondary-foreground">{t.label}</span>
+        <div key={t.label} className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3">
+          <t.icon className="size-4 text-foreground" aria-hidden />
+          <span className="text-[11px] leading-tight font-medium text-muted-foreground">{t.label}</span>
         </div>
       ))}
     </div>

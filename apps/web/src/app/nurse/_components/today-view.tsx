@@ -22,7 +22,7 @@ function greeting(): string {
 
 function SectionTitle({ children, count }: { children: React.ReactNode; count?: number }) {
   return (
-    <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+    <h2 className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
       {children}
       {count !== undefined && (
         <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] text-foreground tabular-nums">
@@ -39,8 +39,8 @@ function Kpi({ label, value, accent }: { label: string; value: string; accent?: 
       <span
         className={
           accent
-            ? "truncate font-display text-xl leading-8 font-medium text-primary tabular-nums"
-            : "truncate font-display text-2xl leading-8 font-medium tabular-nums"
+            ? "truncate font-display text-xl leading-8 tabular-nums"
+            : "truncate font-display text-2xl leading-8 tabular-nums"
         }
       >
         {value}
@@ -130,7 +130,7 @@ export function TodayView() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <p className="text-sm font-medium text-muted-foreground">{format(new Date(), "EEEE, d MMMM")}</p>
-        <h1 className="font-display text-[2rem] leading-tight font-medium tracking-tight">Today</h1>
+        <h1 className="font-display text-[2rem] leading-tight">Today</h1>
         {user && (
           <p className="text-sm text-muted-foreground">
             {greeting()}, <span className="font-medium text-foreground">{firstName(user.name)}</span>
@@ -160,7 +160,7 @@ export function TodayView() {
             <VisitHeroCard key={groups.hero.id} booking={groups.hero} />
           ) : (
             <div className="flex flex-col items-center gap-2 rounded-3xl border border-dashed border-border bg-card/60 px-6 py-10 text-center">
-              <span className="flex size-12 items-center justify-center rounded-full bg-mint text-primary">
+              <span className="flex size-12 items-center justify-center rounded-full border border-border bg-card text-foreground">
                 {groups.done.length ? <CircleCheckBig className="size-6" /> : <Coffee className="size-6" />}
               </span>
               <p className="mt-1 font-semibold">

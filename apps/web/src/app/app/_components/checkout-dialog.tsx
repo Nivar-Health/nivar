@@ -15,9 +15,9 @@ type Method = Exclude<PaymentMethod, "cash">;
 type Phase = "form" | "processing" | "success" | "error";
 
 const UPI_APPS = [
-  { id: "gpay", name: "GPay", color: "bg-[#E8F0FE] text-[#1A73E8]" },
-  { id: "phonepe", name: "PhonePe", color: "bg-[#F1E8FB] text-[#5F259F]" },
-  { id: "paytm", name: "Paytm", color: "bg-[#E5F6FD] text-[#002E6E]" },
+  { id: "gpay", name: "GPay", color: "bg-muted text-foreground" },
+  { id: "phonepe", name: "PhonePe", color: "bg-muted text-foreground" },
+  { id: "paytm", name: "Paytm", color: "bg-muted text-foreground" },
 ] as const;
 
 const BANKS = ["HDFC Bank", "ICICI Bank", "State Bank of India", "Axis Bank", "Kotak Mahindra Bank", "Yes Bank"];
@@ -119,7 +119,6 @@ export function CheckoutDialog({
         >
           {/* Header */}
           <div className="relative overflow-hidden bg-primary px-5 pt-4 pb-5 text-primary-foreground">
-            <div aria-hidden className="absolute inset-0 bg-ecg-grid-dark opacity-70" />
             <div className="relative mx-auto mb-3 h-1 w-10 rounded-full bg-white/25 sm:hidden" />
             <div className="relative flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -143,7 +142,7 @@ export function CheckoutDialog({
             </div>
             <div className="relative mt-4 flex items-end justify-between">
               <div>
-                <p className="text-[11px] font-medium tracking-wide text-primary-foreground/65 uppercase">Amount payable</p>
+                <p className="text-xs font-medium text-primary-foreground/65">Amount payable</p>
                 <p className="tabular font-display text-[2rem] leading-none font-medium tracking-tight">{formatINR(amount)}</p>
               </div>
               <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-primary-foreground/85">
@@ -158,7 +157,7 @@ export function CheckoutDialog({
             <>
               <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-2">
                 {phase === "error" && error && (
-                  <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-800">
+                  <div role="alert" className="mb-4 rounded-xl border border-danger/30 bg-background px-3.5 py-2.5 text-sm text-danger">
                     {error}
                   </div>
                 )}
@@ -206,7 +205,7 @@ export function CheckoutDialog({
                           ))}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
                         <span className="h-px flex-1 bg-border" /> or enter UPI ID <span className="h-px flex-1 bg-border" />
                       </div>
                       <div>
@@ -287,7 +286,7 @@ export function CheckoutDialog({
                             bank === b ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/40",
                           )}
                         >
-                          <span className="grid size-7 place-items-center rounded-full bg-secondary text-secondary-foreground">
+                          <span className="grid size-7 place-items-center rounded-full border border-border bg-card text-foreground">
                             <Landmark className="size-3.5" aria-hidden />
                           </span>
                           <span className="flex-1">{b}</span>
@@ -310,14 +309,14 @@ export function CheckoutDialog({
                 <Button
                   onClick={pay}
                   disabled={!booking || !methodValid}
-                  className="h-12 w-full rounded-xl text-[15px] font-semibold shadow-lift"
+                  className="h-12 w-full rounded-xl text-[15px] font-semibold"
                 >
                   <Lock className="size-4" aria-hidden />
                   {phase === "error" ? "Try again" : `Pay securely ${formatINR(amount)}`}
                   <ChevronRight className="size-4 opacity-70" aria-hidden />
                 </Button>
                 <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-                  <ShieldCheck className="size-3.5 text-primary" aria-hidden />
+                  <ShieldCheck className="size-3.5 text-muted-foreground" aria-hidden />
                   Payments are encrypted. Demo mode, no money is charged.
                 </p>
               </div>
@@ -353,7 +352,7 @@ function ProcessingView({ method }: { method: Method }) {
         <span aria-hidden className="absolute inset-0 rounded-full bg-primary/15 animate-pulse-ring" />
         <span className="absolute inset-0 rounded-full border-4 border-secondary" />
         <LoaderCircle className="absolute size-20 animate-spin text-primary [stroke-width:1.25]" aria-hidden />
-        <Lock className="size-6 text-primary" aria-hidden />
+        <Lock className="size-6 text-foreground" aria-hidden />
       </span>
       <div className="space-y-1">
         <p className="font-semibold">Processing payment</p>
@@ -367,20 +366,20 @@ function SuccessView({ booking }: { booking: Booking }) {
   return (
     <div className="flex min-h-[340px] flex-col items-center justify-center gap-5 px-6 py-10 text-center" aria-live="polite">
       <span className="relative grid size-20 place-items-center">
-        <span aria-hidden className="absolute inset-0 rounded-full bg-emerald-500/20 animate-pulse-ring" />
-        <span className="checkout-pop grid size-20 place-items-center rounded-full bg-success text-white shadow-lg">
+        <span aria-hidden className="absolute inset-0 rounded-full bg-signal/25 animate-pulse-ring" />
+        <span className="checkout-pop grid size-20 place-items-center rounded-full bg-signal text-white">
           <Check className="checkout-draw size-10" strokeWidth={3} aria-hidden />
         </span>
       </span>
       <div className="space-y-1.5">
-        <p className="font-display text-2xl font-medium tracking-tight">Payment successful</p>
+        <p className="font-display text-2xl">Payment successful</p>
         <p className="text-sm text-muted-foreground">
           {formatINR(booking.amount)} paid. Your booking is confirmed.
         </p>
       </div>
-      <div className="rounded-xl border border-dashed border-primary/40 bg-secondary/60 px-4 py-2.5">
-        <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Booking ID</p>
-        <p className="tabular font-mono text-lg font-semibold tracking-wider text-primary">{booking.code}</p>
+      <div className="rounded-xl border border-border bg-muted px-4 py-2.5">
+        <p className="text-xs font-medium text-muted-foreground">Booking ID</p>
+        <p className="tabular font-mono text-lg font-semibold tracking-wider text-foreground">{booking.code}</p>
       </div>
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> Taking you to your visit

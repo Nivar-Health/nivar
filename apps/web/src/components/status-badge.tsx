@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Pill showing a booking status. `audience="patient"` uses the friendly
- * patient wording, `"staff"` the operational wording. Live statuses pulse.
+ * patient wording, `"staff"` the operational wording. The pill itself is
+ * neutral; a small coloured dot carries the status, and live statuses pulse.
  */
 export function StatusBadge({
   status,
@@ -16,11 +17,11 @@ export function StatusBadge({
   status: BookingStatus;
   audience?: "patient" | "staff";
   size?: "sm" | "default";
+  /** Hide the status dot (text only). */
   showIcon?: boolean;
   className?: string;
 }) {
   const meta = STATUS_META[status] ?? STATUS_META.confirmed;
-  const Icon = meta.icon;
   const label = audience === "patient" ? meta.patientLabel : meta.staffLabel;
   return (
     <span
@@ -31,10 +32,11 @@ export function StatusBadge({
         className,
       )}
     >
-      {meta.live ? (
-        <span className={cn("live-dot size-1.5", status === "consult" ? "text-saffron" : "")} />
-      ) : (
-        showIcon && <Icon className={size === "sm" ? "size-3" : "size-3.5"} aria-hidden />
+      {showIcon && (
+        <span
+          aria-hidden
+          className={cn("size-1.5 shrink-0 rounded-full", meta.dotClass, meta.live ? "live-dot" : "bg-current")}
+        />
       )}
       {label}
     </span>

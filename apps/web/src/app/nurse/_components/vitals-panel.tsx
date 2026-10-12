@@ -293,7 +293,7 @@ function VitalCard({
       aria-labelledby={`${uid}-t`}
     >
       <div className="flex items-center gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-mint text-primary">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-foreground">
           <Icon className="size-[18px]" aria-hidden />
         </span>
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -301,7 +301,7 @@ function VitalCard({
             {def.title}
           </h3>
           {!booked && (
-            <span className="rounded-full bg-muted px-1.5 py-px text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+            <span className="rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground">
               Optional
             </span>
           )}
@@ -406,7 +406,7 @@ export function VitalsPanel({ booking, onSaved }: { booking: Booking; onSaved: (
       ))}
       {optional.length > 0 && (
         <>
-          <p className="pt-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          <p className="pt-2 text-[13px] font-medium text-muted-foreground">
             Also record if needed
           </p>
           <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2">

@@ -41,20 +41,13 @@ function NavList({
               onClick={onNavigate}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "group/nav relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40 [&_svg]:size-[18px] [&_svg]:shrink-0",
+                "group/nav relative flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40 [&_svg]:size-[18px] [&_svg]:shrink-0",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
             >
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute top-2 bottom-2 -left-3 w-1 rounded-r-full bg-primary transition-opacity",
-                  isActive ? "opacity-100" : "opacity-0",
-                )}
-              />
-              <span className={cn(isActive ? "text-primary" : "text-muted-foreground group-hover/nav:text-foreground")}>
+              <span className={cn(isActive ? "text-foreground" : "text-muted-foreground group-hover/nav:text-foreground")}>
                 {item.icon}
               </span>
               {item.label}
@@ -71,7 +64,7 @@ function RealtimeStatus({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
       {connected ? (
-        <span className="live-dot size-1.5 text-success" aria-hidden />
+        <span className="live-dot size-1.5 text-signal" aria-hidden />
       ) : (
         <span className="size-1.5 rounded-full bg-muted-foreground/40" aria-hidden />
       )}
@@ -84,7 +77,7 @@ function UserCard({ onSignOut }: { onSignOut: () => void }) {
   const { user } = useAuth();
   if (!user) return null;
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-sidebar-border bg-card p-2.5 shadow-soft">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2.5">
       <UserAvatar name={user.name} src={user.avatarUrl} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm leading-tight font-semibold">{user.name}</p>
@@ -158,7 +151,7 @@ export function StaffShell({
           <Link href={homeHref} className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
             <Logo size="sm" />
           </Link>
-          <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tracking-wide text-secondary-foreground uppercase">
+          <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
             {roleLabel}
           </span>
         </div>
@@ -187,7 +180,7 @@ export function StaffShell({
                     <SheetTitle className="sr-only">Navigation</SheetTitle>
                     <div className="flex h-14 items-center gap-2 px-4">
                       <Logo size="sm" />
-                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tracking-wide text-secondary-foreground uppercase">
+                      <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                         {roleLabel}
                       </span>
                     </div>
@@ -204,7 +197,7 @@ export function StaffShell({
               <Link href={homeHref} className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
                 <Logo size="sm" />
               </Link>
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold tracking-wide text-secondary-foreground uppercase">
+              <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                 {roleLabel}
               </span>
             </div>

@@ -293,18 +293,18 @@ export function EcgMonitor({
   return (
     <div
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-2xl border border-[#14332E] bg-[#071B18] text-[#CFEFE6] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-12px_rgba(7,27,24,0.55)]",
+        "relative flex flex-col overflow-hidden rounded-2xl border border-[#262626] bg-[#0a0a0a] text-[#F2F2EE] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-12px_rgba(0,0,0,0.55)]",
         className,
       )}
       style={{ height }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3.5 py-2">
         <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] tracking-wide whitespace-nowrap">
-          <span className="font-semibold text-[#3BE3B4]">ECG</span>
-          <span className="rounded border border-[#3BE3B4]/25 px-1.5 py-px font-medium text-[#9FE9D2]">{lead}</span>
-          <span className="hidden text-[#6E8F87] tabular-nums sm:inline">{SPEED_MM_S} mm/s</span>
-          <span className="hidden text-[#6E8F87] tabular-nums sm:inline">{gainLabel}</span>
-          <span className="hidden text-[#6E8F87] md:inline">0.5 to 40 Hz</span>
+          <span className="font-semibold text-[#19C37D]">ECG</span>
+          <span className="rounded border border-[#19C37D]/25 px-1.5 py-px font-medium text-[#8FE3BF]">{lead}</span>
+          <span className="hidden text-[#7A7A75] tabular-nums sm:inline">{SPEED_MM_S} mm/s</span>
+          <span className="hidden text-[#7A7A75] tabular-nums sm:inline">{gainLabel}</span>
+          <span className="hidden text-[#7A7A75] md:inline">0.5 to 40 Hz</span>
         </div>
         <LiveBadge live={live} />
       </div>
@@ -316,25 +316,25 @@ export function EcgMonitor({
         </div>
 
         <div className="flex w-[92px] shrink-0 flex-col justify-between border-l border-white/5 bg-[#0A221E] px-3 py-2.5 sm:w-[124px]">
-          <div className="flex items-center justify-between text-[10px] font-semibold tracking-[0.14em] text-[#3BE3B4]">
+          <div className="flex items-center justify-between text-[10px] font-semibold tracking-[0.14em] text-[#19C37D]">
             <span>HR</span>
-            <span ref={heartRef} className="inline-flex origin-center text-[#FF6B5E] opacity-85">
+            <span ref={heartRef} className="inline-flex origin-center text-[#19C37D] opacity-85">
               <HeartPulse className="size-4" strokeWidth={2.25} />
             </span>
           </div>
           <div className="-mt-1 flex flex-col">
             <span
               ref={hrTextRef}
-              className="font-mono text-[44px] leading-none font-semibold tracking-tight text-[#3BE3B4] tabular-nums sm:text-[52px]"
+              className="font-mono text-[44px] leading-none font-semibold tracking-tight text-[#19C37D] tabular-nums sm:text-[52px]"
               style={{ textShadow: "0 0 18px rgba(59,227,180,0.35)" }}
             >
               --
             </span>
-            <span className="mt-1 text-[10px] tracking-wider text-[#6E8F87]">bpm</span>
+            <span className="mt-1 text-[10px] tracking-wider text-[#7A7A75]">bpm</span>
           </div>
-          <div className="flex items-baseline justify-between text-[10px] text-[#6E8F87]">
+          <div className="flex items-baseline justify-between text-[10px] text-[#7A7A75]">
             <span className="tracking-wider">RR</span>
-            <span className="font-mono text-xs text-[#9FE9D2] tabular-nums">
+            <span className="font-mono text-xs text-[#8FE3BF] tabular-nums">
               <span ref={rrTextRef}>--</span> ms
             </span>
           </div>

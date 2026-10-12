@@ -37,17 +37,17 @@ function DeviceChip({
   let label = "Not connected";
   let dot: React.ReactNode = <span className="size-1.5 rounded-full bg-muted-foreground/50" />;
   if (live) {
-    tone = "bg-emerald-50 text-emerald-800 ring-emerald-200";
+    tone = "bg-background text-foreground ring-border";
     label = "Streaming live";
-    dot = <span className="live-dot size-1.5 text-emerald-500" />;
+    dot = <span className="live-dot size-1.5 text-signal" />;
   } else if (state === "connecting") {
-    tone = "bg-amber-50 text-amber-800 ring-amber-200";
+    tone = "bg-background text-foreground ring-border";
     label = "Pairing";
-    dot = <span className="size-1.5 animate-pulse rounded-full bg-amber-500" />;
+    dot = <span className="size-1.5 animate-pulse rounded-full bg-saffron" />;
   } else if (view === "captured") {
-    tone = "bg-secondary text-secondary-foreground ring-primary/15";
+    tone = "bg-background text-foreground ring-border";
     label = capturedAt ? `Captured ${formatTime(capturedAt)}` : "Captured";
-    dot = <span className="size-1.5 rounded-full bg-primary" />;
+    dot = <span className="size-1.5 rounded-full bg-foreground" />;
   } else if (view === "absent") {
     label = "Not in this visit";
   }
@@ -78,7 +78,7 @@ function PanelHeader({
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-primary [&_svg]:size-4">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-card text-foreground [&_svg]:size-4">
           {icon}
         </span>
         <div className="min-w-0">
@@ -204,7 +204,7 @@ function StethStrip({ samples, heartRate }: { samples: number[]; heartRate?: num
   }, [samples]);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#14332E] bg-[#071B18]">
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0f0f0f]">
       <div className="absolute inset-0 bg-ecg-grid-dark" aria-hidden />
       <svg
         viewBox={`0 0 ${W} ${H}`}
@@ -213,11 +213,11 @@ function StethStrip({ samples, heartRate }: { samples: number[]; heartRate?: num
         role="img"
         aria-label={`Captured heart sound envelope${heartRate ? `, ${heartRate} bpm` : ""}`}
       >
-        <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke="rgba(242,193,78,0.25)" strokeWidth="1" />
+        <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke="rgba(25,195,125,0.25)" strokeWidth="1" />
         <path
           d={path}
-          fill="rgba(242,193,78,0.35)"
-          stroke="#F2C14E"
+          fill="rgba(25,195,125,0.3)"
+          stroke="#19c37d"
           strokeWidth="1"
           vectorEffect="non-scaling-stroke"
         />
@@ -273,7 +273,7 @@ export function StethPanel({
       {view === "absent" && <Absent>Stethoscope is not part of this visit.</Absent>}
       {steth?.findings && (
         <div className="flex items-start gap-2.5 rounded-xl border bg-card px-3.5 py-2.5 text-[13px]">
-          <Activity className="mt-0.5 size-4 shrink-0 text-primary" />
+          <Activity className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div className="flex flex-col">
             <span className="text-[11px] font-medium text-muted-foreground">
               {view === "live" ? "Nurse's captured findings" : "Findings"}

@@ -24,7 +24,7 @@ function LoadMeter({ n }: { n: number }) {
       <span
         className={cn(
           "size-2 shrink-0 rounded-full",
-          n === 0 ? "bg-emerald-500" : n < 3 ? "bg-saffron" : "bg-destructive",
+          n === 0 ? "bg-success" : n < 3 ? "bg-saffron" : "bg-danger",
         )}
       />
       <span className="text-[13px] font-medium tabular">{n === 0 ? "Free" : `${n} active`}</span>
