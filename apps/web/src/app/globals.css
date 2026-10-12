@@ -263,3 +263,22 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ------------------------------------------------------------------------- */
+/* Landing page (/) helpers                                                  */
+/* ------------------------------------------------------------------------- */
+
+@keyframes landing-flow {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has([data-landing]) {
+    scroll-behavior: smooth;
+  }
+}

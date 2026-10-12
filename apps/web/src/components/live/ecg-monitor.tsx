@@ -299,7 +299,7 @@ export function EcgMonitor({
       style={{ height }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3.5 py-2">
-        <div className="flex min-w-0 items-center gap-2.5 text-[11px] tracking-wide">
+        <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] tracking-wide whitespace-nowrap">
           <span className="font-semibold text-[#3BE3B4]">ECG</span>
           <span className="rounded border border-[#3BE3B4]/25 px-1.5 py-px font-medium text-[#9FE9D2]">{lead}</span>
           <span className="hidden text-[#6E8F87] tabular-nums sm:inline">{SPEED_MM_S} mm/s</span>

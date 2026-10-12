@@ -348,7 +348,7 @@ export function StethMonitor({
       style={{ height }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3.5 py-2">
-        <div className="flex min-w-0 items-center gap-2.5 text-[11px] tracking-wide">
+        <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] tracking-wide whitespace-nowrap">
           <span className="inline-flex items-center gap-1.5 font-semibold text-[#F2C14E]">
             <Stethoscope className="size-3.5" /> PCG
           </span>

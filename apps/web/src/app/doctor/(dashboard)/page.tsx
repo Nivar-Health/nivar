@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { DoctorDashboard } from "../_components/dashboard";
 
 export const metadata: Metadata = { title: "Consults" };
 
 export default function DoctorHomePage() {
-  return <h1 className="font-display text-3xl font-medium tracking-tight">Consults</h1>;
+  return <DoctorDashboard />;
 }

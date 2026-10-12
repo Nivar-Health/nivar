@@ -1,17 +1,10 @@
-import { Stethoscope } from "lucide-react";
 import { RequireRole } from "@/components/require-role";
-import { StaffShell } from "@/components/staff-shell";
 
+/**
+ * Every doctor route requires a signed-in doctor. The dashboard renders inside
+ * the staff shell (see `(dashboard)/layout.tsx`); the consult workspace is a
+ * full-bleed, immersive screen with its own header.
+ */
 export default function DoctorLayout({ children }: LayoutProps<"/doctor">) {
-  return (
-    <RequireRole role="doctor">
-      <StaffShell
-        roleLabel="Doctor"
-        width="full"
-        nav={[{ href: "/doctor", label: "Consults", icon: <Stethoscope /> }]}
-      >
-        {children}
-      </StaffShell>
-    </RequireRole>
-  );
+  return <RequireRole role="doctor">{children}</RequireRole>;
 }

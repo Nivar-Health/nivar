@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { TodayView } from "./_components/today-view";
 
 export const metadata: Metadata = { title: "Today's visits" };
 
 export default function NurseHomePage() {
-  return <h1 className="font-display text-3xl font-medium tracking-tight">Today&apos;s visits</h1>;
+  return <TodayView />;
 }

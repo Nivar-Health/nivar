@@ -82,6 +82,7 @@ function NurseLayer({ home, nurse, nurseName }: { home: LatLng; nurse: LatLng; n
   const lineRef = useRef<L.Polyline | null>(null);
   const animRef = useRef<number>(0);
   const fittedRef = useRef(false);
+  const lastRefitRef = useRef(0);
 
   // Create layers once.
   useEffect(() => {
@@ -127,9 +128,21 @@ function NurseLayer({ home, nurse, nurseName }: { home: LatLng; nurse: LatLng; n
       fittedRef.current = true;
       map.invalidateSize({ pan: false });
       map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: 16, animate: false });
-    } else if (!map.getBounds().pad(-0.08).contains(to) || !map.getBounds().contains(homeLL)) {
-      map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: 16, animate: true, duration: 0.8 });
+    } else {
+      const outOfView = !map.getBounds().pad(-0.08).contains(to) || !map.getBounds().contains(homeLL);
+      // Zoom in step by step as the nurse closes in, at most every few seconds so the map stays calm.
+      const canZoomIn =
+        map.getBoundsZoom(bounds, false, L.point(FIT_PADDING as [number, number]).multiplyBy(2)) >= map.getZoom() + 1 &&
+        performance.now() - lastRefitRef.current > 4000;
+      if (outOfView || canZoomIn) {
+        lastRefitRef.current = performance.now();
+        map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: 17, animate: true, duration: 0.8 });
+      }
     }
+
+    // Once the nurse is at the door, the markers overlap: hide the route line and the home label.
+    const near = to.distanceTo(homeLL) < 150;
+    map.getContainer().classList.toggle("nivar-map--near", near);
 
     const dist = from.distanceTo(to);
     // Jumps over ~5 km are teleports (e.g. first fix); don't animate across the city.
