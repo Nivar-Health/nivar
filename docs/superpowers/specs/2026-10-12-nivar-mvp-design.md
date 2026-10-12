@@ -145,6 +145,7 @@ Validation with zod; 400 on bad input.
 - `GET /api/health` -> `{ ok: true }`
 - `GET /api/catalog` -> `{ services: Service[], packages: Package[] }` (active only)
 - `GET /api/slots?date=YYYY-MM-DD` -> `{ date, slots: [{ slot, available }] }` hourly 07:00-20:00; past slots for today unavailable; a slot with 3 or more bookings is unavailable.
+  For today only, the first entry is `{ slot: "express", available: true, express: true }`: an Express visit (nurse within 60 minutes), always available, rejected for other dates (400 `express_today_only`).
 - `POST /api/leads` `{ name, phone, city, message? }` -> `{ ok: true }` (landing callback form)
 
 ### Auth

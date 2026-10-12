@@ -1,0 +1,137 @@
+/* Live map marker styles (Leaflet divIcons). */
+
+.nivar-map .leaflet-container {
+  font-family: inherit;
+  background: #eef1ec;
+}
+
+.nivar-map .leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(250, 247, 242, 0.85);
+  color: #5b6b67;
+  border-top-left-radius: 8px;
+  padding: 1px 6px;
+}
+
+.nivar-map .leaflet-control-attribution a {
+  color: #0e5e52;
+}
+
+.nivar-map .leaflet-bar {
+  border: 1px solid #e5e0d6 !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 6px 16px -8px rgba(19, 35, 33, 0.35) !important;
+}
+
+.nivar-map .leaflet-bar a {
+  color: #132321;
+  background: #fffdf9;
+  border-bottom-color: #e5e0d6;
+}
+
+.nivar-icon {
+  background: transparent;
+  border: 0;
+}
+
+/* Home pin */
+.nivar-home {
+  position: relative;
+  width: 38px;
+  height: 48px;
+  filter: drop-shadow(0 6px 8px rgba(14, 94, 82, 0.35));
+}
+
+.nivar-home svg {
+  display: block;
+}
+
+/* Nurse avatar with pulse */
+.nivar-nurse {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
+.nivar-nurse__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgba(242, 163, 58, 0.45);
+  animation: nivar-pulse 1.8s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+.nivar-nurse__ring--late {
+  animation-delay: 0.9s;
+}
+
+.nivar-nurse__dot {
+  position: absolute;
+  inset: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #f2a33a;
+  border: 3px solid #fffdf9;
+  color: #132321;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 14px -4px rgba(19, 35, 33, 0.45);
+}
+
+.nivar-nurse__name {
+  position: absolute;
+  top: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #132321;
+  color: #faf7f2;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px -4px rgba(19, 35, 33, 0.5);
+}
+
+.nivar-home__label {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #fffdf9;
+  color: #0e5e52;
+  border: 1px solid #e5e0d6;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px -6px rgba(19, 35, 33, 0.4);
+}
+
+@keyframes nivar-pulse {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nivar-nurse__ring {
+    animation: none;
+    opacity: 0.25;
+  }
+}
+
+/* Calm the busy OSM palette so brand markers stand out. */
+.nivar-map .leaflet-tile {
+  filter: saturate(0.55) contrast(0.92) brightness(1.04);
+}
