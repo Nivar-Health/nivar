@@ -5,11 +5,7 @@ One booking goes from the patient's phone to a published doctor's report, across
 
 ## Before the meeting (10 minutes before)
 
-1. Start MongoDB, reset the demo data, and start the app:
-
-```bash
-pnpm db:up
-```
+1. Reset the demo data and start the app (needs `apps/web/.env.local` with the Supabase keys, see the README):
 
 ```bash
 pnpm seed
@@ -18,8 +14,6 @@ pnpm seed
 ```bash
 pnpm dev
 ```
-
-If Docker is not working, see "Without Docker" at the end.
 
 2. Open four Chrome windows side by side (use separate windows, not tabs, so all four are visible):
 
@@ -73,16 +67,5 @@ Open "View full report": letterhead, vitals table, ECG strip, prescription, sign
 ## Notes
 
 - Express visits are always bookable today, so the demo works at any hour.
-- Run `pnpm seed` again between rehearsals; it resets everything.
+- Run `pnpm seed` again between rehearsals; it resets bookings and keeps every login working.
 - Demo-mode stand-ins (payment, OTP, devices, video signalling) are listed in the README.
-
-## Without Docker
-
-Docker Desktop had disk errors on this machine.
-A standalone MongoDB 7 binary is cached and serves the same port, so nothing else changes:
-
-```bash
-~/.cache/mongodb-binaries/mongod-arm64-darwin-7.0.14 --dbpath ~/.cache/nivar-mongo/data --port 27018 --bind_ip 127.0.0.1 --fork --logpath ~/.cache/nivar-mongo/mongod.log --logappend
-```
-
-Then run `pnpm seed` and `pnpm dev` as above.

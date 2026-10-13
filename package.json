@@ -2,16 +2,12 @@
   "name": "nivar",
   "private": true,
   "scripts": {
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down",
-    "seed": "pnpm --filter api seed",
-    "dev": "concurrently -k -n api,web -c cyan,magenta \"pnpm --filter api dev\" \"pnpm --filter web dev\"",
+    "db:push": "pnpm dlx supabase@latest db push",
+    "seed": "pnpm --filter web seed",
+    "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
     "lint": "pnpm -r lint",
-    "test": "pnpm --filter api test"
-  },
-  "devDependencies": {
-    "concurrently": "^9.2.0"
+    "test": "pnpm --filter web test"
   },
   "packageManager": "pnpm@12.4.2"
 }
