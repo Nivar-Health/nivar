@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import type { Role, User } from "@/lib/types";
 import { errorResponse, forbidden, unauthorized } from "./errors";
 import { profileToUser, type ProfileRow } from "./mappers";
-import { supabaseAdmin } from "./supabase";
+import { supabaseAdmin, supabaseAuthAdmin } from "./supabase";
 
 export type AuthedUser = User & { role: Role };
 
@@ -17,10 +17,9 @@ function bearer(req: Request): string | null {
 export async function userFromRequest(req: Request): Promise<AuthedUser | null> {
   const token = bearer(req);
   if (!token) return null;
-  const sb = supabaseAdmin();
-  const { data, error } = await sb.auth.getUser(token);
+  const { data, error } = await supabaseAuthAdmin().auth.getUser(token);
   if (error || !data.user) return null;
-  const { data: profile } = await sb.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
+  const { data: profile } = await supabaseAdmin().from("profiles").select("*").eq("id", data.user.id).maybeSingle();
   if (!profile) return null;
   return profileToUser(profile as ProfileRow) as AuthedUser;
 }

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { withAuth } from "@/server/auth";
 import { badRequest, json, notFound } from "@/server/errors";
 import type { ProfileRow } from "@/server/mappers";
-import { supabaseAdmin } from "@/server/supabase";
+import { supabaseAdmin, supabaseAuthAdmin } from "@/server/supabase";
 import { parseBody } from "@/server/validate";
 import { STAFF_ROLES, UUID, rethrowDuplicate, staffFields, staffPatch, withActiveCounts } from "../../_lib";
 
@@ -24,7 +24,7 @@ export const PATCH = withAuth<{ id: string }>(
     if (password) authPatch.password = password;
     if (data.email && data.email !== existing.email) Object.assign(authPatch, { email: data.email, email_confirm: true });
     if (Object.keys(authPatch).length) {
-      const { error } = await sb.auth.admin.updateUserById(params.id, authPatch);
+      const { error } = await supabaseAuthAdmin().auth.admin.updateUserById(params.id, authPatch);
       if (error) rethrowDuplicate(error, "email");
     }
 

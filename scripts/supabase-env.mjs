@@ -37,7 +37,7 @@ const publicUrl = "http://localhost:8000";
 
 const docker = {
   POSTGRES_PASSWORD: secret(24),
-  POSTGRES_HOST_PORT: "54322",
+  POSTGRES_HOST_PORT: "54332",
   JWT_SECRET: jwtSecret,
   JWT_EXPIRY: "3600",
   ANON_KEY: anonKey,

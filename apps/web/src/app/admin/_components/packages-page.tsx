@@ -142,6 +142,7 @@ function PriceCell({ service, onSaved }: { service: Service; onSaved: (s: Servic
   }
   return (
     <form
+      method="post"
       className="inline-flex items-center gap-1"
       onSubmit={(e) => {
         e.preventDefault();

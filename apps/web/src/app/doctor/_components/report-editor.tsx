@@ -292,6 +292,7 @@ function AdviceEditor({ advice, onChange }: { advice: string[]; onChange: (a: st
         </ul>
       )}
       <form
+        method="post"
         onSubmit={(e) => {
           e.preventDefault();
           add(text);

@@ -108,7 +108,7 @@ export function AddressForm({
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4" noValidate>
+    <form method="post" onSubmit={submit} className="space-y-4" noValidate>
       <button
         type="button"
         onClick={useLocation}

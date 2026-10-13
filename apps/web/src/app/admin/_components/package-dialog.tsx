@@ -140,7 +140,7 @@ export function PackageDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto p-0 sm:max-w-[600px]">
-        <form onSubmit={submit} noValidate>
+        <form method="post" onSubmit={submit} noValidate>
           <DialogHeader className="px-5 pt-5">
             <DialogTitle className="text-lg">{pkg ? `Edit ${pkg.name}` : "New package"}</DialogTitle>
             <DialogDescription>Changes go live on the website and booking flow immediately.</DialogDescription>

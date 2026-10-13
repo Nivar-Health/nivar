@@ -100,6 +100,28 @@ export async function guardedSet(booking: Booking, statuses: BookingStatus[], se
   return publishBooking(booking.id);
 }
 
+/**
+ * Merge `set` into a booking JSON column and drop `unset` keys in one statement, only while the
+ * booking is in one of `statuses`. Safe when several requests write the same column at once.
+ */
+export async function mergeJson(
+  booking: Booking,
+  column: "vitals" | "report",
+  set: Record<string, unknown>,
+  { unset = [], statuses, action }: { unset?: string[]; statuses: BookingStatus[]; action: string },
+): Promise<Booking> {
+  const { data, error } = await supabaseAdmin().rpc("merge_booking_json", {
+    p_id: booking.id,
+    p_column: column,
+    p_set: set,
+    p_unset: unset,
+    p_statuses: statuses,
+  });
+  if (error) throw error;
+  if (!data) throw conflict(`${action} is no longer possible, the booking status changed`, "stale");
+  return publishBooking(booking.id);
+}
+
 /** Send notifications appropriate for a status change; `booking` is the populated payload. */
 export async function notifyStatusChange(status: BookingStatus, booking: Booking, actor: Actor): Promise<void> {
   const customerId = idOf(booking.customer);

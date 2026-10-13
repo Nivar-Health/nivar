@@ -117,7 +117,8 @@ test("admin can cancel via /status and act on any booking", async () => {
   const res = await as(admin.token).post(`/api/bookings/${id}/status`, { status: "cancelled", note: "Duplicate booking" });
   assert.equal(res.status, 200, JSON.stringify(res.body));
   assert.equal(res.body.booking.status, "cancelled");
-  assert.equal(res.body.booking.timeline.at(-1).note, "Duplicate booking");
+  // The reason is kept, prefixed so the patient's timeline shows who cancelled.
+  assert.equal(res.body.booking.timeline.at(-1).note, "Booking cancelled by Nivar: Duplicate booking");
 });
 
 test("non-admins cannot reach admin endpoints", async () => {

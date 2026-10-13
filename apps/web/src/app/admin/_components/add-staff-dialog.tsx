@@ -160,7 +160,7 @@ export function AddStaffDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto p-0 sm:max-w-[560px]">
-        <form onSubmit={submit} noValidate>
+        <form method="post" onSubmit={submit} noValidate>
           <DialogHeader className="px-5 pt-5">
             <DialogTitle className="text-lg">Add staff member</DialogTitle>
             <DialogDescription>Full-time Nivar employees only. They sign in with this email and password.</DialogDescription>

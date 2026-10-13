@@ -3,7 +3,7 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import type { Booking } from "../src/lib/types.ts";
-import { BookingTracker, PHONES, STAFF, anonClient, as, customerToken, sampleBooking, staffToken, type Session } from "./helpers.ts";
+import { BookingTracker, PHONES, STAFF, anonClient, as, customerToken, refreshTokenFor, sampleBooking, staffToken, type Session } from "./helpers.ts";
 
 const bookings = new BookingTracker();
 let rahul: Session, other: Session, admin: Session, priya: Session, kavya: Session, ananya: Session;
@@ -84,6 +84,12 @@ class Listener {
 /** Authenticated realtime client for a user token; one socket per user, as in the browser. */
 async function realtimeClient(token: string): Promise<SupabaseClient> {
   const sb = anonClient();
+  const refresh = refreshTokenFor(token);
+  if (refresh) {
+    // A signed-in client, like the browser: realtime then authenticates with the user's token.
+    const { error } = await sb.auth.setSession({ access_token: token, refresh_token: refresh });
+    if (error) throw error;
+  }
   await sb.realtime.setAuth(token);
   clients.push(sb);
   return sb;

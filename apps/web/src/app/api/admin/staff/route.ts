@@ -2,7 +2,7 @@ import { z } from "zod";
 import { withAuth } from "@/server/auth";
 import { json } from "@/server/errors";
 import type { ProfileRow } from "@/server/mappers";
-import { supabaseAdmin } from "@/server/supabase";
+import { supabaseAdmin, supabaseAuthAdmin } from "@/server/supabase";
 import { parseBody, parseQuery } from "@/server/validate";
 import { STAFF_ROLES, rethrowDuplicate, staffFields, staffPatch, withActiveCounts } from "../_lib";
 
@@ -23,7 +23,7 @@ export const POST = withAuth(
     const { password, ...data } = await parseBody(req, z.object(staffFields));
     const sb = supabaseAdmin();
 
-    const { data: created, error: authError } = await sb.auth.admin.createUser({
+    const { data: created, error: authError } = await supabaseAuthAdmin().auth.admin.createUser({
       email: data.email,
       password,
       email_confirm: true,
@@ -39,7 +39,7 @@ export const POST = withAuth(
       .single();
     if (error) {
       // Do not leave an auth user without a usable profile behind.
-      await sb.auth.admin.deleteUser(created.user.id).catch(() => undefined);
+      await supabaseAuthAdmin().auth.admin.deleteUser(created.user.id).catch(() => undefined);
       rethrowDuplicate(error, data.phone && /phone/i.test(error.message) ? "phone" : "email");
     }
     const [staff] = await withActiveCounts([profile as ProfileRow]);

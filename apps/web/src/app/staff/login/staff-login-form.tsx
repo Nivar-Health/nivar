@@ -111,7 +111,7 @@ export function StaffLoginForm({ next }: { next: string | null }) {
         </div>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
+      <form method="post" onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Work email</Label>
           <Input

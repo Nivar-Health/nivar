@@ -45,7 +45,7 @@ export function NamePrompt() {
           <DialogPrimitive.Description className="mt-1 text-sm text-muted-foreground">
             What should we call you? Your nurse and doctor will see this name.
           </DialogPrimitive.Description>
-          <form onSubmit={save} className="mt-5 space-y-3">
+          <form method="post" onSubmit={save} className="mt-5 space-y-3">
             <label htmlFor="welcome-name" className="sr-only">
               Your full name
             </label>

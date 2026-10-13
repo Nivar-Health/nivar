@@ -25,7 +25,7 @@ pnpm setup
 
 `pnpm setup` runs four steps, which you can also run on their own:
 - `pnpm supabase:env` generates local secrets into `supabase/docker/.env` and `apps/web/.env.local` (first time only).
-- `pnpm supabase:up` starts self-hosted Supabase from `docker-compose.yml`: Postgres (host port 54322), Auth, REST and Realtime behind a gateway on http://localhost:8000.
+- `pnpm supabase:up` starts self-hosted Supabase from `docker-compose.yml`: Postgres (host port 54332), Auth, REST and Realtime behind a gateway on http://localhost:8000.
 - `pnpm db:migrate` applies `supabase/migrations`.
 - `pnpm seed` loads the demo data.
 

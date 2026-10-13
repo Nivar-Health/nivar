@@ -87,6 +87,14 @@ export interface Session {
   user: User;
 }
 
+/**
+ * Refresh tokens by access token, so a realtime test client can hold a real Supabase session.
+ * supabase-js prefers its own session over a hand-set realtime token, so a signed-out client
+ * would join channels with the anon key.
+ */
+const refreshTokens = new Map<string, string>();
+export const refreshTokenFor = (accessToken: string) => refreshTokens.get(accessToken);
+
 async function me(token: string): Promise<User> {
   const res = await as(token).get("/api/auth/me");
   if (res.status !== 200) throw new Error(`GET /api/auth/me failed: ${res.status} ${JSON.stringify(res.body)}`);
@@ -98,6 +106,7 @@ export async function staffToken(email: string, password = PASSWORD): Promise<Se
   const { data, error } = await anonClient().auth.signInWithPassword({ email, password });
   if (error || !data.session) throw new Error(`login ${email} failed: ${error?.message ?? "no session"}`);
   const token = data.session.access_token;
+  refreshTokens.set(token, data.session.refresh_token);
   return { token, user: await me(token) };
 }
 
@@ -108,6 +117,7 @@ export async function customerToken(phone: string): Promise<Session> {
   const { data, error } = await anonClient().auth.verifyOtp({ phone: `+91${phone}`, token: DEMO_OTP, type: "sms" });
   if (error || !data.session) throw new Error(`otp verify ${phone} failed: ${error?.message ?? "no session"}`);
   const token = data.session.access_token;
+  refreshTokens.set(token, data.session.refresh_token);
   return { token, user: await me(token) };
 }
 

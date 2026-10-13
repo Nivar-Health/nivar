@@ -111,7 +111,7 @@ export function CustomerLoginForm({ next }: { next: string | null }) {
           Sign in or create an account with your mobile number.
         </p>
 
-        <form onSubmit={onPhoneSubmit} className="mt-8 flex flex-col gap-5" noValidate>
+        <form method="post" onSubmit={onPhoneSubmit} className="mt-8 flex flex-col gap-5" noValidate>
           <div className="flex flex-col gap-2">
             <Label htmlFor="phone">Mobile number</Label>
             <div
@@ -235,7 +235,7 @@ export function CustomerLoginForm({ next }: { next: string | null }) {
         </div>
       )}
 
-      <form onSubmit={onOtpSubmit} className="mt-6 flex flex-col gap-5" noValidate>
+      <form method="post" onSubmit={onOtpSubmit} className="mt-6 flex flex-col gap-5" noValidate>
         {isNewUser && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Your full name</Label>

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Report } from "@/lib/types";
 import { withAuth } from "@/server/auth";
 import { REPORT_DRAFT_STATUSES, REPORT_PUBLISH_STATUSES } from "@/server/booking-status";
-import { assertAssigned, assertStatusIn, guardedSet, loadForUser, notifyStatusChange, publishBooking, transition } from "@/server/bookings";
+import { assertAssigned, assertStatusIn, loadForUser, mergeJson, notifyStatusChange, publishBooking, transition } from "@/server/bookings";
 import { badRequest, json } from "@/server/errors";
 import { parseBody } from "@/server/validate";
 
@@ -41,7 +41,8 @@ export const PUT = withAuth<{ id: string }>(
     if (!publish) {
       assertStatusIn(booking, REPORT_DRAFT_STATUSES, "Editing the report");
       if (!Object.keys(patch).length) throw badRequest("Nothing to save", "empty_report");
-      return json({ booking: await guardedSet(booking, REPORT_DRAFT_STATUSES, { report: merged }, "Editing the report") });
+      // Merged in the database so overlapping autosaves cannot drop each other's fields.
+      return json({ booking: await mergeJson(booking, "report", patch, { statuses: REPORT_DRAFT_STATUSES, action: "Editing the report" }) });
     }
 
     assertStatusIn(booking, REPORT_PUBLISH_STATUSES, "Publishing the report");

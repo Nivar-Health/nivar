@@ -71,7 +71,7 @@ export function ProfileView() {
 
       <Surface className="p-4 sm:p-5">
         {editingName ? (
-          <form onSubmit={saveName} className="space-y-3">
+          <form method="post" onSubmit={saveName} className="space-y-3">
             <label htmlFor="profile-name" className="block text-xs font-medium text-muted-foreground">
               Your name
             </label>

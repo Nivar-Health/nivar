@@ -1,8 +1,7 @@
 import { z } from "zod";
-import type { Vitals } from "@/lib/types";
 import { withAuth } from "@/server/auth";
 import { CAPTURE_STATUSES } from "@/server/booking-status";
-import { assertAssigned, assertStatusIn, guardedSet, loadForUser } from "@/server/bookings";
+import { assertAssigned, assertStatusIn, loadForUser, mergeJson } from "@/server/bookings";
 import { json } from "@/server/errors";
 import { parseBody } from "@/server/validate";
 
@@ -27,14 +26,15 @@ export const PUT = withAuth<{ id: string }>(
     const booking = await loadForUser(user, params.id);
     assertAssigned(booking, user, "nurse");
     assertStatusIn(booking, CAPTURE_STATUSES, "Recording vitals");
-    // Partial update: numbers are set, explicit nulls clear the field.
-    const vitals: Record<string, unknown> = { ...(booking.vitals ?? {}) };
+    // Partial update merged in the database: numbers are set, explicit nulls clear the field.
+    // The nurse's form saves fields separately and concurrently, so this must not read-modify-write.
+    const set: Record<string, unknown> = { recordedAt: new Date().toISOString() };
+    const unset: string[] = [];
     for (const [k, v] of Object.entries(body)) {
-      if (v === null) delete vitals[k];
-      else if (v !== undefined) vitals[k] = v;
+      if (v === null) unset.push(k);
+      else if (v !== undefined) set[k] = v;
     }
-    vitals.recordedAt = new Date().toISOString();
-    return json({ booking: await guardedSet(booking, CAPTURE_STATUSES, { vitals: vitals as Vitals }, "Recording vitals") });
+    return json({ booking: await mergeJson(booking, "vitals", set, { unset, statuses: CAPTURE_STATUSES, action: "Recording vitals" }) });
   },
   { roles: ["nurse"] },
 );

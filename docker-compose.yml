@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     ports:
       # 5432 is often taken by a local Postgres on macOS.
-      - "${POSTGRES_HOST_PORT:-54322}:5432"
+      - "${POSTGRES_HOST_PORT:-54332}:5432"
     volumes:
       - ./supabase/docker/volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
       - ./supabase/docker/volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
@@ -90,7 +90,8 @@ services:
       GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: local-not-used
       GOTRUE_SMS_OTP_EXP: 600
       GOTRUE_SMS_OTP_LENGTH: 6
-      GOTRUE_SMS_MAX_FREQUENCY: 1s
+      # Fixed-code test numbers never send an SMS, so the resend limit only slows the test suite.
+      GOTRUE_SMS_MAX_FREQUENCY: 1ms
       GOTRUE_SMS_TEST_OTP: "919876543210:123456,919123400001:123456,919123400002:123456"
       GOTRUE_RATE_LIMIT_SMS_SENT: 1000
       GOTRUE_RATE_LIMIT_VERIFY: 1000

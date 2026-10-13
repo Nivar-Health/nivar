@@ -109,7 +109,7 @@ export function CallbackForm() {
     [errors[k] ? id(`${k}-error`) : null, hint ? id(`${k}-hint`) : null].filter(Boolean).join(" ") || undefined;
 
   return (
-    <form ref={formRef} noValidate onSubmit={onSubmit} className="flex flex-col gap-5" aria-describedby={serverError ? id("server") : undefined}>
+    <form method="post" ref={formRef} noValidate onSubmit={onSubmit} className="flex flex-col gap-5" aria-describedby={serverError ? id("server") : undefined}>
       <Field label="Your name" htmlFor={id("name")} error={errors.name} errorId={id("name-error")}>
         <input
           id={id("name")}

@@ -278,7 +278,7 @@ export function Surface({ className, children, ...props }: React.ComponentProps<
 }
 
 // ---------------------------------------------------------------------------
-// Bangalore areas (mirrors apps/api/src/lib/areas.js) for the address form
+// Bangalore areas (same list as AREAS in src/server/bookings.ts) for the address form
 // ---------------------------------------------------------------------------
 
 export const BANGALORE_AREAS: { name: string; lat: number; lng: number; pincode: string }[] = [
