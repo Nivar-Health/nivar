@@ -7,3 +7,5 @@ coverage
 .DS_Store
 *.log
 .playwright-mcp
+supabase/docker/.env
+supabase/docker/volumes/db/data

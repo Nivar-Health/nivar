@@ -13,39 +13,33 @@ A doctor in the clinic watches the readings live, video-consults the patient and
 
 ## Run locally
 
-Requirements: Node 22+, pnpm, a Supabase project.
-
-1. Install dependencies:
+Requirements: Node 22+, pnpm, Docker Desktop (about 3 GB of images; 4 GB more with the optional Studio dashboard).
 
 ```bash
 pnpm install
 ```
 
-2. Create `apps/web/.env.local` with your project's keys (Project Settings, API):
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR-REF.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-```
-
-3. In the Supabase dashboard, Authentication, Providers, Phone: enable the provider and add the demo test numbers `+919876543210=123456`, `+919123400001=123456`, `+919123400002=123456`.
-
-4. Apply the schema, seed the demo data and start the app:
-
 ```bash
-pnpm db:push
+pnpm setup
 ```
 
-```bash
-pnpm seed
-```
+`pnpm setup` runs four steps, which you can also run on their own:
+- `pnpm supabase:env` generates local secrets into `supabase/docker/.env` and `apps/web/.env.local` (first time only).
+- `pnpm supabase:up` starts self-hosted Supabase from `docker-compose.yml`: Postgres (host port 54322), Auth, REST and Realtime behind a gateway on http://localhost:8000.
+- `pnpm db:migrate` applies `supabase/migrations`.
+- `pnpm seed` loads the demo data.
+
+Then start the app:
 
 ```bash
 pnpm dev
 ```
 
 - Web and API: http://localhost:3100 (health check at http://localhost:3100/api/health)
+- Optional dashboard: `pnpm supabase:studio`, then http://localhost:8000 (user `supabase`, password in `supabase/docker/.env`).
+- Stop the backend with `pnpm supabase:down`; data is kept.
+
+Patient phone OTPs for the demo and test numbers (`9876543210`, `9123400001`, `9123400002`) are fixed at `123456`, so no SMS provider is needed.
 
 ## Demo accounts
 
@@ -80,5 +74,4 @@ pnpm lint
 
 ## Deploy
 
-One Next.js app, so any Next.js host works. On Vercel: import the repository, set the project's Root Directory to `apps/web`, and add the three Supabase variables from `.env.local` as environment variables.
-The live features use Supabase Realtime, so no long-running server is needed.
+The app is one Next.js project and works with hosted Supabase as well as the local stack: create a Supabase project, apply `supabase/migrations` to it, and set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` on the host (on Vercel, Root Directory `apps/web`).

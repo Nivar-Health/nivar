@@ -7,7 +7,7 @@ Pages and components do not change unless noted.
 ## 1. Layout
 
 - `apps/web` is the whole product. `apps/api`, `docker-compose.yml` and MongoDB are removed once parity is reached.
-- `supabase/migrations/*.sql` holds the schema. Apply with `pnpm supabase db push` (Supabase CLI via `pnpm dlx supabase`).
+- `supabase/migrations/*.sql` holds the schema. Locally it runs on self-hosted Supabase from `docker-compose.yml`; apply with `pnpm db:migrate`.
 - `apps/web/src/server/*` holds server-only code (admin client, auth, validation, booking logic, realtime publishing).
 - `apps/web/src/app/api/**/route.ts` holds the route handlers, one folder per path.
 - `apps/web/scripts/seed.ts` seeds the cloud project (`pnpm seed`).

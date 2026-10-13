@@ -5,7 +5,11 @@ One booking goes from the patient's phone to a published doctor's report, across
 
 ## Before the meeting (10 minutes before)
 
-1. Reset the demo data and start the app (needs `apps/web/.env.local` with the Supabase keys, see the README):
+1. Start the backend, reset the demo data and start the app (first time on a machine: `pnpm setup` instead of the first two):
+
+```bash
+pnpm supabase:up
+```
 
 ```bash
 pnpm seed
