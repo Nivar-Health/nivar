@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-menu";
 import { useAuth } from "@/lib/auth";
 import { firstName } from "@/lib/format";
-import { useSocket, useSocketConnected } from "@/lib/socket";
+import { useSignalling, useSocketConnected } from "@/lib/socket";
 import { populated, type Booking } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -110,13 +110,13 @@ export function ConsultPanel({
   ending: boolean;
 }) {
   const { user } = useAuth();
-  const socket = useSocket();
+  const signalling = useSignalling();
   const connected = useSocketConnected();
   const [joined, setJoined] = useState(false);
   const nurse = populated(booking.nurse);
   const nurseName = nurse ? firstName(nurse.name) : "The nurse";
   const inConsult = booking.status === "consult";
-  const showCall = inConsult && joined && socket;
+  const showCall = inConsult && joined && signalling;
   const waiting = WAITING_STATES[booking.status];
 
   return (
@@ -162,7 +162,7 @@ export function ConsultPanel({
 
       {showCall ? (
         <VideoCall
-          socket={socket}
+          signalling={signalling}
           bookingId={booking.id}
           self={{ name: user?.name ?? "Doctor", role: "doctor" }}
           compact
@@ -186,7 +186,7 @@ export function ConsultPanel({
           <Button
             size="lg"
             onClick={() => setJoined(true)}
-            disabled={!socket || !connected}
+            disabled={!signalling || !connected}
             className="h-11 gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#0a0a0a] hover:bg-white/90"
           >
             <Camera className="size-[18px]" />

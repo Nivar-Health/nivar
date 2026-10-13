@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { haversineKm, simulateDrive, type LatLng } from "@/components/live";
+import { api } from "@/lib/api";
 import { emit } from "@/lib/socket";
 
 const PREF_KEY = "nivar_nurse_simulate_drive";
@@ -9,6 +10,8 @@ const PREF_KEY = "nivar_nurse_simulate_drive";
 const FAR_KM = 30;
 const GPS_TIMEOUT_MS = 8000;
 const DRIVE_MS = 45_000;
+/** The position is persisted (PUT /bookings/:id/location) at most this often. */
+const PERSIST_MS = 3000;
 
 export type GpsState = "idle" | "locating" | "ok" | "unavailable" | "far";
 
@@ -112,13 +115,39 @@ export function useLocationSharing({
     };
   }, [autoSimulate, pref]);
 
+  // Every point is broadcast live to the booking channel; the server never sees the
+  // broadcast, so the latest point is also persisted, throttled to one request per 3 s.
+  const lastPersistAt = useRef(0);
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+    },
+    [],
+  );
+  const persist = useCallback(
+    (p: LatLng) => {
+      const send = () => {
+        lastPersistAt.current = Date.now();
+        persistTimer.current = null;
+        api.put(`/bookings/${bookingId}/location`, { lat: p.lat, lng: p.lng }).catch(() => {});
+      };
+      const wait = PERSIST_MS - (Date.now() - lastPersistAt.current);
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+      if (wait <= 0) send();
+      else persistTimer.current = setTimeout(send, wait);
+    },
+    [bookingId],
+  );
+
   const share = useCallback(
     (p: LatLng) => {
       positionRef.current = p;
       setLivePos(p);
-      emit("nurse:location", { bookingId, lat: p.lat, lng: p.lng });
+      emit("nurse:location", { bookingId, lat: p.lat, lng: p.lng, at: new Date().toISOString() });
+      persist(p);
     },
-    [bookingId],
+    [bookingId, persist],
   );
 
   // Simulated drive.

@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { dayLabel, firstName, todayISO } from "@/lib/format";
-import { useSocket, useSocketEvent } from "@/lib/socket";
+import { useOnReconnect, useSocketEvent } from "@/lib/socket";
 import { refId, type Booking } from "@/lib/types";
 import { VisitHeroCard, VisitRow } from "./visit-bits";
 import { NURSE_DONE, ONGOING, compareVisits, slotStart } from "./visit-utils";
@@ -72,7 +72,6 @@ export function TodayView() {
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
-  const s = useSocket();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -92,13 +91,7 @@ export function TodayView() {
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   // Catch up after a dropped connection.
-  useEffect(() => {
-    if (!s) return;
-    s.io.on("reconnect", reload);
-    return () => {
-      s.io.off("reconnect", reload);
-    };
-  }, [s, reload]);
+  useOnReconnect(reload);
 
   useSocketEvent<{ booking: Booking }>("booking:updated", (payload) => {
     const next = payload?.booking;

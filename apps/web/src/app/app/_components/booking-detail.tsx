@@ -47,7 +47,7 @@ import {
   relative,
   slotLabel,
 } from "@/lib/format";
-import { useBooking, useNurseLocation, useSocket } from "@/lib/socket";
+import { useBooking, useNurseLocation, useSignalling } from "@/lib/socket";
 import { populated, type Booking, type UserSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CheckoutDialog } from "./checkout-dialog";
@@ -441,12 +441,12 @@ function EnRoutePanel({ booking, nurse }: { booking: Booking; nurse: UserSummary
 
 function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSummary | null }) {
   const [inCall, setInCall] = useState(false);
-  const socket = useSocket();
+  const signalling = useSignalling();
   const { user } = useAuth();
   const docName = doctor?.name ?? "your doctor";
 
   // Close the call overlay when the consult ends (doctor moves to reporting).
-  const showCall = inCall && booking.status === "consult" && socket;
+  const showCall = inCall && booking.status === "consult" && signalling;
 
   useEffect(() => {
     if (!showCall) return;
@@ -479,7 +479,7 @@ function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSumma
           </p>
           <Button
             onClick={() => setInCall(true)}
-            disabled={!socket}
+            disabled={!signalling}
             className="mt-5 h-auto min-h-12 w-full rounded-xl bg-white px-4 py-3 text-[15px] leading-snug font-semibold whitespace-normal text-foreground hover:bg-white/90"
           >
             <Video className="size-5" aria-hidden /> Join video consult with {doctor ? `Dr. ${firstName(doctor.name)}` : "your doctor"}
@@ -509,7 +509,7 @@ function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSumma
               </button>
             </div>
             <VideoCall
-              socket={socket}
+              signalling={signalling}
               bookingId={booking.id}
               self={{ name: user?.name || booking.patient.name, role: "customer" }}
               onLeave={() => setInCall(false)}

@@ -1,18 +1,19 @@
 // Typed fetch wrapper for the Nivar API, plus the per-tab session token store.
 
+import { getSupabase, peekStoredSession } from "@/lib/supabase";
+
 /**
- * Where the API lives.
- * - On the server (SSR, server components): the `API_URL` binding injected by the host
- *   (Vercel services), then `NEXT_PUBLIC_API_URL`.
- * - In the browser: `NEXT_PUBLIC_API_URL` when set, otherwise the same origin, where the
- *   host rewrites `/api/*` and `/socket.io/*` to the API service.
- * - Local development falls back to the API dev server on port 4100.
+ * Where the API lives. The route handlers are part of this Next.js app, so:
+ * - In the browser: `NEXT_PUBLIC_API_URL` when set, otherwise the same origin.
+ * - On the server (SSR, server components): the `API_URL` binding if the host injects
+ *   one, then `NEXT_PUBLIC_API_URL`, then this app's own local port in development.
  */
 function resolveApiOrigin(): string {
   const isServer = typeof window === "undefined";
   const configured = (isServer && process.env.API_URL) || process.env.NEXT_PUBLIC_API_URL;
   if (configured) return configured.replace(/\/+$/, "");
-  return process.env.NODE_ENV === "production" ? "" : "http://localhost:4100";
+  if (isServer && process.env.NODE_ENV !== "production") return `http://localhost:${process.env.PORT ?? "3100"}`;
+  return "";
 }
 
 /** API origin without a trailing slash; empty string means "same origin". */
@@ -22,76 +23,75 @@ export const API_BASE = `${API_ORIGIN}/api`;
 // ---------------------------------------------------------------------------
 // Token store (spec section 3)
 //
-// The token lives in sessionStorage so every tab can hold a different role
-// during the demo, and is mirrored to localStorage so a freshly opened tab
-// inherits the most recent login. On first read a tab prefers its own
-// sessionStorage and falls back to (and adopts) the localStorage copy.
+// Backed by the Supabase session, which lives in sessionStorage so every tab can
+// hold a different role during the demo and is mirrored to localStorage so a new
+// tab inherits the most recent login (see lib/supabase.ts). `get()` returns the
+// cached access token synchronously; `subscribe` follows Supabase auth events.
 // ---------------------------------------------------------------------------
-
-const TOKEN_KEY = "nivar_token";
 
 type Listener = () => void;
 
 let cachedToken: string | null = null;
 let tokenLoaded = false;
+let authListening = false;
 const tokenListeners = new Set<Listener>();
 
-function safeStorage(kind: "session" | "local"): Storage | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return kind === "session" ? window.sessionStorage : window.localStorage;
-  } catch {
-    return null;
-  }
+function setCachedToken(next: string | null) {
+  tokenLoaded = true;
+  if (cachedToken === next) return;
+  cachedToken = next;
+  tokenListeners.forEach((l) => l());
 }
 
-function loadToken(): string | null {
-  const session = safeStorage("session");
-  const fromSession = session?.getItem(TOKEN_KEY);
-  if (fromSession) return fromSession;
-  const fromLocal = safeStorage("local")?.getItem(TOKEN_KEY) ?? null;
-  // Adopt the shared token for this tab so later logins in other tabs don't change it.
-  if (fromLocal) session?.setItem(TOKEN_KEY, fromLocal);
-  return fromLocal;
+function listenToAuth() {
+  if (authListening || typeof window === "undefined") return;
+  authListening = true;
+  getSupabase().auth.onAuthStateChange((_event, session) => {
+    setCachedToken(session?.access_token ?? null);
+  });
 }
 
 export const tokenStore = {
+  /** The current access token (may be close to expiry; requests fetch a fresh one). */
   get(): string | null {
     if (typeof window === "undefined") return null;
     if (!tokenLoaded) {
-      cachedToken = loadToken();
+      cachedToken = peekStoredSession()?.accessToken ?? null;
       tokenLoaded = true;
     }
     return cachedToken;
   },
-  set(token: string) {
-    tokenLoaded = true;
-    if (cachedToken === token) return;
-    cachedToken = token;
-    safeStorage("session")?.setItem(TOKEN_KEY, token);
-    safeStorage("local")?.setItem(TOKEN_KEY, token);
-    tokenListeners.forEach((l) => l());
-  },
+  /** Signs this tab out locally. Other tabs keep their own sessions. */
   clear() {
-    const previous = tokenLoaded ? cachedToken : loadToken();
-    tokenLoaded = true;
-    cachedToken = null;
-    safeStorage("session")?.removeItem(TOKEN_KEY);
-    // Only drop the shared copy if it is ours, so logging out one tab does not
-    // affect what a new tab would inherit from a different, newer login.
-    const local = safeStorage("local");
-    if (local && previous && local.getItem(TOKEN_KEY) === previous) {
-      local.removeItem(TOKEN_KEY);
-    }
-    if (previous) tokenListeners.forEach((l) => l());
+    const had = tokenStore.get() !== null;
+    setCachedToken(null);
+    if (!had) return;
+    void getSupabase()
+      .auth.signOut({ scope: "local" })
+      .catch(() => {});
   },
   subscribe(listener: Listener): () => void {
     tokenListeners.add(listener);
+    listenToAuth();
     return () => {
       tokenListeners.delete(listener);
     };
   },
 };
+
+/** Access token for a request, letting Supabase refresh it when it is about to expire. */
+async function currentAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  if (tokenStore.get() === null) return null;
+  try {
+    const { data } = await getSupabase().auth.getSession();
+    const token = data.session?.access_token ?? null;
+    if (token) setCachedToken(token);
+    return token ?? tokenStore.get();
+  } catch {
+    return tokenStore.get();
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -138,7 +138,7 @@ async function request<T>(
   options: RequestOptions = {},
 ): Promise<T> {
   const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
-  const token = options.anonymous ? null : tokenStore.get();
+  const token = options.anonymous ? null : await currentAccessToken();
   const headers: Record<string, string> = { Accept: "application/json", ...options.headers };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -181,8 +181,8 @@ async function request<T>(
           : res.status === 404
             ? "Not found."
             : `Request failed (${res.status}).`);
-    // An authenticated call that comes back 401 means our token is no longer valid.
-    if (res.status === 401 && token && tokenStore.get() === token) {
+    // An authenticated call that comes back 401 means our session is no longer valid.
+    if (res.status === 401 && token && tokenStore.get() !== null) {
       tokenStore.clear();
     }
     throw new ApiError(res.status, message, errObj?.code, data);

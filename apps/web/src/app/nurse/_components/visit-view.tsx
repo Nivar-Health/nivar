@@ -41,7 +41,7 @@ import { UserAvatar } from "@/components/user-menu";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { EXPRESS_SLOT, firstName, formatPhone, formatTime, scheduleLabel, vitalAssessment } from "@/lib/format";
-import { useBooking, useSocket } from "@/lib/socket";
+import { useBooking, useSignalling } from "@/lib/socket";
 import { populated, type Booking, type BookingStatus, type ServiceCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DeviceCard } from "./device-card";
@@ -524,7 +524,7 @@ function Workspace({
   onFinish: () => void;
 }) {
   const { user } = useAuth();
-  const socket = useSocket();
+  const signalling = useSignalling();
   const doctor = populated(booking.doctor);
   const consult = booking.status === "consult";
   const hasEcg = booking.serviceCodes.includes("ECG");
@@ -546,9 +546,9 @@ function Workspace({
             </span>{" "}
             Keep devices streaming and update vitals if asked.
           </p>
-          {inCall && socket && user && (
+          {inCall && signalling && user && (
             <VideoCall
-              socket={socket}
+              signalling={signalling}
               bookingId={booking.id}
               self={{ name: user.name, role: "nurse" }}
               onLeave={onLeaveCall}

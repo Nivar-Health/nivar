@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage } from "@/lib/api";
-import { useSocket, useSocketEvent } from "@/lib/socket";
+import { useOnReconnect, useSocketEvent } from "@/lib/socket";
 import type { AdminStats, Booking, StaffMember } from "@/lib/types";
 
 interface Resource<T> {
@@ -10,20 +10,6 @@ interface Resource<T> {
   error: string | null;
   loading: boolean;
   reload: () => void;
-}
-
-/** Re-runs `fn` after a socket reconnect so a long-open console catches up. */
-function useOnReconnect(fn: () => void) {
-  const s = useSocket();
-  const run = useEffectEvent(fn);
-  useEffect(() => {
-    if (!s) return;
-    const onReconnect = () => run();
-    s.io.on("reconnect", onReconnect);
-    return () => {
-      s.io.off("reconnect", onReconnect);
-    };
-  }, [s]);
 }
 
 /**

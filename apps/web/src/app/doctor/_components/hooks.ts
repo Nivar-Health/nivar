@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EcgChunk, Feed, StethChunk } from "@/lib/device-sim";
 import { api, errorMessage } from "@/lib/api";
-import { useDeviceStream, useSocket, useSocketEvent } from "@/lib/socket";
+import { useDeviceStream, useOnReconnect, useSocketEvent } from "@/lib/socket";
 import type { Booking, BookingStatus } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -131,7 +131,6 @@ export function useDoctorBookings(): DoctorBookings {
   const [nonce, setNonce] = useState(0);
   const [justWentLive, setJustWentLive] = useState<Set<string>>(() => new Set());
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const s = useSocket();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -152,14 +151,7 @@ export function useDoctorBookings(): DoctorBookings {
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
-  useEffect(() => {
-    if (!s) return;
-    const onReconnect = () => reload();
-    s.io.on("reconnect", onReconnect);
-    return () => {
-      s.io.off("reconnect", onReconnect);
-    };
-  }, [s, reload]);
+  useOnReconnect(reload);
 
   useEffect(() => {
     const map = timers.current;

@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Socket } from "socket.io-client";
+import type { Signalling } from "@/lib/socket";
 import { Mic, MicOff, PhoneOff, RotateCcw, Users, Video, VideoOff, Volume2, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type VideoCallProps = {
-  /** A connected (or connecting) socket.io client authenticated for this booking. */
-  socket: Socket;
+  /** Realtime signalling adapter for the signed-in user (see `useSignalling`). */
+  signalling: Signalling;
   bookingId: string;
   self: { name: string; role: string };
   /** Called after the user leaves. If omitted, a "Rejoin" screen is shown instead. */
@@ -17,7 +17,12 @@ export type VideoCallProps = {
   className?: string;
 };
 
-type PeerInfo = { socketId: string; name?: string; role?: string };
+type PeerInfo = { peerId: string; name?: string; role?: string };
+
+type RtcJoin = PeerInfo & { bookingId?: string };
+type RtcPeerHere = PeerInfo & { bookingId?: string; to: string };
+type RtcSignal = { bookingId?: string; to: string; from: string; data: SignalData };
+type RtcLeave = { bookingId?: string; peerId: string };
 
 type PeerView = {
   id: string;
@@ -268,14 +273,14 @@ export function VideoCall(props: VideoCallProps) {
   return <CallSession key={session} {...props} onLeave={leave} />;
 }
 
-function CallSession({ socket, bookingId, self, onLeave, compact, className }: VideoCallProps & { onLeave: () => void }) {
+function CallSession({ signalling, bookingId, self, onLeave, compact, className }: VideoCallProps & { onLeave: () => void }) {
   const [peers, setPeers] = useState<PeerView[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [mediaReady, setMediaReady] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
-  const [online, setOnline] = useState(socket.connected);
+  const [online, setOnline] = useState(true);
 
   const localRef = useRef<MediaStream | null>(null);
   const pcsRef = useRef<Map<string, PeerConn>>(new Map());
@@ -291,9 +296,11 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
         media: { ...mediaStateRef.current, name: selfRef.current.name, role: selfRef.current.role },
       };
       const targets = to ? [to] : [...pcsRef.current.keys()];
-      targets.forEach((id) => socket.emit("rtc:signal", { to: id, data }));
+      targets.forEach((id) =>
+        signalling.send("rtc:signal", { bookingId, to: id, from: signalling.peerId, data }),
+      );
     },
-    [socket],
+    [signalling, bookingId],
   );
 
   useEffect(() => {
@@ -306,16 +313,16 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
 
     const upsertPeer = (info: PeerInfo) =>
       setPeers((prev) => {
-        const existing = prev.find((p) => p.id === info.socketId);
+        const existing = prev.find((p) => p.id === info.peerId);
         if (existing) {
           return prev.map((p) =>
-            p.id === info.socketId ? { ...p, name: info.name ?? p.name, role: info.role ?? p.role } : p,
+            p.id === info.peerId ? { ...p, name: info.name ?? p.name, role: info.role ?? p.role } : p,
           );
         }
         return [
           ...prev,
           {
-            id: info.socketId,
+            id: info.peerId,
             name: info.name ?? "Guest",
             role: info.role ?? "",
             stream: null,
@@ -327,7 +334,10 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
         ];
       });
 
-    const send = (to: string, data: SignalData) => socket.emit("rtc:signal", { to, data });
+    const me = signalling.peerId;
+    const send = (to: string, data: SignalData) =>
+      signalling.send("rtc:signal", { bookingId, to, from: me, data });
+    const forThisCall = (p: { bookingId?: string } | null | undefined) => !!p && (!p.bookingId || p.bookingId === bookingId);
 
     const closePeer = (id: string) => {
       const entry = pcs.get(id);
@@ -348,17 +358,17 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
     };
 
     const createPeer = (info: PeerInfo, initiator: boolean): PeerConn => {
-      const existing = pcs.get(info.socketId);
+      const existing = pcs.get(info.peerId);
       if (existing) {
         upsertPeer(info);
         return existing;
       }
-      const id = info.socketId;
+      const id = info.peerId;
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
       const entry: PeerConn = {
         pc,
         // Deterministic roles for glare resolution (perfect negotiation).
-        polite: (socket.id ?? "") > id,
+        polite: me > id,
         makingOffer: false,
         ignoreOffer: false,
         // Existing members wait for the newcomer's offer ("new joiner offers").
@@ -407,7 +417,7 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
     };
 
     const handleSignal = async (from: string, data: SignalData) => {
-      const entry = pcs.get(from) ?? createPeer({ socketId: from }, false);
+      const entry = pcs.get(from) ?? createPeer({ peerId: from }, false);
       const { pc } = entry;
       if ("description" in data && data.description) {
         const desc = data.description;
@@ -442,34 +452,54 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
       }
     };
 
-    const onPeers = (payload: { peers?: PeerInfo[] } | PeerInfo[]) => {
-      const list = Array.isArray(payload) ? payload : (payload?.peers ?? []);
-      list.filter((p) => p && p.socketId && p.socketId !== socket.id).forEach((p) => createPeer(p, true));
-    };
-    const onPeerJoined = (payload: PeerInfo | { peer: PeerInfo }) => {
-      const info = "peer" in payload ? payload.peer : payload;
-      if (!info?.socketId || info.socketId === socket.id) return;
+    // Protocol: the joiner broadcasts rtc:join, every peer already in the call replies with
+    // rtc:peer-here addressed to it, and the joiner then offers to each of them.
+    const onJoin = (payload: unknown) => {
+      const info = payload as RtcJoin;
+      if (!forThisCall(info) || !info.peerId || info.peerId === me) return;
+      // A peer we already know re-announcing itself has reconnected: start that link over.
+      if (pcs.has(info.peerId)) closePeer(info.peerId);
       createPeer(info, false);
+      signalling.send("rtc:peer-here", {
+        bookingId,
+        to: info.peerId,
+        peerId: me,
+        name: selfRef.current.name,
+        role: selfRef.current.role,
+      });
     };
-    const onPeerLeft = (payload: { socketId: string }) => {
-      if (payload?.socketId) closePeer(payload.socketId);
+    const onPeerHere = (payload: unknown) => {
+      const info = payload as RtcPeerHere;
+      if (!forThisCall(info) || info.to !== me || !info.peerId || info.peerId === me) return;
+      createPeer(info, true);
     };
-    const onSignal = (payload: { from: string; data: SignalData }) => {
-      if (!payload?.from || !payload.data) return;
-      const entry = pcs.get(payload.from);
-      const run = () =>
-        handleSignal(payload.from, payload.data).catch((err) => console.warn("[video-call] signal error", err));
+    const onPeerLeft = (payload: unknown) => {
+      const info = payload as RtcLeave;
+      if (forThisCall(info) && info.peerId) closePeer(info.peerId);
+    };
+    const onSignal = (payload: unknown) => {
+      const msg = payload as RtcSignal;
+      if (!forThisCall(msg) || msg.to !== me || !msg.from || !msg.data) return;
+      const entry = pcs.get(msg.from);
+      const run = () => handleSignal(msg.from, msg.data).catch((err) => console.warn("[video-call] signal error", err));
       if (entry) entry.queue = entry.queue.then(run);
       else void run();
     };
-    const join = () => socket.emit("rtc:join", { bookingId });
-    const onConnect = () => {
-      setOnline(true);
-      // New socket id after a reconnect: rebuild the mesh from scratch.
-      closeAll();
-      join();
+    const join = () =>
+      signalling.send("rtc:join", { bookingId, peerId: me, name: selfRef.current.name, role: selfRef.current.role });
+    let joined = false;
+    let wasOnline = true;
+    const onConnection = (connected: boolean) => {
+      if (!joined) return;
+      setOnline(connected);
+      if (connected && !wasOnline) {
+        // Channel came back: rebuild the mesh from scratch, as after a socket reconnect.
+        closeAll();
+        join();
+      }
+      wasOnline = connected;
     };
-    const onDisconnect = () => setOnline(false);
+    const unsubs: Array<() => void> = [];
 
     (async () => {
       const { stream, error } = await acquireMedia();
@@ -488,30 +518,29 @@ function CallSession({ socket, bookingId, self, onLeave, compact, className }: V
       setMediaError(error);
       setMediaReady(true);
 
-      socket.on("rtc:peers", onPeers);
-      socket.on("rtc:peer-joined", onPeerJoined);
-      socket.on("rtc:peer-left", onPeerLeft);
-      socket.on("rtc:signal", onSignal);
-      socket.on("connect", onConnect);
-      socket.on("disconnect", onDisconnect);
-      if (socket.connected) join();
-      else socket.connect();
+      unsubs.push(
+        signalling.on("rtc:join", onJoin),
+        signalling.on("rtc:peer-here", onPeerHere),
+        signalling.on("rtc:leave", onPeerLeft),
+        signalling.on("rtc:signal", onSignal),
+        signalling.onConnectionChange(onConnection),
+      );
+      await signalling.join(bookingId);
+      if (disposed) return;
+      joined = true;
+      join();
     })();
 
     return () => {
       disposed = true;
-      socket.off("rtc:peers", onPeers);
-      socket.off("rtc:peer-joined", onPeerJoined);
-      socket.off("rtc:peer-left", onPeerLeft);
-      socket.off("rtc:signal", onSignal);
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      if (socket.connected) socket.emit("rtc:leave", { bookingId });
+      unsubs.forEach((off) => off());
+      signalling.send("rtc:leave", { bookingId, peerId: me });
+      signalling.leave(bookingId);
       closeAll();
       localRef.current?.getTracks().forEach((t) => t.stop());
       localRef.current = null;
     };
-  }, [socket, bookingId, sendMediaState]);
+  }, [signalling, bookingId, sendMediaState]);
 
   const toggleMic = () => {
     const tracks = localRef.current?.getAudioTracks() ?? [];

@@ -1,10 +1,8 @@
 "use client";
 
-import { API_ORIGIN } from "@/lib/api";
-
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { io, type Socket } from "socket.io-client";
 import { Car, Plug, PlugZap, RotateCcw, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,16 +15,17 @@ import {
   type LatLng,
   type MonitorStatus,
 } from "@/components/live";
+import { useAuth } from "@/lib/auth";
 import {
   createEcgSimulator,
   createStethSimulator,
   generateEcgSamples,
   simulatorFeed,
 } from "@/lib/device-sim";
+import { useSignalling } from "@/lib/socket";
 
 const INDIRANAGAR: LatLng = { lat: 12.9719, lng: 77.6412 };
 const KORAMANGALA: LatLng & { label: string } = { lat: 12.9352, lng: 77.6245, label: "Patient home" };
-const API_URL = API_ORIGIN;
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -150,47 +149,37 @@ function MapDemo() {
 
 function CallDemo() {
   const params = useSearchParams();
-  const token = params.get("token");
   const booking = params.get("booking");
-  const name = params.get("name") ?? "Dev user";
-  const role = params.get("role") ?? "doctor";
-  const apiUrl = params.get("api") ?? API_URL;
+  const role = params.get("role");
   const compact = params.get("compact") === "1";
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { user, loading } = useAuth();
+  const signalling = useSignalling();
   const [joined, setJoined] = useState(false);
+  const name = params.get("name") ?? user?.name ?? "Dev user";
 
-  useEffect(() => {
-    if (!token || !booking) return;
-    const s = io(apiUrl, { auth: { token }, transports: ["websocket"], reconnectionAttempts: 5 });
-    s.on("connect", () => {
-      setSocket(s);
-      setError(null);
-    });
-    s.on("connect_error", (err) => setError(err.message || "Could not reach the realtime server"));
-    return () => {
-      s.disconnect();
-    };
-  }, [token, booking, apiUrl]);
-
-  if (!token || !booking) {
+  if (!booking) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground">Video call needs the API.</p>
+        <p className="font-medium text-foreground">Video call needs a booking.</p>
         <p className="mt-1">
-          Open this page as{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">/dev/live?token=JWT&amp;booking=BOOKING_ID</code>{" "}
-          in two tabs (optionally <code className="rounded bg-muted px-1.5 py-0.5 text-xs">&amp;name=&amp;role=</code>
-          ). The socket connects to <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{apiUrl}</code>{" "}
-          (override with <code className="rounded bg-muted px-1.5 py-0.5 text-xs">&amp;api=</code>).
+          Sign in (any role that can see the booking), then open this page as{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">/dev/live?booking=BOOKING_ID</code> in two tabs
+          signed in as different participants (optionally{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">&amp;name=&amp;role=&amp;compact=1</code>).
         </p>
       </div>
     );
   }
-  if (!socket) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">Checking your session...</div>
+    );
+  }
+  if (!user || !signalling) {
     return (
       <div className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-        {error ? `Realtime server unavailable: ${error}` : "Connecting to the realtime server..."}
+        Not signed in. Sign in on <Link href="/login" className="font-medium text-foreground underline">/login</Link> or{" "}
+        <Link href="/staff/login" className="font-medium text-foreground underline">/staff/login</Link> first.
       </div>
     );
   }
@@ -198,7 +187,7 @@ function CallDemo() {
     return (
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
         <p className="text-sm text-muted-foreground">
-          Connected as <span className="font-medium text-foreground">{name}</span> for booking {booking}.
+          Signed in as <span className="font-medium text-foreground">{name}</span> for booking {booking}.
         </p>
         <Button onClick={() => setJoined(true)}>
           <Video /> Join call
@@ -209,9 +198,9 @@ function CallDemo() {
   return (
     <div className={compact ? "max-w-[360px]" : undefined}>
       <VideoCall
-        socket={socket}
+        signalling={signalling}
         bookingId={booking}
-        self={{ name, role }}
+        self={{ name, role: role ?? user.role }}
         compact={compact}
         onLeave={() => setJoined(false)}
       />
@@ -243,7 +232,7 @@ export default function LiveDevPage() {
         <MapDemo />
       </Section>
 
-      <Section title="Video consult" hint="WebRTC mesh over the rtc:* socket events.">
+      <Section title="Video consult" hint="WebRTC mesh signalled over the booking's realtime channel.">
         <Suspense fallback={null}>
           <CallDemo />
         </Suspense>
