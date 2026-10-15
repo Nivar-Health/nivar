@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { bookingEnabled } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------------- */
@@ -21,6 +22,14 @@ const BUTTON_VARIANT: Record<ButtonVariant, string> = {
 export function buttonClass(variant: ButtonVariant = "primary", className?: string) {
   return cn(BUTTON_BASE, BUTTON_VARIANT[variant], className);
 }
+
+/** Booking CTAs open the booking flow, or the callback form while booking is switched off. */
+export function bookHref(query?: string) {
+  if (!bookingEnabled) return "#callback";
+  return query ? `/app/book?${query}` : "/app/book";
+}
+
+export const BOOK_LABEL = bookingEnabled ? "Book a check-up" : "Request a callback";
 
 export function ButtonLink({
   variant = "primary",

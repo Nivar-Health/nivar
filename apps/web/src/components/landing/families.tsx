@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Check, FileText, MapPin, Video } from "lucide-react";
-import { ButtonLink, Container, IconTile, Section, SectionTitle } from "./primitives";
+import { bookingEnabled } from "@/lib/features";
+import { ButtonLink, Container, IconTile, Section, SectionTitle, bookHref } from "./primitives";
 
 const EVENTS = [
   { icon: MapPin, text: "Priya is on her way", time: "4:12 PM" },
@@ -20,8 +21,8 @@ export function Families() {
               grey="from anywhere."
               lede="Add a family member, book in their name and follow the visit from your own phone. You get every update they do, and the report lands in both apps."
             />
-            <ButtonLink href="/app/book" className="mt-8">
-              Book for a family member
+            <ButtonLink href={bookHref()} className="mt-8">
+              {bookingEnabled ? "Book for a family member" : "Request a callback"}
             </ButtonLink>
           </div>
 

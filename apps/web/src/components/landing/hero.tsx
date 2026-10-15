@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Check } from "lucide-react";
-import { Avatar, ButtonLink, Container, GlassCard, LiveDot, inr } from "./primitives";
+import { Avatar, BOOK_LABEL, ButtonLink, Container, GlassCard, LiveDot, bookHref, inr } from "./primitives";
 import { MiniTrace } from "./mini-trace";
 
 const PROMISES = [
@@ -33,7 +33,7 @@ export function Hero({ fromPrice }: { fromPrice: number }) {
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <ButtonLink href="/app/book">Book a check-up</ButtonLink>
+              <ButtonLink href={bookHref()}>{BOOK_LABEL}</ButtonLink>
               <a
                 href="#how-it-works"
                 className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors outline-none hover:border-[#c8c8c2] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

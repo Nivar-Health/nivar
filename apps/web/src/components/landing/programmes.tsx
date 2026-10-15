@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Package } from "@/lib/types";
-import { Container, Section, SectionTitle, inr } from "./primitives";
+import { Container, Section, SectionTitle, bookHref, inr } from "./primitives";
 
 type Programme = {
   slug: string;
@@ -49,7 +49,7 @@ export function Programmes({ packages }: { packages: Package[] }) {
             return (
               <li key={p.slug}>
                 <Link
-                  href={`/app/book?package=${p.slug}`}
+                  href={bookHref(`package=${p.slug}`)}
                   className="group relative flex h-[320px] flex-col md:h-[420px] justify-end overflow-hidden rounded-3xl bg-[#0a0a0a] p-7 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   {/* A soft sphere: a defined orb with a lit top edge, haloed by a wide blur, like a lamp in a dark room. */}

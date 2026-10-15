@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { bookingEnabled } from "@/lib/features";
 import { CallbackForm } from "./callback-form";
-import { ButtonLink, Container, Section, SectionTitle } from "./primitives";
+import { BOOK_LABEL, ButtonLink, Container, Section, SectionTitle, bookHref } from "./primitives";
 
 export function Callback() {
   return (
@@ -31,14 +32,14 @@ export function FinalCta() {
       <Container className="flex flex-col items-start gap-10 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="font-display max-w-[16ch] text-[2.75rem] leading-[1.02] font-medium tracking-[-0.03em] text-balance sm:text-[3.5rem] lg:text-[4.25rem]">
-            Book your first check-up today.
+            {bookingEnabled ? "Book your first check-up today." : "Plan your first check-up today."}
           </h2>
           <p className="mt-6 max-w-[44ch] text-[1.0625rem] leading-[1.6] text-[#a3a39e]">
             Same-day slots across Bangalore. Pay after the visit.
           </p>
         </div>
-        <ButtonLink href="/app/book" variant="inverse" className="h-12 px-6">
-          Book a check-up
+        <ButtonLink href={bookHref()} variant="inverse" className="h-12 px-6">
+          {BOOK_LABEL}
         </ButtonLink>
       </Container>
     </section>
@@ -58,8 +59,12 @@ const FOOTER_LINKS: { heading: string; links: { label: string; href: string }[] 
   {
     heading: "Account",
     links: [
-      { label: "Book a check-up", href: "/app/book" },
-      { label: "Log in", href: "/login" },
+      ...(bookingEnabled
+        ? [
+            { label: "Book a check-up", href: "/app/book" },
+            { label: "Log in", href: "/login" },
+          ]
+        : []),
       { label: "Request a callback", href: "#callback" },
       { label: "Questions", href: "#faq" },
     ],
@@ -70,7 +75,7 @@ const FOOTER_LINKS: { heading: string; links: { label: string; href: string }[] 
       { label: "Our doctors", href: "#doctors" },
       { label: "Devices", href: "#devices" },
       { label: "Live readings", href: "#live" },
-      { label: "Staff login", href: "/staff/login" },
+      ...(bookingEnabled ? [{ label: "Staff login", href: "/staff/login" }] : []),
     ],
   },
 ];

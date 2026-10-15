@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { bookingEnabled } from "@/lib/features";
 import type { Package, Service } from "@/lib/types";
-import { ButtonLink, Container, Section, SectionTitle, inr } from "./primitives";
+import { ButtonLink, Container, Section, SectionTitle, bookHref, inr } from "./primitives";
 
 const textLink =
   "rounded-sm text-sm font-semibold text-foreground underline decoration-border underline-offset-[5px] transition-colors outline-none hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
@@ -18,8 +19,8 @@ export function Pricing({ packages, services }: { packages: Package[]; services:
               grey="No premium price."
               lede="One price covers the nurse visit, the devices, the doctor's time and the report. Pay after the visit, in the app."
             />
-            <ButtonLink href="/app/book" variant="secondary" className="mt-8">
-              See all tests
+            <ButtonLink href={bookHref()} variant="secondary" className="mt-8">
+              {bookingEnabled ? "See all tests" : "Request a callback"}
             </ButtonLink>
           </div>
 
@@ -50,8 +51,8 @@ export function Pricing({ packages, services }: { packages: Package[]; services:
                         </span>
                       )}
                     </p>
-                    <Link href={`/app/book?package=${p.slug}`} className={textLink}>
-                      Book
+                    <Link href={bookHref(`package=${p.slug}`)} className={textLink}>
+                      {bookingEnabled ? "Book" : "Enquire"}
                     </Link>
                   </div>
                 </li>
@@ -63,7 +64,7 @@ export function Pricing({ packages, services }: { packages: Package[]; services:
               {services.map((s) => (
                 <li key={s.code} className="bg-background shadow-[0_0_0_1px_var(--border)]">
                   <Link
-                    href={`/app/book?test=${s.code}`}
+                    href={bookHref(`test=${s.code}`)}
                     className="flex h-full items-center justify-between gap-4 px-5 py-4 text-[15px] outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   >
                     <span className="min-w-0 leading-snug font-medium">{s.name}</span>
