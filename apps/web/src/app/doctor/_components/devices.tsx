@@ -213,11 +213,10 @@ function StethStrip({ samples, heartRate }: { samples: number[]; heartRate?: num
         role="img"
         aria-label={`Captured heart sound envelope${heartRate ? `, ${heartRate} bpm` : ""}`}
       >
-        <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke="rgba(25,195,125,0.25)" strokeWidth="1" />
+        <line x1="0" x2={W} y1={H / 2} y2={H / 2} className="stroke-trace/25" strokeWidth="1" />
         <path
           d={path}
-          fill="rgba(25,195,125,0.3)"
-          stroke="#19c37d"
+          className="fill-trace/30 stroke-trace"
           strokeWidth="1"
           vectorEffect="non-scaling-stroke"
         />

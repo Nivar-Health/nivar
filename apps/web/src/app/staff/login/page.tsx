@@ -15,7 +15,7 @@ export default async function StaffLoginPage({ searchParams }: PageProps<"/staff
       eyebrow="Nivar care console"
       headline={
         <>
-          Every visit, from dispatch <span className="text-white/55">to diagnosis.</span>
+          Every visit, from dispatch <span className="font-accent font-normal text-heading-accent">to diagnosis.</span>
         </>
       }
       points={[
@@ -26,7 +26,11 @@ export default async function StaffLoginPage({ searchParams }: PageProps<"/staff
       footnote={
         <>
           For Nivar employees. Patients sign in{" "}
-          <Link href="/login" className="font-medium text-white/85 underline-offset-4 hover:underline">
+          {/* Always underlined: colour alone is under 3:1 against the muted footnote text (WCAG 1.4.1). */}
+          <Link
+            href="/login"
+            className="rounded-sm font-medium text-foreground underline decoration-foreground/40 underline-offset-4 transition-[text-decoration-color] hover:decoration-foreground focus-ring"
+          >
             here
           </Link>
           .

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HeartPulse } from "lucide-react";
 import type { EcgChunk, Feed } from "@/lib/device-sim";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,13 @@ export type EcgMonitorProps = {
   height?: number;
   lead?: string;
   className?: string;
+  /**
+   * Freeze the trace on its last frame and stop the draw loop (the landing page's global
+   * "Pause animations" control). Default false.
+   */
+  paused?: boolean;
+  /** Overlay shown while paused before any signal has arrived. Default "Paused". */
+  pausedLabel?: ReactNode;
 };
 
 const SPEED_MM_S = 25;
@@ -41,6 +48,8 @@ export function EcgMonitor({
   height = 240,
   lead = "Lead II",
   className,
+  paused = false,
+  pausedLabel = "Paused",
 }: EcgMonitorProps) {
   const [hasSignal, setHasSignal] = useState(false);
   const [gainLabel, setGainLabel] = useState("10 mm/mV");
@@ -55,6 +64,12 @@ export function EcgMonitor({
   const heartRef = useRef<HTMLSpanElement>(null);
   const playerRef = useRef<SamplePlayer>(new SamplePlayer(250, 0.25));
   const chunkHrRef = useRef<number | null>(null);
+  /** Set only while paused: the frame painter, so a resize can repaint instead of leaving a blank canvas. */
+  const drawRef = useRef<(() => void) | null>(null);
+  /** Mirrors hasSignal for the draw loop, so a restarted (or paused) loop keeps the current state. */
+  const signalRef = useRef(false);
+  /** `paused` as of the last draw-loop run, to detect the paused -> playing transition. */
+  const wasPausedRef = useRef(paused);
 
   // Drawing state lives in a ref; the rAF loop mutates it without re-rendering.
   const view = useRef({
@@ -87,10 +102,21 @@ export function EcgMonitor({
     v.grid = renderGrid(size, v.pxPerMm, MONITOR.traceRgb, v.baseline);
     const sr = playerRef.current.sampleRate;
     const cap = Math.max(10, Math.ceil((size.width / (SPEED_MM_S * v.pxPerMm)) * sr));
+    const prev = v.buf;
+    const prevWi = v.wi;
     v.buf = new Float32Array(cap).fill(NaN);
     v.wi = 0;
     v.gap = Math.round(sr * 0.12);
+    // Paused (drawRef is set only then): carry the newest samples over, oldest first, so the frozen
+    // trace survives a resize or rotation. Streaming monitors keep the old behaviour (fresh sweep).
+    if (drawRef.current && prev.length > 0) {
+      const n = Math.min(prev.length, cap - v.gap - 2);
+      for (let k = n; k > 0; k--) v.buf[v.wi++] = prev[(prevWi - k + prev.length) % prev.length];
+      v.wi %= cap;
+    }
     setGainLabel(`${Math.round(v.pxPerMv / v.pxPerMm)} mm/mV`);
+    // While paused no loop is running: repaint once so the resized canvas is not left blank.
+    drawRef.current?.();
   };
 
   const { containerRef, canvasRef } = useHiDpiCanvas((size) => setup(size));
@@ -124,8 +150,10 @@ export function EcgMonitor({
     if (!ctx) return;
     let raf = 0;
     let last = performance.now();
-    let signal = false;
+    let signal = signalRef.current;
     let lastHrText = "";
+    // Read once per run: under reduced motion the heart icon never pulses.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const onBeat = () => {
       const v = view.current;
@@ -139,6 +167,7 @@ export function EcgMonitor({
         if (rrTextRef.current) rrTextRef.current.textContent = `${Math.round(rr * 1000)}`;
       }
       v.sinceBeat = 0;
+      if (reduced) return;
       heartRef.current?.animate(
         [
           { transform: "scale(1)", opacity: 0.85 },
@@ -255,6 +284,7 @@ export function EcgMonitor({
       const nowSignal = player.lastDataAt > 0 && now - player.lastDataAt < NO_SIGNAL_MS;
       if (nowSignal !== signal) {
         signal = nowSignal;
+        signalRef.current = nowSignal;
         setHasSignal(nowSignal);
         if (!nowSignal) {
           view.current.rrs = [];
@@ -274,13 +304,28 @@ export function EcgMonitor({
       draw();
       raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [canvasRef]);
+    if (paused) {
+      // Frozen: paint the last frame once and start no loop.
+      drawRef.current = draw;
+      draw();
+    } else {
+      // Resuming a frozen trace: count the pause as fresh data so "Waiting for device..." doesn't
+      // flash while the buffer refills. (Only on that transition; first mounts are untouched.)
+      if (wasPausedRef.current && signalRef.current) playerRef.current.lastDataAt = performance.now();
+      raf = requestAnimationFrame(loop);
+    }
+    wasPausedRef.current = paused;
+    return () => {
+      cancelAnimationFrame(raf);
+      drawRef.current = null;
+    };
+  }, [canvasRef, paused]);
 
   const live = hasSignal && status !== "stopped" && status !== "connecting";
   const overlay =
-    status === "connecting" ? (
+    paused && !hasSignal ? (
+      pausedLabel
+    ) : paused ? null : status === "connecting" ? (
       <>
         <WaitingDots /> Connecting to Smart ECG
       </>
@@ -302,11 +347,11 @@ export function EcgMonitor({
         <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] tracking-wide whitespace-nowrap">
           <span className="font-semibold text-[#19C37D]">ECG</span>
           <span className="rounded border border-[#19C37D]/25 px-1.5 py-px font-medium text-[#8FE3BF]">{lead}</span>
-          <span className="hidden text-[#7A7A75] tabular-nums sm:inline">{SPEED_MM_S} mm/s</span>
-          <span className="hidden text-[#7A7A75] tabular-nums sm:inline">{gainLabel}</span>
-          <span className="hidden text-[#7A7A75] md:inline">0.5 to 40 Hz</span>
+          <span className="hidden text-[#8F8F89] tabular-nums sm:inline">{SPEED_MM_S} mm/s</span>
+          <span className="hidden text-[#8F8F89] tabular-nums sm:inline">{gainLabel}</span>
+          <span className="hidden text-[#8F8F89] md:inline">0.5 to 40 Hz</span>
         </div>
-        <LiveBadge live={live} />
+        <LiveBadge live={live && !paused} paused={paused} />
       </div>
 
       <div className="flex min-h-0 flex-1">
@@ -330,9 +375,9 @@ export function EcgMonitor({
             >
               --
             </span>
-            <span className="mt-1 text-[10px] tracking-wider text-[#7A7A75]">bpm</span>
+            <span className="mt-1 text-[10px] tracking-wider text-[#8F8F89]">bpm</span>
           </div>
-          <div className="flex items-baseline justify-between text-[10px] text-[#7A7A75]">
+          <div className="flex items-baseline justify-between text-[10px] text-[#8F8F89]">
             <span className="tracking-wider">RR</span>
             <span className="font-mono text-xs text-[#8FE3BF] tabular-nums">
               <span ref={rrTextRef}>--</span> ms

@@ -353,7 +353,7 @@ export function StethMonitor({
             <Stethoscope className="size-3.5" /> PCG
           </span>
           <span className="truncate rounded border border-[#E6E6E1]/25 px-1.5 py-px font-medium text-[#F7D88E]">{site}</span>
-          <span className="hidden text-[#7A7A75] sm:inline">20 to 400 Hz</span>
+          <span className="hidden text-[#8F8F89] sm:inline">20 to 400 Hz</span>
         </div>
         <LiveBadge live={live} />
       </div>
@@ -374,7 +374,7 @@ export function StethMonitor({
             >
               --
             </span>
-            <span className="mt-1 text-[10px] tracking-wider text-[#7A7A75]">bpm</span>
+            <span className="mt-1 text-[10px] tracking-wider text-[#8F8F89]">bpm</span>
           </div>
 
           {!hideListen && (

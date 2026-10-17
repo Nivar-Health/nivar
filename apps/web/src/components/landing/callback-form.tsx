@@ -1,45 +1,97 @@
 "use client";
 
-import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ChevronDown, CircleCheck, LoaderCircle } from "lucide-react";
-import { api, errorMessage } from "@/lib/api";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ArrowRight, ChevronDown, CircleAlert, LoaderCircle, Lock } from "lucide-react";
+import { ApiError, api } from "@/lib/api";
+import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
+import { LANGUAGES } from "./l10n";
 import { buttonClass } from "./primitives";
 
 const CITIES = ["Bangalore", "Mysuru", "Hyderabad", "Pune", "Chennai", "Other"];
 
+const WHO_FOR = ["Myself", "A parent", "Someone else"] as const;
+type WhoFor = "" | (typeof WHO_FOR)[number];
+type CallLanguage = "" | (typeof LANGUAGES)[number]["english"];
+
 type Fields = { name: string; phone: string; city: string; message: string };
 type Errors = Partial<Record<keyof Fields, string>>;
 
+const EMPTY: Fields = { name: "", phone: "", city: "Bangalore", message: "" };
 const FIELD_ORDER: (keyof Fields)[] = ["name", "phone", "city", "message"];
+
+/** The user's own note. The composed message (who for + language + note) stays under the 1000-character API cap. */
+const MESSAGE_MAX = 900;
 
 function validate(f: Fields): Errors {
   const e: Errors = {};
   if (!f.name.trim()) e.name = "Enter your name.";
   else if (f.name.trim().length > 80) e.name = "Keep the name under 80 characters.";
-  if (!/^[6-9]\d{9}$/.test(f.phone)) e.phone = "Enter a 10 digit mobile number, like 98450 12345.";
+  // No-break space: the example number never splits across lines.
+  if (!/^[6-9]\d{9}$/.test(f.phone)) e.phone = "Enter a 10-digit mobile number, like 98450\u00a012345.";
   if (!f.city) e.city = "Choose a city.";
-  if (f.message.length > 1000) e.message = "Keep the message under 1,000 characters.";
+  if (f.message.length > MESSAGE_MAX) e.message = "Keep the message under 900 characters.";
   return e;
 }
 
+/** Keep each number with its unit ("7 am", "30 minutes") while the sentence wraps freely. */
+const units = (s: string) => s.replace(/(\d) /g, "$1\u00a0");
+
+const SERVER_ERROR = `We could not send your request. Please try again in a minute.${
+  SITE.phone ? ` Or call us on ${SITE.phone.display}.` : ""
+}`;
+
+/** Show the API's own wording for request problems (validation, rate limit, offline); never a raw 5xx. */
+function serverErrorText(err: unknown): string {
+  if (err instanceof ApiError && err.status < 500 && err.message) {
+    return SITE.phone ? `${err.message} Or call us on ${SITE.phone.display}.` : err.message;
+  }
+  return SERVER_ERROR;
+}
+
 const FIELD =
-  "h-12 w-full scroll-mt-28 rounded-[10px] border border-input bg-white px-3.5 text-base text-foreground transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground/70 hover:border-[#bdbdb6] focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-foreground/15 aria-invalid:border-danger aria-invalid:ring-danger/15";
+  "h-13 w-full scroll-mt-28 rounded-xl border border-input bg-white px-4 text-base text-foreground transition-[border-color,box-shadow,background-color] duration-160 placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-solid focus-visible:outline-transparent hover:border-input-hover focus-visible:border-primary focus-visible:shadow-[0_0_0_1px_var(--primary),0_0_0_5px_color-mix(in_oklab,var(--primary)_14%,transparent)] aria-invalid:border-danger aria-invalid:bg-danger-bg aria-invalid:focus-visible:shadow-[0_0_0_1px_var(--danger),0_0_0_5px_color-mix(in_oklab,var(--danger)_14%,transparent)]";
+
+const RADIO_PILL =
+  "relative inline-flex h-11 cursor-pointer items-center rounded-full border border-border-strong bg-card px-4 text-[0.9375rem] font-medium text-foreground transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-aqua has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-ring";
+
+/**
+ * Text link / text button in the success state. Text flows inline (so a wrapped line keeps its arrow on the
+ * last word); the outline hugs the text and ::before makes the hit area 44px.
+ */
+const SUCCESS_ACTION =
+  "relative rounded-sm text-sm font-semibold text-balance underline underline-offset-4 hover:decoration-current focus-ring before:absolute before:-inset-x-2 before:-inset-y-3";
 
 export function CallbackForm() {
   const uid = useId();
-  const [fields, setFields] = useState<Fields>({ name: "", phone: "", city: "Bangalore", message: "" });
+  const [fields, setFields] = useState<Fields>(EMPTY);
+  const [whoFor, setWhoFor] = useState<WhoFor>("");
+  const [language, setLanguage] = useState<CallLanguage>("");
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [done, setDone] = useState<Fields | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const refocusForm = useRef(false);
   const [formHeight, setFormHeight] = useState<number | null>(null);
+
+  // The control that held focus (submit, or "Send another request") is gone after each swap: move focus on.
+  useEffect(() => {
+    if (done) {
+      headingRef.current?.focus();
+    } else if (refocusForm.current) {
+      refocusForm.current = false;
+      formRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+    }
+  }, [done]);
 
   const set = <K extends keyof Fields>(key: K, value: Fields[K]) => {
     setFields((f) => ({ ...f, [key]: value }));
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
   };
+
+  const id = (k: string) => `${uid}-${k}`;
 
   const onSubmit = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -49,24 +101,45 @@ export function CallbackForm() {
     setServerError(null);
     const first = FIELD_ORDER.find((k) => found[k]);
     if (first) {
-      document.getElementById(`${uid}-${first}`)?.focus();
+      document.getElementById(id(first))?.focus();
       return;
     }
     setSubmitting(true);
     try {
-      const message = fields.message.trim();
+      const composed = [
+        whoFor && `For: ${whoFor}`,
+        language && `Preferred language for the call: ${language}`,
+        fields.message.trim(),
+      ]
+        .filter(Boolean)
+        .join("\n");
       await api.post(
         "/leads",
-        { name: fields.name.trim(), phone: fields.phone, city: fields.city, ...(message ? { message } : {}) },
+        {
+          name: fields.name.trim(),
+          phone: fields.phone,
+          city: fields.city,
+          ...(composed ? { message: composed } : {}),
+        },
         { anonymous: true },
       );
       setFormHeight(formRef.current?.offsetHeight ?? null);
       setDone(fields);
     } catch (err) {
-      setServerError(errorMessage(err, "We could not send your request. Please try again, or call us."));
+      setServerError(serverErrorText(err));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const reset = () => {
+    refocusForm.current = true;
+    setFields(EMPTY);
+    setWhoFor("");
+    setLanguage("");
+    setErrors({});
+    setServerError(null);
+    setDone(null);
   };
 
   if (done) {
@@ -77,44 +150,100 @@ export function CallbackForm() {
         className="flex flex-col items-center justify-center px-2 text-center"
         style={{ minHeight: formHeight ?? 460 }}
       >
-        <span className="flex size-14 items-center justify-center rounded-full bg-muted text-foreground">
-          <CircleCheck className="size-7" aria-hidden />
-        </span>
-        <h3 className="font-display mt-5 text-[1.75rem] font-medium tracking-[-0.02em] text-foreground">
+        <svg viewBox="0 0 64 64" aria-hidden className="size-16">
+          <circle cx="32" cy="32" r="30" fill="var(--mint)" />
+          <circle
+            className="success-ring"
+            cx="32"
+            cy="32"
+            r="30"
+            stroke="var(--teal)"
+            strokeWidth={2}
+            fill="none"
+            pathLength={1}
+            transform="rotate(-90 32 32)"
+          />
+          <path
+            // Reduced motion: show the final pose at once (globals shorten durations but keep the 550ms delay).
+            className="success-check motion-reduce:[animation-delay:0s]!"
+            d="M21 33l8 8 15-16"
+            stroke="var(--teal-deep)"
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            pathLength={1}
+          />
+        </svg>
+        <h3
+          ref={headingRef}
+          tabIndex={-1}
+          className="font-display mt-5 text-[1.75rem] leading-tight font-medium tracking-[-0.02em] text-balance text-foreground outline-none"
+        >
           Thanks, {first}. We will call you soon.
         </h3>
-        <p className="mt-3 max-w-sm leading-relaxed text-muted-foreground">
+        <p className="mt-3 max-w-[38ch] text-body text-balance text-foreground-2">
           A Nivar care coordinator will call you on{" "}
           <span className="font-medium whitespace-nowrap text-foreground tabular-nums">
             +91 {done.phone.slice(0, 5)} {done.phone.slice(5)}
           </span>
-          , usually within 30 minutes between 7 am and 9 pm.
+          , usually within {units(SITE.callbackWithin)} {units(SITE.hours.inSentence)}.
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            setDone(null);
-            setFields({ name: "", phone: "", city: "Bangalore", message: "" });
-          }}
-          className="mt-6 rounded-sm text-sm font-semibold text-foreground underline decoration-border underline-offset-[5px] outline-none hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
+        <a href="#health-tips" className={cn(SUCCESS_ACTION, "mt-6 text-primary decoration-border-strong")}>
+          While you wait: take one calm{" "}
+          <span className="whitespace-nowrap">
+            minute
+            <ArrowRight aria-hidden className="ml-1.5 inline-block size-4 align-[-0.1875rem]" />
+          </span>
+        </a>
+        <button type="button" onClick={reset} className={cn(SUCCESS_ACTION, "mt-6 text-foreground decoration-border-strong")}>
           Send another request
         </button>
       </div>
     );
   }
 
-  const id = (k: string) => `${uid}-${k}`;
-  const describe = (k: keyof Fields, hint?: boolean) =>
-    [errors[k] ? id(`${k}-error`) : null, hint ? id(`${k}-hint`) : null].filter(Boolean).join(" ") || undefined;
+  const describe = (k: string, hint?: boolean) =>
+    [errors[k as keyof Fields] ? id(`${k}-error`) : null, hint ? id(`${k}-hint`) : null].filter(Boolean).join(" ") ||
+    undefined;
 
   return (
-    <form method="post" ref={formRef} noValidate onSubmit={onSubmit} className="flex flex-col gap-5" aria-describedby={serverError ? id("server") : undefined}>
+    <form
+      method="post"
+      ref={formRef}
+      noValidate
+      onSubmit={onSubmit}
+      className="flex flex-col gap-6"
+      aria-describedby={serverError ? id("server") : undefined}
+    >
+      <fieldset>
+        <legend className="flex w-full items-baseline justify-between gap-x-1.5 text-[0.9375rem] font-medium text-balance text-foreground">
+          Who is the check-up for? <span className="text-caption font-normal text-muted-foreground">Optional</span>
+        </legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {WHO_FOR.map((v) => (
+            <label key={v} className={RADIO_PILL}>
+              <input
+                type="radio"
+                name="whoFor"
+                value={v}
+                className="sr-only"
+                checked={whoFor === v}
+                onChange={() => setWhoFor(v)}
+              />
+              {v}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <Field label="Your name" htmlFor={id("name")} error={errors.name} errorId={id("name-error")}>
         <input
           id={id("name")}
           name="name"
           autoComplete="name"
+          autoCapitalize="words"
+          spellCheck={false}
           placeholder="Full name"
           value={fields.name}
           onChange={(e) => set("name", e.target.value)}
@@ -124,11 +253,21 @@ export function CallbackForm() {
         />
       </Field>
 
-      <Field label="Mobile number" htmlFor={id("phone")} error={errors.phone} errorId={id("phone-error")}>
+      <Field
+        label="Mobile number"
+        htmlFor={id("phone")}
+        hint="10-digit mobile number. We only call about this request."
+        hintId={id("phone-hint")}
+        error={errors.phone}
+        errorId={id("phone-error")}
+      >
         <div className="relative">
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 flex items-center border-r border-border pr-3 pl-3.5 text-base font-medium text-muted-foreground"
+            className={cn(
+              "pointer-events-none absolute inset-y-px left-px flex items-center rounded-l-[15px] border-r border-border bg-aqua pr-3 pl-3.5 text-base font-medium text-muted-foreground",
+              errors.phone && "bg-transparent",
+            )}
           >
             +91
           </span>
@@ -147,8 +286,8 @@ export function CallbackForm() {
               set("phone", digits.slice(0, 10));
             }}
             aria-invalid={!!errors.phone}
-            aria-describedby={describe("phone")}
-            className={cn(FIELD, "pl-[4.25rem] tabular-nums")}
+            aria-describedby={describe("phone", true)}
+            className={cn(FIELD, "pl-[4.5rem] tabular-nums")}
           />
         </div>
       </Field>
@@ -172,7 +311,39 @@ export function CallbackForm() {
           </select>
           <ChevronDown
             aria-hidden
-            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-primary"
+          />
+        </div>
+      </Field>
+
+      <Field
+        label="Preferred language for the call"
+        optional
+        htmlFor={id("language")}
+        hint="We'll match a coordinator who speaks it when we can."
+        hintId={id("language-hint")}
+      >
+        <div className="relative">
+          <select
+            id={id("language")}
+            name="language"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as CallLanguage)}
+            // The closed select shows the chosen endonym: give it that lang so it renders in the Noto face.
+            lang={LANGUAGES.find((l) => l.english === language && l.lang !== "en-IN")?.lang}
+            aria-describedby={describe("language", true)}
+            className={cn(FIELD, "appearance-none pr-10")}
+          >
+            <option value="">No preference</option>
+            {LANGUAGES.map((l) => (
+              <option key={l.lang} value={l.english} lang={l.lang}>
+                {l.lang === "en-IN" ? l.endonym : `${l.endonym} (${l.english})`}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-primary"
           />
         </div>
       </Field>
@@ -193,29 +364,42 @@ export function CallbackForm() {
           onChange={(e) => set("message", e.target.value)}
           aria-invalid={!!errors.message}
           aria-describedby={describe("message")}
-          className={cn(FIELD, "h-auto min-h-24 resize-y py-3 leading-relaxed")}
+          className={cn(FIELD, "h-auto min-h-28 resize-y py-3 leading-relaxed")}
         />
       </Field>
 
       {serverError && (
-        <p id={id("server")} role="alert" className="rounded-[10px] bg-danger/8 px-4 py-3 text-sm text-danger">
-          {serverError}
-        </p>
+        <div
+          id={id("server")}
+          role="alert"
+          className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger"
+        >
+          <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          <p>{serverError}</p>
+        </div>
       )}
 
-      <button type="submit" disabled={submitting} className={buttonClass("primary", "w-full")}>
-        {submitting ? (
-          <>
-            <LoaderCircle className="animate-spin" aria-hidden />
-            Sending
-          </>
-        ) : (
-          "Request a callback"
-        )}
-      </button>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        We only use your number to call you about this request.
-      </p>
+      <div className="flex flex-col gap-4">
+        <button
+          type="submit"
+          aria-disabled={submitting || undefined}
+          className={buttonClass("primary", "w-full", "lg")}
+        >
+          {submitting ? (
+            <>
+              {/* A loop like any other: it rests under reduced motion (the "Sending…" text carries the state). */}
+              <LoaderCircle className="motion-loop animate-spin" aria-hidden />
+              Sending…
+            </>
+          ) : (
+            "Request a callback"
+          )}
+        </button>
+        <p className="flex items-start gap-2 text-caption text-pretty text-muted-foreground">
+          <Lock aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+          We only use your number to call you about this request.
+        </p>
+      </div>
     </form>
   );
 }
@@ -223,6 +407,8 @@ export function CallbackForm() {
 function Field({
   label,
   htmlFor,
+  hint,
+  hintId,
   error,
   errorId,
   optional,
@@ -230,20 +416,31 @@ function Field({
 }: {
   label: string;
   htmlFor: string;
+  hint?: string;
+  hintId?: string;
   error?: string;
-  errorId: string;
+  errorId?: string;
   optional?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={htmlFor} className="flex items-baseline justify-between text-sm font-medium text-foreground">
+      <label
+        htmlFor={htmlFor}
+        className="flex items-baseline justify-between gap-x-1.5 text-[0.9375rem] font-medium text-balance text-foreground"
+      >
         {label}
-        {optional && <span className="text-xs font-normal text-muted-foreground">Optional</span>}
+        {optional && <span className="text-caption font-normal text-muted-foreground">Optional</span>}
       </label>
+      {hint && (
+        <p id={hintId} className="-mt-0.5 text-caption text-pretty text-muted-foreground">
+          {hint}
+        </p>
+      )}
       {children}
       {error && (
-        <p id={errorId} className="text-[13px] text-danger">
+        <p id={errorId} className="flex items-start gap-1.5 text-caption text-pretty text-danger">
+          <CircleAlert aria-hidden className="mt-px size-3.5 shrink-0" />
           {error}
         </p>
       )}

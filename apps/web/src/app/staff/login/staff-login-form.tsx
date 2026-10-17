@@ -169,7 +169,7 @@ export function StaffLoginForm({ next }: { next: string | null }) {
           ref={submitRef}
           type="submit"
           disabled={pending}
-          className="mt-1 h-12 w-full rounded-xl text-[15px] font-semibold shadow-lift"
+          className="mt-1 h-12 w-full rounded-full text-[15px] font-semibold"
         >
           {pending ? <LoaderCircle className="size-4 animate-spin" /> : "Sign in"}
         </Button>
