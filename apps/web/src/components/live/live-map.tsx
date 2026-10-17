@@ -21,17 +21,17 @@ export type LiveMapProps = {
 
 function MapSkeleton({ height }: { height: number | string }) {
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#E9EEE9]" style={{ height }} aria-busy="true">
+    <div className="relative h-full w-full overflow-hidden bg-wash" style={{ height }} aria-busy="true">
       <div
         className="absolute inset-0 opacity-60"
         style={{
           backgroundImage:
-            "linear-gradient(#DCE4DE 1px, transparent 1px), linear-gradient(90deg, #DCE4DE 1px, transparent 1px)",
+            "linear-gradient(var(--hairline) 1px, transparent 1px), linear-gradient(90deg, var(--hairline) 1px, transparent 1px)",
           backgroundSize: "36px 36px",
         }}
       />
       <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/0 via-white/40 to-white/0" />
-      <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-[#5B6B67]">
+      <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-muted-foreground">
         Loading map...
       </div>
     </div>
@@ -58,7 +58,7 @@ export function LiveMap({ home, nurse, nurseName, height = 320, showEta = true, 
       <LiveMapInner home={home} nurse={nurse} nurseName={nurseName} height="100%" />
       {showEta && km !== null && (
         <div className="pointer-events-none absolute top-3 left-3 z-[500] flex items-center gap-2.5 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-soft backdrop-blur">
-          <span className="flex size-7 items-center justify-center rounded-full bg-foreground text-background">
+          <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Navigation className="size-3.5" />
           </span>
           <div className="leading-tight">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import {
   createEcgSimulator,
   createStethSimulator,
@@ -10,22 +10,7 @@ import {
   type StethChunk,
 } from "@/lib/device-sim";
 
-const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
-
-function subscribeReduced(cb: () => void) {
-  const mq = window.matchMedia(REDUCED_QUERY);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-
-/** True when the visitor asked the OS for reduced motion. False during SSR. */
-export function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
-    subscribeReduced,
-    () => window.matchMedia(REDUCED_QUERY).matches,
-    () => false,
-  );
-}
+export { usePrefersReducedMotion } from "./motion";
 
 /** True while the element is (nearly) on screen, so offscreen monitors stop drawing work. */
 export function useInView(ref: RefObject<Element | null>, rootMargin = "160px"): boolean {

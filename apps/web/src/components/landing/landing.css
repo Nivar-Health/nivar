@@ -1,48 +1,402 @@
-/* Landing page motion. One orchestrated hero reveal plus the ECG traces.
-   Durations collapse under prefers-reduced-motion via the global rule. */
+/* Landing page ("Garden City morning"): scoped tokens and motion.
+   Loops carry .motion-loop so prefers-reduced-motion stops them on their rest pose (globals.css). One-shots use fill-mode `backwards`: an element's base style
+   is its final pose, so without JS, or with reduced motion, everything simply shows at rest. */
 
-@keyframes landing-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ---- 0. Tokens: the landing page is white, with jade as its action colour ---- */
+[data-landing],
+[data-landing] .theme-light {
+  --background: #ffffff;
+  --primary: var(--jade);
+  --primary-hover: var(--jade-hover);
+  --primary-active: var(--jade-active);
+  --ring: var(--jade);
+  --heading-accent: var(--jade);
+  --muted: var(--aqua);
+  --accent: var(--aqua);
+  --border: #dbe9e4;
+  --border-strong: #c2d8d0;
 }
 
-.landing-reveal {
-  animation: landing-reveal 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: var(--reveal-delay, 0ms);
+/* Deep pond bands (Live, footer): pine tokens on a pond gradient. */
+.band-pond {
+  background:
+    radial-gradient(900px 480px at 85% 0%, rgb(127 224 196 / 0.14), transparent 65%),
+    radial-gradient(700px 420px at 0% 100%, rgb(47 109 181 / 0.12), transparent 60%),
+    linear-gradient(180deg, var(--pond) 0%, var(--pond-2) 100%);
 }
 
-/* A repeating ECG strip scrolling leftwards inside its clip. */
+/* ---- 1. Keyframes ---- */
+@keyframes draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(var(--rise, 14px)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes settle {
+  from { transform: scale(0.965); }
+  to { transform: none; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+@keyframes ripple {
+  0% { transform: scale(0.82); opacity: 0; }
+  20% { opacity: 0.55; }
+  100% { transform: scale(1.32); opacity: 0; }
+}
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, 6%, 0) scale(1.08); }
+  100% { transform: translate3d(-3%, 2%, 0) scale(0.96); }
+}
+@keyframes sun-glow {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
 @keyframes landing-trace {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    /* One strip width, in SVG user units. */
-    transform: translateX(-240px);
-  }
+  from { transform: translateX(0); }
+  to { transform: translateX(-240px); }
+}
+@keyframes lubdub {
+  0% { transform: scale(1); }
+  10% { transform: scale(1.16); }
+  20% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  42%, 100% { transform: scale(1); }
+}
+@keyframes lubdub-hover {
+  0% { transform: scale(1); }
+  10% { transform: scale(1.12); }
+  20% { transform: scale(1); }
+  30% { transform: scale(1.06); }
+  42%, 100% { transform: scale(1); }
+}
+@keyframes rise-in { from { transform: translateY(var(--rise, 18px)); } to { transform: none; } }
+@keyframes rise-in-hover { from { transform: translateY(var(--rise, 8px)); } to { transform: none; } }
+@keyframes needle-in { from { transform: rotate(var(--from, -70deg)); } to { transform: none; } }
+@keyframes needle-in-hover { from { transform: rotate(var(--from, -14deg)); } to { transform: none; } }
+@keyframes ring-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.94); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(0.62); }
+  50% { transform: scale(1); }
+}
+@keyframes breathe-halo {
+  0%, 100% { transform: scale(0.7); opacity: 0.35; }
+  50% { transform: scale(1.12); opacity: 0.8; }
+}
+@keyframes tip-in {
+  from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 10px)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes step-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
 }
 
+/* ---- 2. Scroll reveal (RevealObserver), used sparingly on groups ---- */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-nv-reveal-ready] [data-nv-reveal] {
+    transition:
+      opacity 700ms var(--curve-calm),
+      transform 700ms var(--curve-calm);
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+  html[data-nv-reveal-ready] [data-nv-reveal]:not([data-nv-revealed]) {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+@media print {
+  [data-nv-reveal] { opacity: 1 !important; transform: none !important; }
+}
+
+/* ---- 3. Hero: morning light, doorway, ripples, floating readings ---- */
+.hero-sky {
+  background:
+    radial-gradient(760px 520px at 82% 18%, rgb(127 224 196 / 0.32), transparent 62%),
+    radial-gradient(640px 460px at 6% 4%, var(--sky-tint), transparent 64%),
+    linear-gradient(180deg, #f1faf7 0%, #f7fcfa 55%, #ffffff 100%);
+}
+.hero-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  pointer-events: none;
+  animation: drift 28s var(--curve-breath) infinite alternate;
+}
+/* Page-load sequence (once). The H1, lede, CTAs and photo never fade, so LCP is never delayed. */
+.hero-in {
+  animation: rise 800ms var(--curve-calm) backwards;
+  animation-delay: var(--d, 0ms);
+}
+.hero-pop {
+  animation: pop 700ms var(--curve-calm) backwards;
+  animation-delay: var(--d, 0ms);
+}
+.hero-settle {
+  animation: settle 1200ms var(--curve-calm) backwards;
+}
+.hero-float {
+  animation: float var(--t, 7s) var(--curve-breath) var(--d, 0s) infinite;
+}
+.hero-ripple {
+  animation: ripple 5.4s var(--curve-calm) var(--d, 0s) infinite backwards;
+}
+.hero-sun {
+  animation: sun-glow 9s var(--curve-breath) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-ripple { opacity: 0.35; transform: scale(1.1); }
+}
+html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); }
+
+/* Mini ECG: 4 beats per 240-unit strip at 72 bpm = 3333ms. Keep the "72 bpm" label in sync. */
 .landing-trace {
-  animation: landing-trace 3.6s linear infinite;
+  animation: landing-trace 3333ms linear infinite;
+}
+.hero-heart {
+  display: inline-flex;
+  transform-origin: center;
+  animation: lubdub 833ms var(--curve-standard) -610ms infinite;
 }
 
-/* The nurse ETA bar fills once on load, in step with the hero reveal. */
-@keyframes landing-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
+/* ---- 4. Multilingual line (health-words.tsx): cycles on its own ---- */
+.hw-cell {
+  display: grid;
+}
+.hw-item {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  filter: blur(8px);
+  transform: translateY(0.3em);
+  transition:
+    opacity 500ms var(--curve-exit),
+    filter 500ms var(--curve-exit),
+    transform 500ms var(--curve-exit),
+    visibility 0s linear 500ms;
+}
+.hw-item[data-state="active"] {
+  opacity: 1;
+  visibility: visible;
+  filter: none;
+  transform: none;
+  transition:
+    opacity 800ms var(--curve-calm) 250ms,
+    filter 800ms var(--curve-calm) 250ms,
+    transform 800ms var(--curve-calm) 250ms,
+    visibility 0s;
+}
+.hw-item[data-state="leaving"] {
+  visibility: visible;
+  transform: translateY(-0.3em);
+}
+.hw-beat path {
+  stroke-dasharray: 1;
+}
+.hw-beat[data-draw] path {
+  animation: draw 1000ms var(--curve-calm) both;
 }
 
-.landing-progress {
+/* ---- 5. Multilingual ribbon (health-ribbon.tsx) ---- */
+.ribbon-track {
+  animation: marquee 70s linear infinite;
+}
+
+/* ---- 6. Programme glyphs (programme-glyphs.tsx). The card link carries .group. ---- */
+.pg-glyph .pg-heart,
+.pg-glyph .pg-heart-h,
+.pg-glyph .pg-rings-h {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.pg-glyph .pg-needle,
+.pg-glyph .pg-needle-h {
+  transform-box: view-box;
+  transform-origin: 56px 74px;
+}
+.pg-glyph .pg-arc {
+  stroke-dasharray: 1;
+}
+[data-nv-revealed] .pg-heart { animation: lubdub 900ms var(--curve-standard) 300ms backwards; }
+[data-nv-revealed] .pg-level { --rise: 18px; animation: rise-in 1400ms var(--curve-calm) 200ms backwards; }
+[data-nv-revealed] .pg-arc {
+  animation: draw 1200ms var(--curve-calm) backwards;
+  animation-delay: calc(200ms + var(--k, 0) * 120ms);
+}
+[data-nv-revealed] .pg-needle { --from: -70deg; animation: needle-in 900ms var(--curve-calm) 250ms backwards; }
+.group:is(:hover, :focus-visible) .pg-heart-h { animation: lubdub-hover 900ms var(--curve-standard); }
+.group:is(:hover, :focus-visible) .pg-level-h { --rise: 8px; animation: rise-in-hover 700ms var(--curve-calm); }
+.group:is(:hover, :focus-visible) .pg-rings-h { animation: ring-breathe 900ms var(--curve-breath); }
+.group:is(:hover, :focus-visible) .pg-needle-h { --from: -14deg; animation: needle-in-hover 600ms var(--curve-calm); }
+
+/* ---- 7. How it works: the visit story (visit-journey.tsx). Each scene remounts when it becomes
+   active, so its one-shot animations replay; --d staggers them. Under reduced motion every
+   duration and delay collapses (globals.css), so each scene simply shows its finished state. ---- */
+@keyframes jn-scene {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes jn-select {
+  from { background-color: #ffffff; color: var(--ink-2); }
+}
+@keyframes jn-select-card {
+  from { background-color: #ffffff; box-shadow: 0 0 0 1px var(--border); }
+}
+@keyframes jn-press {
+  0%, 100% { transform: none; }
+  45% { transform: scale(0.95); }
+}
+@keyframes jn-drop {
+  from { opacity: 0; transform: translateY(-110%); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes jn-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes jn-grow {
+  from { transform: scaleX(0); }
+  to { transform: none; }
+}
+@keyframes jn-travel {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+@keyframes jn-ripple {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.jn-scene { animation: jn-scene 450ms var(--curve-calm) both; }
+.jn-in { animation: rise 600ms var(--curve-calm) var(--d, 0ms) backwards; --rise: 10px; }
+.jn-pop { animation: pop 500ms var(--curve-calm) var(--d, 0ms) backwards; }
+.jn-select { animation: jn-select 300ms var(--curve-standard) var(--d, 0ms) backwards; }
+.jn-select-card { animation: jn-select-card 300ms var(--curve-standard) var(--d, 0ms) backwards; }
+.jn-press {
+  --rise: 10px;
+  animation:
+    rise 600ms var(--curve-calm) var(--d, 0ms) backwards,
+    jn-press 420ms var(--curve-standard) 2300ms;
+}
+.jn-drop { animation: jn-drop 600ms var(--curve-calm) var(--d, 0ms) backwards; }
+.jn-out { animation: jn-out 300ms var(--curve-exit) var(--d, 0ms) forwards; }
+.jn-grow { transform-origin: left center; animation: jn-grow 700ms var(--curve-calm) var(--d, 0ms) backwards; }
+.jn-draw {
+  stroke-dasharray: 1;
+  animation: draw var(--dur, 1200ms) var(--curve-calm) var(--d, 0ms) backwards;
+}
+.jn-travel {
+  offset-rotate: 0deg;
+  offset-distance: 100%;
+  animation: jn-travel 2600ms var(--curve-calm) var(--d, 0ms) backwards;
+}
+.jn-ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: jn-ripple 1800ms var(--curve-calm) var(--d, 0ms) infinite backwards;
+}
+.jn-progress {
   transform-origin: left center;
-  animation: landing-progress 1.2s cubic-bezier(0.22, 1, 0.36, 1) 500ms both;
+  animation: progress var(--dwell, 6s) linear both;
+}
+.jn-progress[data-paused] { animation-play-state: paused; }
+
+/* ---- 7b. Health facts: each picture plays once when its card scrolls in ---- */
+@keyframes ring-fill {
+  from { stroke-dashoffset: var(--pct, 50); }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes bar-settle {
+  from { transform: scaleY(1.25); }
+  to { transform: none; }
+}
+.fact-person,
+.fact-bar {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+[data-nv-revealed] .fact-person { animation: pop 700ms var(--curve-calm) 350ms backwards; }
+[data-nv-revealed] .fact-ring { animation: ring-fill 1600ms var(--curve-calm) 300ms backwards; }
+[data-nv-revealed] .fact-bar { animation: bar-settle 1400ms var(--curve-calm) 400ms backwards; }
+
+/* ---- 8. Families timeline: updates arrive one by one ---- */
+[data-nv-revealed] .tl-step {
+  animation: step-in 600ms var(--curve-calm) backwards;
+  animation-delay: calc(300ms + var(--step, 0) * 380ms);
+}
+
+/* ---- 9. Breathing orb (breathing-card.tsx): breathes on its own at 5s in, 5s out ---- */
+.breath-disc,
+.breath-halo {
+  transform-origin: center;
+}
+.breath-disc { transform: scale(0.8); }
+.breath-halo { transform: scale(0.9); opacity: 0.5; }
+.breath-disc.motion-loop { animation: breathe 10s var(--curve-breath) infinite; }
+.breath-halo.motion-loop { animation: breathe-halo 10s var(--curve-breath) infinite; }
+
+/* ---- 10. Tip deck ---- */
+.tip-in {
+  animation: tip-in 320ms var(--curve-standard) both;
+}
+.tip-progress {
+  transform-origin: left center;
+  animation: progress var(--dwell, 9s) linear both;
+}
+.tip-progress[data-paused] {
+  animation-play-state: paused;
+}
+
+/* ---- 11. Callback success check ---- */
+.success-ring {
+  stroke-dasharray: 1;
+  animation: draw 600ms var(--curve-calm) both;
+}
+.success-check {
+  stroke-dasharray: 1;
+  animation: draw 400ms var(--curve-calm) 550ms both;
+}
+
+/* ---- 12. ECG hairline that draws once (EcgLine draw) ---- */
+.ecg-draw {
+  stroke-dasharray: 1;
+}
+[data-nv-revealed] .ecg-draw { animation: draw 1800ms var(--curve-calm) 200ms backwards; }
+
+/* ---- 13. Nav link underline + scroll-spy ---- */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0.75rem;
+  bottom: 0.3rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 240ms var(--curve-standard);
+}
+.nav-link:hover::after,
+.nav-link[aria-current="true"]::after {
+  transform: scaleX(1);
 }

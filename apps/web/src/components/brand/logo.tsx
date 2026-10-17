@@ -37,8 +37,9 @@ export function LogoMark({
   variant?: LogoVariant;
   title?: string;
 }) {
-  const tile = variant === "light" ? "#FFFFFF" : "#0A0A0A";
-  const stroke = variant === "light" ? "#0A0A0A" : "#FFFFFF";
+  const tile = variant === "light" ? "#FFFFFF" : "#0E4F45";
+  const stroke = variant === "light" ? "#0D2420" : "#FFFFFF";
+  const dot = variant === "light" ? "#1E9563" : "#5FD6A6";
   return (
     <svg
       viewBox="0 0 32 32"
@@ -57,7 +58,7 @@ export function LogoMark({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="24.6" cy="10.4" r="2.5" fill="#19C37D" />
+      <circle cx="24.6" cy="10.4" r="2.5" fill={dot} />
     </svg>
   );
 }
@@ -86,7 +87,7 @@ export function Logo({
           className={cn(
             "font-display leading-none font-semibold tracking-[-0.03em]",
             WORD_SIZE[size],
-            variant === "light" ? "text-white" : "text-ink",
+            variant === "light" ? "text-on-pine" : "text-ink",
           )}
         >
           nivar

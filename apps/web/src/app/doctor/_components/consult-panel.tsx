@@ -28,7 +28,7 @@ function Participant({ name, role, tone }: { name: string; role: string; tone: "
         className={cn(
           "grid size-16 place-items-center rounded-full text-lg font-semibold ring-4",
           tone === "patient"
-            ? "bg-white text-[#0a0a0a] ring-white/10"
+            ? "bg-white text-ink ring-white/10"
             : "bg-white/10 text-white ring-white/10",
         )}
       >
@@ -187,7 +187,7 @@ export function ConsultPanel({
             size="lg"
             onClick={() => setJoined(true)}
             disabled={!signalling || !connected}
-            className="h-11 gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#0a0a0a] hover:bg-white/90"
+            className="h-11 gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-ink hover:bg-white/90"
           >
             <Camera className="size-[18px]" />
             {connected ? "Join consult" : "Connecting"}

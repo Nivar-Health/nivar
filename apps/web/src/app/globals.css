@@ -2,72 +2,176 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Nivar ships a single, light theme. The `dark` variant is kept only so
-   shadcn component classes compile; nothing toggles it. */
+/* Nivar ships a single, light theme ("Mist & Pine"). The `dark` variant is kept only so
+   shadcn component classes compile; nothing toggles it. Dark *sections* use .theme-pine. */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* shadcn semantic colours (names unchanged) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* New semantic colours (follow .theme-pine / .theme-light scopes) */
+  --color-foreground-2: var(--foreground-2);
+  --color-heading-accent: var(--heading-accent);
+  --color-border-strong: var(--border-strong);
+  --color-input-hover: var(--input-hover);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+
+  /* Brand palette (raw; never re-scoped). Usable as bg-mint, text-saffron, bg-pine, etc. */
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-mist: var(--mist);
+  --color-wash: var(--wash);
+  --color-mint: var(--mint);
+  --color-sand: var(--sand);
+  --color-blush: var(--blush);
+  --color-sky: var(--sky);
+  --color-sage: var(--sage);
+  --color-sage-ink: var(--sage-ink);
+  --color-teal: var(--teal);
+  --color-teal-deep: var(--teal-deep);
+  --color-ivory: var(--ivory);
+  --color-signal: var(--signal);
+  --color-signal-ink: var(--signal-ink);
+  --color-trace: var(--trace);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-ink: var(--warning-ink);
+  --color-saffron: var(--saffron);
+  --color-saffron-foreground: var(--saffron-foreground);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-hover: var(--danger-hover);
+  --color-pine: var(--pine);
+  --color-pine-raised: var(--pine-raised);
+  --color-on-pine: var(--on-pine);
+  --color-on-pine-2: var(--on-pine-2);
+  --color-on-pine-3: var(--on-pine-3);
+  --color-amber-on-dark: var(--amber-on-dark);
+  --color-glyph-rose: var(--glyph-rose);
+  --color-glyph-amber: var(--glyph-amber);
+  --color-glyph-sky: var(--glyph-sky);
+
+  /* Landing palette "Garden City morning" (used by the landing page only) */
+  --color-pond: var(--pond);
+  --color-pond-2: var(--pond-2);
+  --color-jade: var(--jade);
+  --color-jade-hover: var(--jade-hover);
+  --color-aqua: var(--aqua);
+  --color-aqua-2: var(--aqua-2);
+  --color-mint-glow: var(--mint-glow);
+  --color-marigold: var(--marigold);
+  --color-marigold-tint: var(--marigold-tint);
+  --color-marigold-ink: var(--marigold-ink);
+  --color-rose: var(--rose);
+  --color-rose-tint: var(--rose-tint);
+  --color-rose-ink: var(--rose-ink);
+  --color-sky-tint: var(--sky-tint);
+  --color-sky-ink: var(--sky-ink);
+
+  /* Type families */
   --font-sans: var(--font-general), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-general), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-general), ui-sans-serif, system-ui, sans-serif;
+  --font-accent: var(--font-newsreader, ui-serif), Georgia, "Times New Roman", serif;
+  --font-kn: var(--font-general), var(--font-noto-kn, "Noto Sans Kannada"), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
+  --font-deva: var(--font-general), var(--font-noto-deva, "Noto Sans Devanagari"), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
 
-  /* Brand palette, usable as bg-teal, text-saffron, bg-mint, etc. */
-  --color-ink: var(--ink);
-  --color-teal: var(--teal);
-  --color-teal-deep: var(--teal-deep);
-  --color-saffron: var(--saffron);
-  --color-saffron-foreground: var(--saffron-foreground);
-  --color-mint: var(--mint);
-  --color-ivory: var(--ivory);
-  --color-danger: var(--danger);
-  --color-success: var(--success);
-  --color-signal: var(--signal);
-  --color-warning: var(--warning);
+  /* Type scale (font-size + line-height + tracking + weight). Landing only. */
+  --text-h1: clamp(2.5rem, 1.45rem + 4.5vw, 4.75rem);
+  --text-h1--line-height: 1.02;
+  --text-h1--letter-spacing: -0.038em;
+  --text-h1--font-weight: 600;
+  --text-cta: clamp(2.5rem, 1.5rem + 3.8vw, 4.25rem);
+  --text-cta--line-height: 1.03;
+  --text-cta--letter-spacing: -0.036em;
+  --text-cta--font-weight: 600;
+  --text-h2: clamp(2.125rem, 1.35rem + 2.7vw, 3.5rem);
+  --text-h2--line-height: 1.06;
+  --text-h2--letter-spacing: -0.032em;
+  --text-h2--font-weight: 600;
+  --text-h3: 1.5rem;
+  --text-h3--line-height: 1.2;
+  --text-h3--letter-spacing: -0.02em;
+  --text-h3--font-weight: 600;
+  --text-h4: 1.1875rem;
+  --text-h4--line-height: 1.3;
+  --text-h4--letter-spacing: -0.012em;
+  --text-h4--font-weight: 600;
+  --text-lede: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  --text-lede--line-height: 1.6;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.6;
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.55;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+  --text-stat: clamp(3rem, 2rem + 3.4vw, 4.5rem);
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.04em;
+  --text-stat--font-weight: 600;
+  --text-rotator: clamp(1.25rem, 0.82rem + 2.14vw, 2.75rem);
+  --text-rotator--line-height: 1.45;
+  --text-rotator--font-weight: 600;
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Radii: exact steps (inputs 12, tiles 16, cards 20-24, panels 32, buttons full) */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 32px;
 
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.08);
-  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.05), 0 18px 40px -18px rgb(0 0 0 / 0.22);
+  /* Shadows: tinted with pine ink, never grey-black */
+  --shadow-xs: 0 1px 2px rgb(16 32 27 / 0.05);
+  --shadow-soft: 0 1px 2px rgb(16 32 27 / 0.04), 0 8px 24px -12px rgb(16 32 27 / 0.1);
+  --shadow-lift: 0 2px 4px rgb(16 32 27 / 0.04), 0 24px 48px -20px rgb(16 32 27 / 0.2);
+  --shadow-glass: 0 12px 32px -16px rgb(16 32 27 / 0.3);
 
-  --animate-pulse-ring: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  /* Easing utilities: ease-calm, ease-standard, ease-exit, ease-breath */
+  --ease-calm: var(--curve-calm);
+  --ease-standard: var(--curve-standard);
+  --ease-exit: var(--curve-exit);
+  --ease-breath: var(--curve-breath);
+
+  /* App-wide animations (names unchanged; pulse is slower and softer) */
+  --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   --animate-ecg-sweep: ecg-sweep 3.2s linear infinite;
   --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-heartbeat: heartbeat 1.4s ease-in-out infinite;
@@ -75,15 +179,14 @@
   @keyframes pulse-ring {
     0% {
       transform: scale(1);
-      opacity: 0.55;
+      opacity: 0.45;
     }
-    80%,
+    85%,
     100% {
-      transform: scale(2.6);
+      transform: scale(2.2);
       opacity: 0;
     }
   }
-
   @keyframes ecg-sweep {
     from {
       stroke-dashoffset: 1000;
@@ -92,7 +195,6 @@
       stroke-dashoffset: 0;
     }
   }
-
   @keyframes fade-up {
     from {
       opacity: 0;
@@ -103,7 +205,6 @@
       transform: translateY(0);
     }
   }
-
   @keyframes heartbeat {
     0%,
     40%,
@@ -120,54 +221,150 @@
 }
 
 :root {
-  /* Brand: monochrome. Photography supplies the warmth; one signal green marks anything live. */
-  --ivory: #ffffff;
-  --ink: #0a0a0a;
-  --teal: #1f6b58;
-  --teal-deep: #154c3f;
-  --saffron: #b9822c;
-  --saffron-foreground: #3d2a08;
-  --mint: #eef3f0;
-  --danger: #c2453d;
-  --success: #19a56d;
-  --warning: #b9822c;
-  --signal: #19c37d;
+  /* ---- Raw palette: Mist & Pine (never re-scoped) ---------------------------------- */
+  --mist: #f6f8f6; /* page */
+  --white: #ffffff; /* cards */
+  --wash: #edf3ef; /* sage band, quiet fills */
+  --mint: #e1eee7; /* chips, icon tiles, selected */
+  --sand: #f4efe4; /* warm band (Everyday care), diabetes tint */
+  --blush: #f6ece9; /* heart tint */
+  --sky: #e7eef4; /* vitals tint */
+  --ivory: #ffffff; /* legacy name, unused */
 
-  /* shadcn tokens */
-  --background: #ffffff;
-  --foreground: var(--ink);
-  --card: #ffffff;
-  --card-foreground: var(--ink);
-  --popover: #ffffff;
-  --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f1;
-  --secondary-foreground: var(--ink);
-  --muted: #f4f4f1;
-  --muted-foreground: #6a6a66;
-  --accent: #f4f4f1;
-  --accent-foreground: var(--ink);
-  --destructive: var(--danger);
-  --border: #e4e4df;
-  --input: #d9d9d3;
-  --ring: var(--ink);
-  --chart-1: #0a0a0a;
-  --chart-2: #19c37d;
-  --chart-3: #8a8a85;
-  --chart-4: #c2453d;
-  --chart-5: #cfcfc9;
-  --radius: 0.625rem;
-  --sidebar: #fafaf8;
+  --ink: #10201b; /* headings, primary text */
+  --ink-2: #43524c; /* ledes, body copy */
+  --ink-3: #5a6964; /* meta, captions, hints */
+  --sage-ink: #3f6a5e; /* serif accent phrase */
+  --sage: #8db5a4; /* decorative strokes only, never text (2.26:1) */
+
+  --teal: #0e6655; /* icons, glyph strokes, grid tint */
+  --teal-deep: #0e4f45; /* the action colour */
+  --primary-hover: #0b4339;
+  --primary-active: #08372f;
+
+  --signal-ink: #0b7148; /* "Live" / "Normal" as text on light */
+  --trace: #5fd6a6; /* traces, live dots and logo dot on dark */
+  --success: #16704a;
+  --success-bg: #e6f2ec;
+  --warning: #8f5b0c;
+  --warning-bg: #fbf1df;
+  --warning-ink: #7a4d08;
+  --saffron: var(--warning);
+  --saffron-foreground: #ffffff;
+  --danger: #b23a30;
+  --danger-bg: #fdf3f2;
+  --danger-hover: #9a3129;
+
+  --hairline: #dde5e1;
+  --hairline-strong: #c5d2cc;
+  --input-line: #788d85; /* 3.53:1 on white */
+  --input-hover: #5b7068;
+
+  --pine: #0d2420;
+  --pine-raised: #13302a;
+  --on-pine: #f1f6f3;
+  --on-pine-2: #b7c9c1;
+  --on-pine-3: #93aaa1;
+  --pine-accent: #9ccbb9;
+  --ring-on-dark: #7fd1b5;
+  --amber-on-dark: #e9c27a;
+
+  --glyph-rose: #b4574e;
+  --glyph-amber: #9a6b1e;
+  --glyph-sky: #3d6684;
+
+  /* Landing: "Garden City morning". Contrast (WCAG): white on jade 5.74, jade on aqua 5.12,
+     ink-3 on aqua 4.77, white on pond 14.46, marigold-ink on marigold-tint 5.87,
+     rose-ink on rose-tint 5.05, sky-ink on sky-tint 4.58. Marigold and rose are fills only. */
+  --pond: #062f2d;
+  --pond-2: #0a4743;
+  --jade: #0b7366;
+  --jade-hover: #085e54;
+  --jade-active: #064d45;
+  --aqua: #e7f5f1;
+  --aqua-2: #cdebe3;
+  --mint-glow: #7fe0c4;
+  --marigold: #f2a33a;
+  --marigold-tint: #fff4e2;
+  --marigold-ink: #8a5200;
+  --rose: #e0546c;
+  --rose-tint: #fdebee;
+  --rose-ink: #b23a52;
+  --sky-tint: #e6f0fb;
+  --sky-ink: #2f6db5;
+
+  --chart-1: #0e4f45;
+  --chart-2: #2f8a6e;
+  --chart-3: #4f7590;
+  --chart-4: #b07d27;
+  --chart-5: #6f9a8b;
+
+  --sidebar: #f1f5f2;
   --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--ink);
+  --sidebar-primary: var(--teal-deep);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #efefeb;
+  --sidebar-accent: var(--mint);
   --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ink);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--teal-deep);
+
+  --radius: 0.75rem;
+
+  /* Motion curves (used by landing.css and the ease-* utilities) */
+  --curve-calm: cubic-bezier(0.22, 1, 0.36, 1);
+  --curve-standard: cubic-bezier(0.2, 0, 0, 1);
+  --curve-exit: cubic-bezier(0.4, 0, 1, 1);
+  --curve-breath: cubic-bezier(0.37, 0, 0.63, 1);
 
   color-scheme: light;
+}
+
+/* ---- Semantic tokens: light (page default, and .theme-light inside dark panels) ---- */
+:root,
+.theme-light {
+  --background: var(--mist);
+  --foreground: var(--ink);
+  --foreground-2: var(--ink-2);
+  --heading-accent: var(--sage-ink);
+  --card: var(--white);
+  --card-foreground: var(--ink);
+  --popover: var(--white);
+  --popover-foreground: var(--ink);
+  --primary: var(--teal-deep);
+  --primary-foreground: #ffffff;
+  --secondary: var(--wash);
+  --secondary-foreground: var(--ink);
+  --muted: var(--wash);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--mint);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--hairline);
+  --border-strong: var(--hairline-strong);
+  --input: var(--input-line);
+  --ring: var(--teal-deep);
+  --signal: #1e9563; /* live dots on light surfaces: 3.18-3.79:1 */
+}
+
+/* ---- Semantic tokens: deep pine panels (Live section, final CTA, auth brand panel) ---- */
+.theme-pine {
+  --background: var(--pine);
+  --foreground: var(--on-pine);
+  --foreground-2: var(--on-pine-2);
+  --heading-accent: var(--pine-accent);
+  --card: var(--pine-raised);
+  --card-foreground: var(--on-pine);
+  --secondary: rgb(255 255 255 / 0.06);
+  --secondary-foreground: var(--on-pine);
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: var(--on-pine-3);
+  --accent: rgb(255 255 255 / 0.08);
+  --accent-foreground: var(--on-pine);
+  --border: rgb(255 255 255 / 0.1);
+  --border-strong: rgb(255 255 255 / 0.18);
+  --input: rgb(255 255 255 / 0.32);
+  --ring: var(--ring-on-dark);
+  --signal: var(--trace);
 }
 
 @layer base {
@@ -184,16 +381,43 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: color-mix(in oklab, var(--ink) 12%, transparent);
+    background: color-mix(in oklab, var(--teal-deep) 16%, transparent);
   }
   .font-display {
     letter-spacing: -0.025em;
     font-weight: 500;
   }
+  .theme-pine {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+  .font-accent {
+    font-style: italic;
+    font-synthesis: none;
+  }
 }
 
-/* Faint ECG paper: fine 8px grid with a heavier 40px major grid.
-   Override the line colour with `[--grid-color:...]` on dark panels. */
+/* Indic text: General Sans stays first so every language shares one baseline; Noto supplies
+   the Kannada / Devanagari glyphs. Unlayered on purpose so it beats tracking utilities. */
+:lang(kn) {
+  font-family: var(--font-general), var(--font-noto-kn), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
+}
+:lang(hi),
+:lang(mr) {
+  font-family: var(--font-general), var(--font-noto-deva), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
+}
+:lang(kn),
+:lang(hi),
+:lang(mr) {
+  letter-spacing: 0;
+  font-feature-settings: normal;
+  font-synthesis: none;
+  font-style: normal;
+  text-transform: none;
+  line-height: 1.6;
+}
+
+/* Faint ECG paper: fine 8px grid with a heavier 40px major grid. */
 @utility bg-ecg-grid {
   --grid-color: color-mix(in oklab, var(--teal) 7%, transparent);
   --grid-color-major: color-mix(in oklab, var(--teal) 12%, transparent);
@@ -210,10 +434,10 @@
   background-position: -1px -1px;
 }
 
-/* Same grid tuned for deep teal / ink panels. */
+/* Same grid tuned for pine panels. */
 @utility bg-ecg-grid-dark {
-  --grid-color: rgb(255 255 255 / 0.04);
-  --grid-color-major: rgb(255 255 255 / 0.08);
+  --grid-color: rgb(255 255 255 / 0.035);
+  --grid-color-major: rgb(255 255 255 / 0.07);
   background-image:
     linear-gradient(var(--grid-color-major) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-color-major) 1px, transparent 1px),
@@ -227,8 +451,7 @@
   background-position: -1px -1px;
 }
 
-/* A solid dot with an expanding ring, for "LIVE" indicators.
-   Colour follows `currentColor`, so `text-danger live-dot` gives a red dot. */
+/* A solid dot with a slow expanding ring, for "live" indicators. Colour follows currentColor. */
 @utility live-dot {
   position: relative;
   display: inline-block;
@@ -248,6 +471,14 @@
   }
 }
 
+/* The one focus recipe: 2px outline in --ring (light or dark scope), 2px offset, follows radius. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -256,26 +487,25 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Landing loops stop on their rest pose when <html data-motion="paused"> (reduced motion; motion.tsx). */
+html[data-motion="paused"] .motion-loop,
+html[data-motion="paused"] .live-dot::after {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    transition-delay: 0s !important;
   }
-}
-
-/* ------------------------------------------------------------------------- */
-/* Landing page (/) helpers                                                  */
-/* ------------------------------------------------------------------------- */
-
-@keyframes landing-flow {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(300%);
+  .motion-loop,
+  .live-dot::after {
+    animation: none !important;
   }
 }
 

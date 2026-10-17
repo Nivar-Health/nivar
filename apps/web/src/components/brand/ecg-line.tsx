@@ -28,6 +28,8 @@ function ecgPath(beats: number, y: number, amp: number): string {
 /**
  * Decorative ECG trace: a faint full trace with a bright segment sweeping
  * across it like a bedside monitor. Purely visual (aria-hidden).
+ * With `draw`, a single trace instead draws itself once when an ancestor is revealed
+ * (`.ecg-draw` in landing.css).
  */
 export function EcgLine({
   beats = 6,
@@ -37,6 +39,7 @@ export function EcgLine({
   amplitude = 1,
   animated = true,
   thin = false,
+  draw = false,
 }: {
   beats?: number;
   className?: string;
@@ -46,9 +49,32 @@ export function EcgLine({
   animated?: boolean;
   /** 1px hairline trace for the monochrome panels. */
   thin?: boolean;
+  /** One trace that draws once on reveal; no faint underlay or sweep. */
+  draw?: boolean;
 }) {
   const width = beats * BEAT;
   const d = ecgPath(beats, 70, amplitude);
+  if (draw) {
+    return (
+      <svg
+        aria-hidden
+        viewBox={`0 0 ${width} 120`}
+        preserveAspectRatio="none"
+        fill="none"
+        className={cn("w-full", className)}
+      >
+        <path
+          d={d}
+          pathLength={1}
+          className={cn(strokeClassName, "ecg-draw")}
+          strokeWidth={thin ? 1.5 : 2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    );
+  }
   return (
     <svg
       aria-hidden
@@ -69,7 +95,7 @@ export function EcgLine({
         <path
           d={d}
           pathLength={1000}
-          className={cn(glowClassName, "animate-ecg-sweep")}
+          className={cn(glowClassName, "animate-ecg-sweep motion-loop")}
           strokeWidth={thin ? 1.5 : 2.5}
           strokeLinejoin="round"
           strokeLinecap="round"

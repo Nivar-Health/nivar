@@ -114,7 +114,7 @@ function PairingAnimation({ model }: { model: string }) {
           className="absolute inset-2 animate-ping rounded-full bg-signal/20"
           style={{ animationDelay: "400ms" }}
         />
-        <span className="relative flex size-12 items-center justify-center rounded-full bg-signal text-[#0a0a0a]">
+        <span className="relative flex size-12 items-center justify-center rounded-full bg-signal text-ink">
           <Bluetooth className="size-6" />
         </span>
       </span>

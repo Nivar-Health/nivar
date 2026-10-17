@@ -1,5 +1,11 @@
-import { Container, Section, SectionTitle, inr } from "./primitives";
+import { ArrowRight } from "lucide-react";
+import { SITE } from "@/lib/site-facts";
+import { cn } from "@/lib/utils";
 import { FaqAccordion, type FaqItem } from "./faq";
+import { ARROW_NUDGE, Container, inr, revealProps, Section, SectionTitle } from "./primitives";
+
+/** "In an emergency, call 112 (or 108 for an ambulance) straight away." built from SITE. */
+const EMERGENCY_NOW = `${SITE.emergency.short.replace(/\.$/, "")} straight away.`;
 
 export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; completePrice: number }) {
   const items: FaqItem[] = [
@@ -26,8 +32,18 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
       q: "How quickly can a nurse reach me?",
       a: (
         <p>
-          In most of Bangalore a same-day slot is available within an hour or two of booking, between 7 am and 9 pm.
+          In most of {SITE.city} a same-day slot is available within an hour or two of booking, {SITE.hours.inSentence}.
           You see the live arrival time in the app once the nurse sets off.
+        </p>
+      ),
+    },
+    {
+      q: "How soon do I get my report?",
+      a: (
+        <p>
+          {SITE.report.chip} of the visit. Your Nivar doctor signs it, explains every reading in plain words and adds
+          a prescription if you need one. It lands in the app, and in your family member&apos;s app if you booked for
+          them.
         </p>
       ),
     },
@@ -45,7 +61,8 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
       a: (
         <p>
           The doctor sees it as it is recorded and will usually ask the nurse to repeat the measurement. If something
-          needs urgent attention, the doctor tells you directly on the video call and explains the next step.
+          needs urgent attention, the doctor tells you directly on the video call and explains the next step.{" "}
+          {EMERGENCY_NOW}
         </p>
       ),
     },
@@ -60,7 +77,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
     },
     {
       q: "How do I pay?",
-      a: <p>After the visit, in the app, by UPI, card or net banking. You are not charged if the nurse does not arrive.</p>,
+      a: <p>{SITE.payment.faq}</p>,
     },
     {
       q: "Can I cancel or reschedule?",
@@ -74,14 +91,34 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
   ];
 
   return (
-    <Section id="faq">
+    <Section id="faq" tone="aqua" titleId="faq-title">
       <Container>
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-10">
-          <div className="lg:col-span-4">
-            <SectionTitle title="Questions," grey="answered plainly." />
+        {/* 5/7, not the spec's 4/8: at 4 columns the accent ("answered plainly.", 339-375px) is wider than the
+            column (299-373px) at every lg width, so it always broke as "answered / plainly.". 5 columns keeps it
+            on one line and lines the title column up with the Callback section's title column below. */}
+        <div className="grid gap-10 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <SectionTitle
+              id="faq-title"
+              title="Questions, answered plainly."
+              lede="The things families ask us most before a first visit."
+            />
           </div>
-          <div className="lg:col-span-8">
+          <div {...revealProps(1)} className="lg:col-span-7">
             <FaqAccordion items={items} />
+            <p className="mt-8 text-body text-foreground-2">
+              Still unsure?{" "}
+              <a
+                href="#callback"
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-sm font-semibold text-primary underline decoration-border-strong underline-offset-4 hover:decoration-current focus-ring",
+                  ARROW_NUDGE,
+                )}
+              >
+                Ask us to call you
+                <ArrowRight aria-hidden className="size-4" />
+              </a>
+            </p>
           </div>
         </div>
       </Container>

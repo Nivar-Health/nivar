@@ -152,7 +152,7 @@ export function CustomerLoginForm({ next }: { next: string | null }) {
           <Button
             type="submit"
             disabled={pending !== null || phone.length !== 10}
-            className="h-12 w-full rounded-xl text-[15px] font-semibold shadow-lift"
+            className="h-12 w-full rounded-full text-[15px] font-semibold"
           >
             {pending === "otp" ? (
               <LoaderCircle className="size-4 animate-spin" />
@@ -185,7 +185,7 @@ export function CustomerLoginForm({ next }: { next: string | null }) {
           Nivar doctor, nurse or admin?{" "}
           <Link
             href={next ? `/staff/login?next=${encodeURIComponent(next)}` : "/staff/login"}
-            className="font-medium text-primary underline-offset-4 hover:underline"
+            className="rounded-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary focus-ring"
           >
             Staff sign in
           </Link>
@@ -295,7 +295,7 @@ export function CustomerLoginForm({ next }: { next: string | null }) {
         <Button
           type="submit"
           disabled={pending !== null || otp.length !== OTP_LENGTH}
-          className="h-12 w-full rounded-xl text-[15px] font-semibold shadow-lift"
+          className="h-12 w-full rounded-full text-[15px] font-semibold"
         >
           {pending === "verify" ? (
             <LoaderCircle className="size-4 animate-spin" />

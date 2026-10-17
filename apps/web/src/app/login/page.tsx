@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AuthLayout } from "@/components/auth-layout";
+import { SITE } from "@/lib/site-facts";
 import { CustomerLoginForm } from "./login-form";
 
 export const metadata: Metadata = {
@@ -14,15 +15,17 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       eyebrow="Home health check-ups"
       headline={
         <>
-          Doctor-grade check-ups, <span className="text-white/55">at your doorstep.</span>
+          {/* nowrap: never break "check-ups" at its hyphen, and keep the serif phrase on one line. */}
+          Doctor-grade <span className="whitespace-nowrap">check-ups,</span>{" "}
+          <span className="font-accent font-normal whitespace-nowrap text-heading-accent">at your doorstep.</span>
         </>
       }
       points={[
         "A certified Nivar nurse visits with a smart ECG and stethoscope",
         "A Nivar doctor watches your readings live and consults over video",
-        "Your report and prescription, usually within 60 minutes",
+        `Your report and prescription, ${SITE.report.promise}`,
       ]}
-      footnote="Now serving Bangalore, 7 AM to 8 PM, every day"
+      footnote={`Now serving ${SITE.city}, ${SITE.hours.short}, every day`}
     >
       <CustomerLoginForm next={typeof next === "string" ? next : null} />
     </AuthLayout>
