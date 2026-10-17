@@ -62,7 +62,7 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const ROLE_STYLE: Record<string, string> = {
-  doctor: "bg-white text-[#0a0a0a]",
+  doctor: "bg-white text-ink",
   nurse: "bg-white/15 text-white ring-1 ring-white/30",
   customer: "bg-white/15 text-white",
   patient: "bg-white/15 text-white",
@@ -223,7 +223,7 @@ function VideoTile({
           onClick={() => {
             ref.current?.play().then(() => setBlocked(false), () => {});
           }}
-          className="absolute inset-x-0 top-3 mx-auto flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] shadow-lg"
+          className="absolute inset-x-0 top-3 mx-auto flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-lg"
         >
           <Volume2 className="size-3.5" /> Tap to enable audio
         </button>
@@ -263,7 +263,7 @@ export function VideoCall(props: VideoCallProps) {
             setSession((s) => s + 1);
             setLeft(false);
           }}
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0a0a0a] hover:bg-white/90"
+          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-white/90"
         >
           <RotateCcw className="size-4" /> Rejoin
         </button>
@@ -704,7 +704,7 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
             aria-pressed={!micOn}
             aria-label={micOn ? "Mute microphone" : "Unmute microphone"}
             title={hasMic ? (micOn ? "Mute" : "Unmute") : "No microphone"}
-            className={cn(controlBtn, btnSize, micOn && hasMic ? "bg-white/12 hover:bg-white/20" : "bg-white text-[#C2453D] hover:bg-white/90")}
+            className={cn(controlBtn, btnSize, micOn && hasMic ? "bg-white/12 hover:bg-white/20" : "bg-white text-danger hover:bg-white/90")}
           >
             {micOn && hasMic ? <Mic className="size-5" /> : <MicOff className="size-5" />}
           </button>
@@ -715,7 +715,7 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
             aria-pressed={!camOn}
             aria-label={camOn ? "Turn camera off" : "Turn camera on"}
             title={hasCam ? (camOn ? "Stop video" : "Start video") : "No camera"}
-            className={cn(controlBtn, btnSize, camOn && hasCam ? "bg-white/12 hover:bg-white/20" : "bg-white text-[#C2453D] hover:bg-white/90")}
+            className={cn(controlBtn, btnSize, camOn && hasCam ? "bg-white/12 hover:bg-white/20" : "bg-white text-danger hover:bg-white/90")}
           >
             {camOn && hasCam ? <Video className="size-5" /> : <VideoOff className="size-5" />}
           </button>
@@ -724,7 +724,7 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
             onClick={onLeave}
             aria-label="Leave call"
             title="Leave"
-            className={cn(controlBtn, compact ? "h-10 px-4" : "h-11 px-5", "gap-2 bg-[#C2453D] text-sm font-semibold hover:bg-[#D2554C]")}
+            className={cn(controlBtn, compact ? "h-10 px-4" : "h-11 px-5", "gap-2 bg-danger text-sm font-semibold hover:bg-danger-hover")}
           >
             <PhoneOff className="size-5" />
             {!compact && <span>Leave</span>}

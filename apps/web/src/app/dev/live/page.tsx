@@ -87,7 +87,7 @@ function DevicesDemo() {
             max={150}
             value={hr}
             onChange={(e) => onHr(Number(e.target.value))}
-            className="h-1.5 w-full cursor-pointer accent-[#0a0a0a]"
+            className="h-1.5 w-full cursor-pointer accent-primary"
           />
           <span className="w-16 shrink-0 text-right font-medium text-foreground tabular-nums">{hr} bpm</span>
         </label>

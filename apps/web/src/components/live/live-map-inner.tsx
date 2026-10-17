@@ -47,7 +47,7 @@ function homeIcon(label?: string) {
     iconAnchor: [19, 46],
     html: `<div class="nivar-home">
       <svg width="38" height="48" viewBox="0 0 38 48" aria-hidden="true">
-        <path d="M19 47c-1-1.6-15-17.4-15-28.2C4 9.9 10.7 3 19 3s15 6.9 15 15.8C34 29.6 20 45.4 19 47z" fill="#0a0a0a" stroke="#ffffff" stroke-width="2.5"/>
+        <path d="M19 47c-1-1.6-15-17.4-15-28.2C4 9.9 10.7 3 19 3s15 6.9 15 15.8C34 29.6 20 45.4 19 47z" fill="#0E4F45" stroke="#ffffff" stroke-width="2.5"/>
         <g transform="translate(10.5 10)" fill="none" stroke="#ffffff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1.5 7.5 8.5 1.6l7 5.9"/>
           <path d="M3.4 6.2V15h10.2V6.2"/>
@@ -92,7 +92,7 @@ function NurseLayer({ home, nurse, nurseName }: { home: LatLng; nurse: LatLng; n
         [nurse.lat, nurse.lng],
         [home.lat, home.lng],
       ],
-      { color: "#0a0a0a", weight: 3, opacity: 0.7, dashArray: "2 9", lineCap: "round", interactive: false },
+      { color: "#0E4F45", weight: 3, opacity: 0.7, dashArray: "2 9", lineCap: "round", interactive: false },
     );
     line.addTo(map);
     marker.addTo(map);

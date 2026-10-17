@@ -12,8 +12,8 @@ export const MONITOR = {
   steth: "#E6E6E1",
   stethRgb: "230, 230, 225",
   text: "#F2F2EE",
-  dim: "#7A7A75",
-  danger: "#19C37D",
+  /** 6.09:1 on bg, 5.12:1 on the HR panel (#0A221E). */
+  dim: "#8F8F89",
 } as const;
 
 export type MonitorStatus = "connecting" | "streaming" | "stopped";
@@ -101,19 +101,24 @@ export function renderGrid(size: CanvasSize, pxPerMm: number, rgb: string, origi
   return c;
 }
 
-export function LiveBadge({ live, label = "LIVE" }: { live: boolean; label?: string }) {
+/**
+ * Monitor status chip. Live: mint text with the slow live-dot ring (stops under the global motion
+ * pause and reduced motion). Paused: dim, static dot, "PAUSED". Otherwise: "OFFLINE".
+ */
+export function LiveBadge({ live, label = "LIVE", paused = false }: { live: boolean; label?: string; paused?: boolean }) {
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] transition-colors",
-        live ? "bg-[#19C37D]/15 text-[#FF8A7F]" : "bg-white/5 text-[#7A7A75]",
+        live ? "bg-[#19C37D]/15 text-[#8FE3BF]" : "bg-white/5 text-[#8F8F89]",
       )}
     >
-      <span className="relative flex size-1.5">
-        {live && <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#19C37D] opacity-75" />}
-        <span className={cn("relative inline-flex size-1.5 rounded-full", live ? "bg-[#19C37D]" : "bg-[#7A7A75]")} />
-      </span>
-      {live ? label : "OFFLINE"}
+      {live ? (
+        <span aria-hidden className="live-dot size-1.5 text-[#19C37D]" />
+      ) : (
+        <span aria-hidden className="inline-flex size-1.5 shrink-0 rounded-full bg-[#8F8F89]" />
+      )}
+      {live ? label : paused ? "PAUSED" : "OFFLINE"}
     </span>
   );
 }

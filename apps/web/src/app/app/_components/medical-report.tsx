@@ -150,7 +150,7 @@ function ReportSheet({
       </div>
 
       {/* Patient block */}
-      <section className="report-avoid mt-4 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl border border-border bg-[#FBFAF7] px-4 py-3.5 sm:grid-cols-4">
+      <section className="report-avoid mt-4 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl border border-border bg-muted/60 px-4 py-3.5 sm:grid-cols-4">
         <Info label="Patient name" value={booking.patient.name} strong />
         <Info
           label="Age / Gender"
@@ -374,7 +374,7 @@ function ReportSheet({
         </p>
         <p className="mt-1">
           This is an electronically generated report and does not require a physical signature. Please consult your
-          doctor before making changes to any medication. In an emergency, call 108.
+          doctor before making changes to any medication. In an emergency, call 112 (or 108 for an ambulance).
         </p>
       </footer>
     </article>

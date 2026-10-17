@@ -169,7 +169,7 @@ function ActiveHero({ booking, catalog }: { booking: Booking; catalog: Catalog |
           thin
           className="pointer-events-none absolute inset-x-0 top-10 h-20 opacity-60"
           strokeClassName="stroke-white/30"
-          glowClassName="stroke-signal"
+          glowClassName="stroke-trace"
         />
       )}
       <div className="relative">

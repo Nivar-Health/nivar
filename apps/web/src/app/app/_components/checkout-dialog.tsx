@@ -366,8 +366,8 @@ function SuccessView({ booking }: { booking: Booking }) {
   return (
     <div className="flex min-h-[340px] flex-col items-center justify-center gap-5 px-6 py-10 text-center" aria-live="polite">
       <span className="relative grid size-20 place-items-center">
-        <span aria-hidden className="absolute inset-0 rounded-full bg-signal/25 animate-pulse-ring" />
-        <span className="checkout-pop grid size-20 place-items-center rounded-full bg-signal text-white">
+        <span aria-hidden className="absolute inset-0 rounded-full bg-success/25 animate-pulse-ring" />
+        <span className="checkout-pop grid size-20 place-items-center rounded-full bg-success text-white">
           <Check className="checkout-draw size-10" strokeWidth={3} aria-hidden />
         </span>
       </span>

@@ -460,10 +460,10 @@ function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSumma
   return (
     <>
       <div className="relative animate-fade-up overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground">
-        <EcgLine beats={4} thin className="pointer-events-none absolute inset-x-0 top-3 h-14 opacity-60" strokeClassName="stroke-white/30" glowClassName="stroke-signal" />
+        <EcgLine beats={4} thin className="pointer-events-none absolute inset-x-0 top-3 h-14 opacity-60" strokeClassName="stroke-white/30" glowClassName="stroke-trace" />
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-2.5 py-1 text-[11px] font-medium">
-            <span className="live-dot size-1.5 text-signal" /> Doctor is ready
+            <span className="live-dot size-1.5 text-trace" /> Doctor is ready
           </span>
           <div className="mt-4 flex items-center gap-3.5">
             <PersonAvatar name={doctor?.name} tone="outline" size="lg" className="border-0 ring-white/20" />

@@ -1,5 +1,6 @@
-import { Check } from "lucide-react";
-import { Container, Section, SectionTitle } from "./primitives";
+import { Check, X } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo";
+import { Container, revealProps, Section, SectionTitle } from "./primitives";
 
 const ROWS = [
   {
@@ -24,41 +25,72 @@ const ROWS = [
   },
 ];
 
+/** Two cards side by side: the usual way, and the Nivar way. Plain headings and lists, no table roles. */
 export function Doctors() {
   return (
-    <Section id="doctors">
+    <Section id="doctors" titleId="doctors-title">
       <Container>
         <SectionTitle
-          title="Doctors on payroll,"
-          grey="not on call."
+          id="doctors-title"
+          title={
+            <>
+              Doctors on payroll, <span className="whitespace-nowrap">not on call.</span>
+            </>
+          }
           lede="Most home-care apps route your visit to whichever doctor is free. Ours are full-time Nivar staff, and that changes what you can expect."
         />
 
-        <div className="mt-14 lg:mt-16" role="table" aria-label="Typical gig model compared with Nivar">
-          <div role="row" className="hidden grid-cols-[180px_1fr_1fr] gap-8 border-b border-border pb-4 text-sm font-medium text-muted-foreground md:grid">
-            <span role="columnheader" />
-            <span role="columnheader">Typical gig model</span>
-            <span role="columnheader" className="text-foreground">
-              Nivar
-            </span>
-          </div>
-          <ul className="divide-y divide-border border-b border-border md:border-t-0">
-            {ROWS.map((r) => (
-              <li key={r.label} role="row" className="grid gap-3 py-6 md:grid-cols-[180px_1fr_1fr] md:gap-8">
-                <span role="rowheader" className="text-[1.0625rem] font-medium">
-                  {r.label}
-                </span>
-                <p role="cell" className="text-[15px] leading-[1.55] text-muted-foreground">
-                  <span className="mb-1 block text-xs font-medium md:hidden">Typical gig model</span>
-                  {r.gig}
-                </p>
-                <p role="cell" className="flex items-start gap-2.5 text-[15px] leading-[1.55] text-foreground">
-                  <Check aria-hidden className="mt-1 size-4 shrink-0" strokeWidth={2.25} />
-                  <span>{r.nivar}</span>
-                </p>
-              </li>
-            ))}
-          </ul>
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:mt-16">
+          <section
+            {...revealProps(0)}
+            aria-labelledby="doctors-gig"
+            className="rounded-[2rem] bg-mist p-6 ring-1 ring-border sm:p-9"
+          >
+            <h3 id="doctors-gig" className="text-h4 text-ink-2">
+              A typical home-care app
+            </h3>
+            <ul className="mt-6 divide-y divide-border">
+              {ROWS.map((r) => (
+                <li key={r.label} className="flex items-start gap-4 py-5 first:pt-0 last:pb-0">
+                  <span aria-hidden className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-ink-3 ring-1 ring-border">
+                    <X className="size-3.5" strokeWidth={2.5} />
+                  </span>
+                  <p>
+                    <span className="block text-caption font-semibold text-ink-3">{r.label}</span>
+                    <span className="mt-1 block text-body text-ink-2">{r.gig}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section
+            {...revealProps(1)}
+            aria-labelledby="doctors-nivar"
+            className="theme-pine relative isolate overflow-hidden rounded-[2rem] bg-[linear-gradient(155deg,var(--jade)_0%,var(--pond-2)_60%,var(--pond)_100%)] p-6 shadow-[0_40px_70px_-40px_rgb(6_47_45/0.7)] sm:p-9"
+          >
+            <div
+              aria-hidden
+              className="absolute -top-28 -right-28 -z-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(127_224_196/0.28),transparent)]"
+            />
+            <h3 id="doctors-nivar" className="flex items-center gap-2.5 text-h4 text-white">
+              <LogoMark variant="light" className="size-7" />
+              With Nivar
+            </h3>
+            <ul className="mt-6 divide-y divide-white/12">
+              {ROWS.map((r) => (
+                <li key={r.label} className="flex items-start gap-4 py-5 first:pt-0 last:pb-0">
+                  <span aria-hidden className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-mint-glow text-pond">
+                    <Check className="size-4" strokeWidth={3} />
+                  </span>
+                  <p>
+                    <span className="block text-caption font-semibold text-mint-glow">{r.label}</span>
+                    <span className="mt-1 block text-body font-medium text-white">{r.nivar}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </Container>
     </Section>
