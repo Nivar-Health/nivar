@@ -291,9 +291,6 @@ function PackagePicks({ catalog }: { catalog: Catalog | null }) {
             </p>
             <p className="mt-auto flex items-baseline gap-1.5 pt-2.5">
               <span className="tabular text-[15px] font-semibold">{formatINR(p.price)}</span>
-              {p.mrp > p.price && (
-                <span className="tabular text-[11px] text-muted-foreground line-through">{formatINR(p.mrp)}</span>
-              )}
             </p>
           </Link>
         );

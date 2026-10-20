@@ -96,7 +96,7 @@ export function BreathingCard() {
     >
       <div
         aria-hidden
-        className="absolute -top-24 left-1/2 -z-10 size-[420px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(127_224_196/0.25),transparent)]"
+        className="absolute -top-24 left-1/2 -z-10 size-[420px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(142_211_224/0.25),transparent)]"
       />
       <p className="text-[0.9375rem] font-semibold text-mint-glow">One calm minute</p>
       <h3 id={titleId} className="mt-2 text-h3 text-white">
@@ -114,7 +114,7 @@ export function BreathingCard() {
           key={`halo-${runKey}-${still}`}
           ref={syncOrb}
           className={cn(
-            "breath-halo absolute inset-0 rounded-full bg-[radial-gradient(closest-side,rgb(127_224_196/0.55),transparent)] blur-md",
+            "breath-halo absolute inset-0 rounded-full bg-[radial-gradient(closest-side,rgb(142_211_224/0.55),transparent)] blur-md",
             loop,
           )}
         />
@@ -122,7 +122,7 @@ export function BreathingCard() {
           key={`disc-${runKey}-${still}`}
           ref={syncOrb}
           className={cn(
-            "breath-disc absolute inset-[14%] rounded-full bg-[radial-gradient(circle_at_50%_35%,#dff8ef,var(--mint-glow)_45%,var(--jade)_100%)] shadow-[0_0_60px_rgb(127_224_196/0.45)]",
+            "breath-disc absolute inset-[14%] rounded-full bg-[radial-gradient(circle_at_50%_35%,#eaf6f9,var(--mint-glow)_45%,var(--jade)_100%)] shadow-[0_0_60px_rgb(142_211_224/0.45)]",
             loop,
           )}
         />

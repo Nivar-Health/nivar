@@ -10,9 +10,9 @@ const EXIT_MS = 500;
 const NAMES: Record<string, string> = Object.fromEntries(LANGUAGES.map((l) => [l.lang, l.english]));
 
 /**
- * "Cared for like family" in English, Kannada, Hindi and Marathi, changing on its own.
+ * "Cared for like family" in English, Kannada and Hindi, changing on its own.
  * It holds still while off screen or in a hidden tab, and stays on English under reduced motion.
- * Screen readers get all four once, not every change.
+ * Screen readers get all three once, not every change.
  */
 export function HealthWords({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -78,7 +78,7 @@ export function HealthWords({ className }: { className?: string }) {
 
       <div aria-hidden="true" className="flex items-start gap-3 text-rotator text-primary sm:gap-4">
         {/* Centred on the first line, whichever language is showing. */}
-        <span className="mt-[calc((1.45em-2.25rem)/2)] flex size-9 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_6px_16px_-8px_rgb(11_115_102/0.5)] ring-1 ring-aqua-2 sm:mt-[calc((1.45em-3rem)/2)] sm:size-12">
+        <span className="mt-[calc((1.45em-2.25rem)/2)] flex size-9 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_6px_16px_-8px_rgb(1_76_94/0.5)] ring-1 ring-aqua-2 sm:mt-[calc((1.45em-3rem)/2)] sm:size-12">
           <svg
             key={drawKey}
             data-draw={drawKey > 0 ? "" : undefined}

@@ -44,7 +44,7 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
           <AccordionItem
             key={item.q}
             value={`faq-${i}`}
-            className="rounded-2xl border-0 bg-white px-5 shadow-xs ring-1 ring-ink/5 transition-shadow duration-300 data-[open]:shadow-[0_18px_40px_-28px_rgb(6_47_45/0.5)] sm:px-6"
+            className="rounded-2xl border-0 bg-white px-5 shadow-xs ring-1 ring-ink/5 transition-shadow duration-300 data-[open]:shadow-[0_18px_40px_-28px_rgb(1_43_54/0.5)] sm:px-6"
           >
             <AccordionTrigger className="min-h-16 cursor-pointer gap-6 rounded-xl border-0 py-5 text-[1.0625rem] leading-snug font-semibold text-pretty text-ink transition-[color] duration-160 ease-standard hover:no-underline focus-visible:ring-0 focus-visible:after:hidden focus-ring aria-expanded:text-primary **:data-[slot=accordion-trigger-icon]:mt-0.5 **:data-[slot=accordion-trigger-icon]:size-5 **:data-[slot=accordion-trigger-icon]:text-primary">
               <span>{keepHyphenated(item.q)}</span>

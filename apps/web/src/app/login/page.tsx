@@ -23,9 +23,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       points={[
         "A certified Nivar nurse visits with a smart ECG and stethoscope",
         "A Nivar doctor watches your readings live and consults over video",
-        `Your report and prescription, ${SITE.report.promise}`,
+        `Your report and prescription, ${SITE.report.checkup}`,
       ]}
-      footnote={`Now serving ${SITE.city}, ${SITE.hours.short}, every day`}
+      footnote={`Now serving ${SITE.area}, ${SITE.hours.short}`}
     >
       <CustomerLoginForm next={typeof next === "string" ? next : null} />
     </AuthLayout>

@@ -4,33 +4,36 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Activity,
-  CalendarCheck2,
   Check,
+  CheckCheck,
   Clock3,
   DoorOpen,
-  Download,
-  Droplet,
   FileHeart,
+  FileText,
   Gauge,
-  HeartPulse,
+  MessageCircle,
+  Mic,
+  PackageCheck,
+  PhoneCall,
+  Pill,
   Stethoscope,
   Video,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MiniTrace } from "./mini-trace";
 import { useMotionPaused } from "./motion";
 
 export type JourneyStep = { title: string; text: string; time: string };
 
-const ICONS: LucideIcon[] = [CalendarCheck2, DoorOpen, Video, FileHeart];
+const ICONS: LucideIcon[] = [MessageCircle, PhoneCall, DoorOpen, Video];
 /** How long each step stays on screen; each scene finishes its own animation about 2s before. */
-const DWELL_MS = [5600, 6400, 6400, 7000];
+const DWELL_MS = [6000, 6200, 6400, 7000];
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
 /**
- * "How it works" as a short story: four steps on the left, and a phone that acts each one out.
+ * "How it works" as a short story: four steps on the left, and a phone that acts each one out
+ * (a WhatsApp chat, the doctor's call, the nurse's arrival, the video and the report).
  * It starts at step 1 when it scrolls into view, advances on its own and loops; any step can be
  * picked. It holds while off screen or in a hidden tab, and under reduced motion it does not
  * advance and every scene shows its finished state.
@@ -134,7 +137,7 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
           <p className="mt-1.5 text-small text-pretty text-ink-2">{steps[active]?.text}</p>
         </div>
 
-        <p className="mt-4 text-center text-caption text-ink-3 lg:mt-4">Illustrative screens from the Nivar app.</p>
+        <p className="mt-4 text-center text-caption text-ink-3 lg:mt-4">Illustrative screens. Names are examples.</p>
       </div>
 
       <ol className="relative hidden flex-col gap-2 lg:order-1 lg:col-span-5 lg:flex">
@@ -161,7 +164,7 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
                 aria-current={isActive ? "step" : undefined}
                 className={cn(
                   "group flex w-full gap-5 rounded-[1.5rem] p-4 text-left transition-[background-color,box-shadow] duration-300 ease-calm focus-ring",
-                  isActive ? "bg-white shadow-[0_20px_44px_-30px_rgb(6_47_45/0.55)]" : "hover:bg-white/60",
+                  isActive ? "bg-white shadow-[0_20px_44px_-30px_rgb(1_43_54/0.55)]" : "hover:bg-white/60",
                 )}
               >
                 <span
@@ -222,19 +225,19 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
 /* The phone and its four scenes                                              */
 /* ------------------------------------------------------------------------- */
 
-const SCENES = [BookScene, ArriveScene, DoctorScene, ReportScene];
+const SCENES = [ChatScene, CallScene, ArriveScene, DoneScene];
 
 function Stage({ active, run }: { active: number; run: number }) {
-  const Scene = SCENES[active] ?? BookScene;
+  const Scene = SCENES[active] ?? ChatScene;
   return (
     <div
       aria-hidden
       className="relative isolate flex justify-center overflow-hidden rounded-[2rem] bg-[linear-gradient(160deg,#ffffff_0%,var(--aqua)_60%,var(--aqua-2)_100%)] px-4 py-10 ring-1 ring-white sm:py-12"
     >
-      <div className="absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(242_163_58/0.18),transparent)]" />
-      <div className="absolute -bottom-28 -left-24 -z-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(11_115_102/0.16),transparent)]" />
+      <div className="absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(142_211_224/0.35),transparent)]" />
+      <div className="absolute -bottom-28 -left-24 -z-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(1_76_94/0.16),transparent)]" />
       <div className="relative w-full max-w-[19.5rem]">
-        <div className="relative h-[30.5rem] overflow-hidden rounded-[2.25rem] border-[6px] border-pond bg-white shadow-[0_40px_80px_-36px_rgb(6_47_45/0.6)]">
+        <div className="relative h-[30.5rem] overflow-hidden rounded-[2.25rem] border-[6px] border-pond bg-white shadow-[0_40px_80px_-36px_rgb(1_43_54/0.6)]">
           <div className="absolute top-2 left-1/2 z-20 h-5 w-24 -translate-x-1/2 rounded-full bg-pond" />
           <div key={`${active}-${run}`} className="jn-scene absolute inset-0 px-4 pt-11 pb-4">
             <Scene />
@@ -254,86 +257,126 @@ function ScreenTitle({ children, sub }: { children: ReactNode; sub?: ReactNode }
   );
 }
 
-/** Step 1: pick a programme, a day and a slot, then confirm. */
-function BookScene() {
-  const slots = ["Within 60 min", "11:00 am", "1:00 pm", "3:00 pm", "5:00 pm", "7:00 pm"];
+/** A chat bubble: `out` is the family's own message (right, green), otherwise Nivar's (left, white). */
+function Bubble({ out = false, delay, time, children }: { out?: boolean; delay: number; time: string; children: ReactNode }) {
   return (
-    <div className="relative flex h-full flex-col text-[0.75rem]">
-      <ScreenTitle sub="For Kamala Iyer, 67">Book a check-up</ScreenTitle>
+    <div
+      className={cn(
+        "jn-in max-w-[85%] rounded-2xl px-3 py-2 leading-snug text-ink shadow-xs",
+        out ? "self-end rounded-br-md bg-[#d9fdd3]" : "self-start rounded-bl-md bg-white",
+      )}
+      style={d(delay)}
+    >
+      {children}
+      <span className="mt-0.5 flex items-center justify-end gap-1 text-[0.5625rem] text-ink-3">
+        {time}
+        {out && <CheckCheck className="size-3 text-sky-ink" />}
+      </span>
+    </div>
+  );
+}
 
-      <p className="jn-in mt-4 font-semibold text-ink-3" style={d(150)}>
-        Programme
-      </p>
-      <div className="jn-in mt-1.5" style={d(250)}>
-        <div className="jn-select-card flex items-center gap-3 rounded-xl bg-aqua p-2.5 ring-2 ring-primary" style={d(650)}>
-          <span className="flex size-9 items-center justify-center rounded-lg bg-rose-tint text-rose-ink">
-            <HeartPulse className="size-4.5" />
+/** Step 1: the family messages Nivar on WhatsApp, with the prescription. */
+function ChatScene() {
+  return (
+    <div className="-mx-4 -mt-11 flex h-[calc(100%+3.75rem)] flex-col bg-aqua text-[0.75rem]">
+      <div className="jn-in flex items-center gap-2.5 bg-white px-4 pt-10 pb-2.5 shadow-xs" style={d(0)}>
+        <span className="flex size-8 items-center justify-center rounded-full bg-primary text-[0.6875rem] font-bold text-white">N</span>
+        <span className="flex-1">
+          <span className="block font-semibold text-ink">Nivar Health</span>
+          <span className="block text-[0.625rem] text-signal-ink">online</span>
+        </span>
+        <PhoneCall className="size-4 text-primary" />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-2 px-3 pt-4">
+        <Bubble out delay={300} time="4:02 PM">
+          Hi, my mother needs a B12 injection at home. HSR Layout, Sector 2.
+        </Bubble>
+        <Bubble out delay={1000} time="4:02 PM">
+          <span className="flex items-center gap-2 rounded-lg bg-white/70 p-2">
+            <span className="flex size-8 items-center justify-center rounded-md bg-sky-tint text-sky-ink">
+              <FileText className="size-4" />
+            </span>
+            <span>
+              <span className="block font-semibold">Prescription.jpg</span>
+              <span className="block text-[0.625rem] text-ink-3">Photo</span>
+            </span>
           </span>
-          <span className="flex-1">
-            <span className="block font-semibold text-ink">Heart Check</span>
-            <span className="block text-[0.6875rem] text-ink-3">ECG, stethoscope and consult</span>
-          </span>
-          <span className="font-semibold text-ink">₹1,499</span>
+        </Bubble>
+        <span className="jn-out flex w-fit gap-1 self-start rounded-2xl bg-white px-3 py-2.5 shadow-xs" style={d(2300)}>
+          {[0, 1, 2].map((k) => (
+            <span key={k} className="size-1.5 rounded-full bg-ink-3/50" />
+          ))}
+        </span>
+        {/* Takes the typing dots' place (26px tall + the 8px gap) once they fade. */}
+        <div className="-mt-[2.125rem] flex flex-col">
+          <Bubble delay={2400} time="4:03 PM">
+            Thank you! Our doctor will call you in a few minutes to check the prescription and confirm a time.
+          </Bubble>
         </div>
       </div>
 
-      <p className="jn-in mt-4 font-semibold text-ink-3" style={d(450)}>
-        Day
-      </p>
-      <div className="jn-in mt-1.5 flex gap-1.5" style={d(500)}>
-        {["Today", "Tomorrow", "Saturday"].map((x, i) => (
-          <span
-            key={x}
-            className={cn(
-              "rounded-full px-3 py-1.5 font-semibold",
-              i === 0 ? "jn-select bg-primary text-white" : "bg-white text-ink-2 ring-1 ring-border",
-            )}
-            style={i === 0 ? { "--d": "1100ms" } as CSSProperties : undefined}
-          >
-            {x}
-          </span>
-        ))}
-      </div>
-
-      <p className="jn-in mt-4 font-semibold text-ink-3" style={d(650)}>
-        Time
-      </p>
-      <div className="jn-in mt-1.5 grid grid-cols-3 gap-1.5" style={d(700)}>
-        {slots.map((x, i) => (
-          <span
-            key={x}
-            className={cn(
-              "rounded-lg px-1 py-2 text-center font-medium",
-              i === 3 ? "jn-select bg-primary text-white" : "bg-white text-ink-2 ring-1 ring-border",
-            )}
-            style={i === 3 ? { "--d": "1700ms" } as CSSProperties : undefined}
-          >
-            {x}
-          </span>
-        ))}
-      </div>
-
-      <span className="jn-press mt-auto flex h-11 items-center justify-center rounded-full bg-primary font-semibold text-white" style={d(900)}>
-        Confirm booking
-      </span>
-
-      <div
-        className="jn-drop absolute inset-x-0 top-0 z-10 flex items-center gap-2.5 rounded-2xl bg-pond p-3 text-white shadow-lg"
-        style={d(2700)}
-      >
-        <span className="flex size-8 items-center justify-center rounded-full bg-mint-glow text-pond">
-          <Check className="size-4" strokeWidth={3} />
-        </span>
-        <span>
-          <span className="block font-semibold">Booking confirmed</span>
-          <span className="block text-[0.6875rem] text-on-pine-2">Today, 3:00 pm. Your nurse is assigned.</span>
+      <div className="jn-in flex items-center gap-2 px-3 pt-2 pb-4" style={d(200)}>
+        <span className="flex h-9 flex-1 items-center rounded-full bg-white px-3.5 text-ink-3">Message</span>
+        <span className="flex size-9 items-center justify-center rounded-full bg-primary text-white">
+          <Mic className="size-4" />
         </span>
       </div>
     </div>
   );
 }
 
-/** Step 2: the nurse travels to the home, then unpacks the devices. */
+/** Step 2: a Nivar doctor calls, and the visit plan fills in. */
+function CallScene() {
+  const plan = ["B12 injection, IM", "Prescription checked", "Today, 6:00 PM", "Price told upfront"];
+  return (
+    <div className="relative flex h-full flex-col text-[0.75rem]">
+      <div className="jn-in flex flex-col items-center rounded-2xl bg-pond px-4 pt-5 pb-4 text-white" style={d(0)}>
+        <span className="relative flex size-14 items-center justify-center rounded-full bg-white/12 ring-1 ring-white/20">
+          <span className="jn-ripple motion-loop absolute inset-0 rounded-full bg-mint-glow/25" style={d(400)} />
+          <Stethoscope className="size-6 text-mint-glow" />
+        </span>
+        <span className="mt-3 text-[0.9375rem] font-semibold">Your Nivar doctor</span>
+        <span className="text-[0.6875rem] text-on-pine-2 tabular-nums">Voice call, 02:14</span>
+        <span className="mt-3 flex h-5 items-end gap-[3px]">
+          {[6, 12, 18, 10, 16, 8, 14, 6, 11].map((h, k) => (
+            <span key={k} className="jn-grow w-1 rounded-full bg-mint-glow/80" style={{ height: h, "--d": `${300 + k * 60}ms` } as CSSProperties} />
+          ))}
+        </span>
+      </div>
+
+      <p className="jn-in mt-4 font-semibold text-ink-3" style={d(700)}>
+        Visit plan
+      </p>
+      <ul className="mt-1.5 flex flex-col gap-1.5">
+        {plan.map((x, i) => (
+          <li key={x} className="jn-in flex items-center gap-2.5 rounded-xl bg-white px-3 py-2.5 ring-1 ring-border" style={d(900 + i * 450)}>
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-white">
+              <Check className="size-3" strokeWidth={3} />
+            </span>
+            <span className="font-medium text-ink">{x}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div
+        className="jn-drop absolute inset-x-0 top-0 z-10 flex items-center gap-2.5 rounded-2xl bg-white p-3 text-ink shadow-lg ring-1 ring-border"
+        style={d(3200)}
+      >
+        <span className="flex size-8 items-center justify-center rounded-full bg-primary text-white">
+          <Check className="size-4" strokeWidth={3} />
+        </span>
+        <span>
+          <span className="block font-semibold">Visit confirmed</span>
+          <span className="block text-[0.6875rem] text-ink-3">Today, 6:00 PM. Priya will come.</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Step 3: the nurse travels to the home with the kit and the medicines. */
 const ROUTE = "M28 168 C 70 168, 70 110, 120 110 S 168 72, 194 70";
 
 function ArriveScene() {
@@ -358,8 +401,8 @@ function ArriveScene() {
             strokeLinecap="round"
             style={{ "--d": "300ms", "--dur": "2600ms" } as CSSProperties}
           />
-          <circle className="jn-ripple motion-loop" cx="214" cy="58" r="15" fill="var(--marigold)" fillOpacity={0.4} style={d(2900)} />
-          <circle cx="214" cy="58" r="14" fill="var(--marigold)" stroke="white" strokeWidth={3} />
+          <circle className="jn-ripple motion-loop" cx="214" cy="58" r="15" fill="var(--primary)" fillOpacity={0.3} style={d(2900)} />
+          <circle cx="214" cy="58" r="14" fill="var(--primary)" stroke="white" strokeWidth={3} />
           {/* A small house */}
           <path d="M207 59.5 214 53l7 6.5V65h-14z" fill="white" />
         </svg>
@@ -391,13 +434,13 @@ function ArriveScene() {
       </p>
       <div className="mt-1.5 grid grid-cols-4 gap-1.5">
         {[
-          { icon: Activity, label: "ECG", tone: "bg-aqua text-primary" },
-          { icon: Stethoscope, label: "Steth", tone: "bg-sky-tint text-sky-ink" },
-          { icon: Gauge, label: "BP", tone: "bg-rose-tint text-rose-ink" },
-          { icon: Droplet, label: "Sugar", tone: "bg-marigold-tint text-marigold-ink" },
+          { icon: PackageCheck, label: "Sealed kit" },
+          { icon: Pill, label: "Medicines" },
+          { icon: Gauge, label: "BP" },
+          { icon: Activity, label: "ECG" },
         ].map((x, i) => (
           <span key={x.label} className="jn-pop flex flex-col items-center gap-1 rounded-xl bg-white py-2 ring-1 ring-border" style={d(3400 + i * 150)}>
-            <span className={cn("flex size-7 items-center justify-center rounded-lg", x.tone)}>
+            <span className="flex size-7 items-center justify-center rounded-lg bg-aqua text-primary">
               <x.icon className="size-4" />
             </span>
             <span className="text-[0.625rem] font-semibold text-ink-2">{x.label}</span>
@@ -408,150 +451,72 @@ function ArriveScene() {
   );
 }
 
-/** Step 3: the doctor on video while the readings stream in. */
-function DoctorScene() {
-  const vitals = [
-    { label: "Heart rate", value: "76 bpm", flag: "Normal" },
+/** Step 4: the doctor joins on video, the care is done, and the report arrives on WhatsApp. */
+function DoneScene() {
+  const rows = [
+    { label: "B12 injection", value: "Given, 6:12 PM", flag: "Done" },
     { label: "Blood pressure", value: "126/78", flag: "Elevated" },
-    { label: "Oxygen", value: "98%", flag: "Normal" },
   ];
   return (
-    <div className="flex h-full flex-col text-[0.75rem]">
-      <div className="jn-in relative h-[10.5rem] overflow-hidden rounded-2xl bg-pond" style={d(0)}>
+    <div className="relative flex h-full flex-col text-[0.75rem]">
+      <div className="jn-in relative h-[8.5rem] shrink-0 overflow-hidden rounded-2xl bg-pond" style={d(0)}>
         <Image src="/img/doctor.jpg" alt="" fill sizes="300px" className="object-cover object-[50%_30%]" />
         <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-pond/80 px-2 py-1 text-[0.625rem] font-semibold text-white backdrop-blur">
           <span className="size-1.5 rounded-full bg-mint-glow" />
-          Live
+          On video
         </span>
         <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/90 px-2.5 py-1 text-[0.6875rem] font-semibold text-ink backdrop-blur">
-          Dr. Ananya Rao
+          Your Nivar doctor
         </span>
-        <span className="jn-pop absolute right-2.5 bottom-2.5 flex size-12 items-center justify-center rounded-xl bg-aqua-2 text-[0.8125rem] font-semibold text-primary ring-2 ring-white" style={d(500)}>
+        <span className="jn-pop absolute right-2.5 bottom-2.5 flex size-11 items-center justify-center rounded-xl bg-aqua-2 text-[0.8125rem] font-semibold text-primary ring-2 ring-white" style={d(500)}>
           KI
         </span>
       </div>
 
-      <div className="jn-in mt-3 rounded-2xl bg-pond p-3 text-white" style={d(400)}>
-        <div className="flex items-center justify-between text-[0.6875rem]">
-          <span className="font-semibold">ECG, lead II</span>
-          <span className="flex items-center gap-1 text-mint-glow">
-            <HeartPulse className="size-3.5" />
-            72 bpm
-          </span>
-        </div>
-        <MiniTrace className="mt-1.5 h-8 text-mint-glow" />
-      </div>
-
       <div className="mt-3 flex flex-col gap-1.5">
-        {vitals.map((v, i) => (
-          <div key={v.label} className="jn-in flex items-center justify-between rounded-xl bg-white px-3 py-2 ring-1 ring-border" style={d(1100 + i * 500)}>
-            <span className="text-ink-3">{v.label}</span>
+        {rows.map((r, i) => (
+          <div key={r.label} className="jn-in flex items-center justify-between rounded-xl bg-white px-3 py-2 ring-1 ring-border" style={d(700 + i * 450)}>
+            <span className="text-ink-3">{r.label}</span>
             <span className="flex items-center gap-2">
-              <span className="font-semibold text-ink tabular-nums">{v.value}</span>
+              <span className="font-semibold text-ink tabular-nums">{r.value}</span>
               <span
                 className={cn(
                   "rounded-full px-1.5 py-0.5 text-[0.625rem] font-semibold",
-                  v.flag === "Normal" ? "bg-aqua text-primary" : "bg-marigold-tint text-marigold-ink",
+                  r.flag === "Elevated" ? "bg-marigold-tint text-marigold-ink" : "bg-aqua text-primary",
                 )}
               >
-                {v.flag}
+                {r.flag}
               </span>
             </span>
           </div>
         ))}
       </div>
 
-      <span className="jn-pop mt-auto flex items-center justify-center gap-1.5 rounded-full bg-aqua py-2 font-semibold text-primary" style={d(2900)}>
-        <Check className="size-3.5" strokeWidth={3} />
-        Reviewed live by your doctor
-      </span>
-    </div>
-  );
-}
-
-/** Step 4: the report fills in, gets signed and lands in the app. */
-function ReportScene() {
-  const rows = [
-    { label: "Blood pressure", value: "126/78", flag: "Elevated" },
-    { label: "ECG", value: "Normal rhythm", flag: "Normal" },
-    { label: "Blood sugar", value: "112 mg/dL", flag: "Normal" },
-  ];
-  return (
-    <div className="relative flex h-full flex-col text-[0.75rem]">
-      <div className="jn-in flex items-start justify-between" style={d(0)}>
-        <span>
-          <span className="block text-[0.9375rem] font-semibold text-ink">Health report</span>
-          <span className="block text-[0.6875rem] text-ink-3">Kamala Iyer, 67. Heart Check</span>
-        </span>
-        <span className="flex size-9 items-center justify-center rounded-xl bg-aqua text-primary">
-          <FileHeart className="size-4.5" />
-        </span>
-      </div>
-
-      <div className="mt-4 flex flex-col divide-y divide-border rounded-2xl ring-1 ring-border">
-        {rows.map((r, i) => (
-          <div key={r.label} className="jn-in flex items-center justify-between px-3 py-2.5" style={d(300 + i * 350)}>
-            <span className="text-ink-3">{r.label}</span>
-            <span className="flex items-center gap-2">
-              <span className="font-semibold text-ink">{r.value}</span>
-              <span
-                className={cn(
-                  "size-2 rounded-full",
-                  r.flag === "Normal" ? "bg-primary" : "bg-marigold",
-                )}
-              />
+      <div className="mt-3 flex flex-1 flex-col justify-end rounded-2xl bg-aqua p-2.5">
+        <Bubble delay={1900} time="6:40 PM">
+          <span className="flex items-center gap-2 rounded-lg bg-aqua p-2">
+            <span className="flex size-8 items-center justify-center rounded-md bg-rose-tint text-rose-ink">
+              <FileHeart className="size-4" />
             </span>
-          </div>
-        ))}
-      </div>
-
-      <p className="jn-in mt-4 font-semibold text-ink-3" style={d(1400)}>
-        Doctor&apos;s note
-      </p>
-      <div className="mt-2 flex flex-col gap-1.5">
-        {["94%", "86%", "72%"].map((w, i) => (
-          <span key={w} className="jn-grow h-2 rounded-full bg-aqua-2" style={{ width: w, "--d": `${1500 + i * 220}ms` } as CSSProperties} />
-        ))}
-      </div>
-
-      <div className="mt-4 flex items-end justify-between">
-        <span>
-          <svg viewBox="0 0 120 36" className="h-8 w-28" fill="none">
-            <path
-              className="jn-draw"
-              d="M4 26c8-14 14-20 18-12s-6 16 2 10 10-18 16-10 0 14 8 8 8-14 14-8 4 10 12 6 12-10 22-8 14 4 20 2"
-              pathLength={1}
-              stroke="var(--pond)"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ "--d": "2200ms", "--dur": "1100ms" } as CSSProperties}
-            />
-          </svg>
-          <span className="jn-in block text-[0.625rem] text-ink-3" style={d(2900)}>
-            Dr. Ananya Rao, MBBS, MD
+            <span>
+              <span className="block font-semibold">Visit report.pdf</span>
+              <span className="block text-[0.625rem] text-ink-3">Signed by your doctor</span>
+            </span>
           </span>
-        </span>
-        <span className="jn-pop flex size-12 items-center justify-center rounded-full border-2 border-primary text-[0.5625rem] leading-tight font-bold text-primary" style={d(3000)}>
-          SIGNED
-        </span>
+          <span className="mt-1.5 block">Here is today&apos;s report. Take care!</span>
+        </Bubble>
       </div>
-
-      <span className="jn-pop mt-auto flex h-11 items-center justify-center gap-2 rounded-full bg-primary font-semibold text-white" style={d(3400)}>
-        <Download className="size-4" />
-        Download report
-      </span>
 
       <div
         className="jn-drop absolute inset-x-0 top-0 z-10 flex items-center gap-2.5 rounded-2xl bg-pond p-3 text-white shadow-lg"
-        style={d(3700)}
+        style={d(3400)}
       >
         <span className="flex size-8 items-center justify-center rounded-full bg-mint-glow text-pond">
-          <FileHeart className="size-4" />
+          <Check className="size-4" strokeWidth={3} />
         </span>
         <span>
-          <span className="block font-semibold">Your report is ready</span>
-          <span className="block text-[0.6875rem] text-on-pine-2">Also sent to your son&apos;s app</span>
+          <span className="block font-semibold">Care done</span>
+          <span className="block text-[0.6875rem] text-on-pine-2">Report sent on WhatsApp, to you and your son</span>
         </span>
       </div>
     </div>

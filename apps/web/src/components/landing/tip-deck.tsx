@@ -118,10 +118,10 @@ export function TipDeck({
   return (
     <article
       aria-labelledby={titleId}
-      className="flex h-full flex-col rounded-[2rem] bg-white p-6 shadow-[0_24px_50px_-32px_rgb(6_47_45/0.45)] ring-1 ring-ink/5 sm:p-9"
+      className="flex h-full flex-col rounded-[2rem] bg-white p-6 shadow-[0_24px_50px_-32px_rgb(1_43_54/0.45)] ring-1 ring-ink/5 sm:p-9"
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="rounded-full bg-marigold px-3 py-1 text-sm font-semibold text-ink">
+        <p className="rounded-full bg-aqua px-3 py-1 text-sm font-semibold text-primary">
           {isToday ? "Tip of the day" : "Health tip"}
         </p>
         {isToday && <p className="text-small font-medium text-ink-3">{dateLabel}</p>}

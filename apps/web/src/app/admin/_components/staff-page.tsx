@@ -182,7 +182,7 @@ export function StaffPage() {
         title="Staff"
         description={
           staff
-            ? `${activeCount("nurse")} nurses and ${activeCount("doctor")} doctors on duty. Every one a full-time Nivar employee.`
+            ? `${activeCount("nurse")} nurses and ${activeCount("doctor")} doctors on duty.`
             : "Nurses and doctors"
         }
         actions={

@@ -69,14 +69,19 @@ const LOOK: Record<string, { tint: string; ink: string; viz: (f: HealthFact) => 
   "bp-lowering-benefit": { tint: "bg-aqua", ink: "text-primary", viz: () => <Bars /> },
 };
 
-/** "Health, in numbers": four sourced facts, each with a small picture of what the number means. No CTA. */
+/**
+ * "Most of it is silent": four sourced facts, each with a small picture of what the number means.
+ * It opens the "Why Nivar Health?" page, so its title is that page's h1. No CTA.
+ */
 export function HealthFacts() {
   const facts = HEALTH_FACTS.filter((f) => f.featured);
   return (
-    <Section id="health-facts" titleId="health-facts-title">
+    <Section id="health-facts" titleId="health-facts-title" className="pt-32 lg:pt-40">
       <Container>
         <SectionTitle
+          as="h1"
           id="health-facts-title"
+          eyebrow="Why Nivar Health?"
           title="Most of it is silent. Until someone checks."
           lede="High blood pressure and raised blood sugar rarely cause symptoms early on. These figures come from large public-health studies, not from Nivar patients."
         />

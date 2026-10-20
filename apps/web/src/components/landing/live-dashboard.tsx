@@ -2,8 +2,9 @@
 
 import { useRef } from "react";
 import { EcgMonitor } from "@/components/live/ecg-monitor";
+import { StethMonitor } from "@/components/live/steth-monitor";
 import { cn } from "@/lib/utils";
-import { useEcgFeed, useInView, usePairing } from "./live-feeds";
+import { useEcgFeed, useInView, usePairing, useStethFeed } from "./live-feeds";
 import { useMotionPaused } from "./motion";
 import { LiveDot, Pill } from "./primitives";
 
@@ -15,10 +16,16 @@ const VITALS = [
   { label: "Heart rate", value: "76", unit: "bpm", flag: "Normal" },
 ] as const;
 
+/** Shown on both monitors under reduced motion, before any signal has arrived. */
+const PAUSED_LABEL = (
+  // Narrow canvases (under sm) get two centred lines with room to spare instead of an edge-to-edge pill.
+  <span className="max-w-[18ch] text-center text-balance sm:max-w-none">Live trace paused while animations are off.</span>
+);
+
 /**
- * The doctor's view, built from the same monitor component the real console uses
- * and fed by the local device simulator, so the trace is genuinely live.
- * It streams only while on screen, and holds its last frame under prefers-reduced-motion.
+ * The doctor's view, built from the same monitor components the real console uses (smart ECG and
+ * digital stethoscope) and fed by the local device simulators, so both traces are genuinely live.
+ * They stream only while on screen, and hold still under prefers-reduced-motion.
  */
 export function LiveDashboard({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -27,6 +34,7 @@ export function LiveDashboard({ className }: { className?: string }) {
   const running = inView && !motionPaused;
   const paired = usePairing(running, 1200);
   const feed = useEcgFeed(76);
+  const stethFeed = useStethFeed(76);
 
   return (
     <div
@@ -40,12 +48,12 @@ export function LiveDashboard({ className }: { className?: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-4">
         <div className="min-w-0">
           <p className="text-[0.9375rem] font-medium text-foreground">Rahul Mehta, 58</p>
-          <p className="text-caption text-muted-foreground">Heart Check, Indiranagar</p>
+          <p className="text-caption text-muted-foreground">Heart Check, HSR Layout</p>
         </div>
         <Pill tone="inverse" size="md" className="h-9">
           <LiveDot pulse className="size-1.5" />
           <span>
-            Dr. Rao<span className="hidden sm:inline"> reviewing</span>
+            Doctor<span className="hidden sm:inline"> reviewing</span>
           </span>
         </Pill>
       </div>
@@ -55,14 +63,20 @@ export function LiveDashboard({ className }: { className?: string }) {
         heartRate={76}
         status={paired ? "streaming" : "connecting"}
         paused={motionPaused}
-        pausedLabel={
-          // Narrow canvases (under sm) get two centred lines with room to spare instead of an edge-to-edge pill.
-          <span className="max-w-[18ch] text-center text-balance sm:max-w-none">
-            Live trace paused while animations are off.
-          </span>
-        }
+        pausedLabel={PAUSED_LABEL}
         height={200}
         className="rounded-2xl"
+      />
+
+      {/* Heart and lung sounds: the doctor listens as the nurse moves the digital stethoscope. */}
+      <StethMonitor
+        feed={running ? stethFeed : null}
+        heartRate={76}
+        status={paired ? "streaming" : "connecting"}
+        paused={motionPaused}
+        pausedLabel={PAUSED_LABEL}
+        height={170}
+        className="mt-3 rounded-2xl"
       />
 
       <dl className="mt-4 grid gap-px overflow-hidden rounded-2xl bg-border min-[420px]:grid-cols-2">
