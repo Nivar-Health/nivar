@@ -22,7 +22,7 @@ export const SERVICES: SeedService[] = (
     { code: "HR", name: "Heart Rate", shortName: "HR", price: 99, durationMin: 2, requiresDevice: null, icon: "heart-pulse", description: "Resting heart rate and rhythm check." },
     { code: "SPO2", name: "Oxygen Saturation", shortName: "SpO2", price: 99, durationMin: 2, requiresDevice: null, icon: "wind", description: "Pulse oximetry to measure blood oxygen levels." },
     { code: "STETH", name: "Smart Stethoscope", shortName: "Steth", price: 399, durationMin: 10, requiresDevice: "stethoscope", icon: "stethoscope", description: "Digital auscultation of heart and lungs, heard live by the doctor." },
-    { code: "CONSULT", name: "Doctor Video Consult", shortName: "Consult", price: 499, durationMin: 15, requiresDevice: null, icon: "video", description: "Video consultation with a full-time Nivar doctor, with a written report and prescription." },
+    { code: "CONSULT", name: "Doctor Video Consult", shortName: "Consult", price: 499, durationMin: 15, requiresDevice: null, icon: "video", description: "Video consultation with a Nivar doctor, with a written report and prescription." },
   ] as const
 ).map((s, i) => ({ ...s, sortOrder: i + 1 }));
 
@@ -40,7 +40,7 @@ export interface SeedPackage {
 
 export const PACKAGES: SeedPackage[] = [
   { slug: "essential-vitals", name: "Essential Vitals", tagline: "The quick monthly check", description: "Blood pressure, blood sugar, heart rate and oxygen saturation, recorded at home by a certified Nivar nurse.", serviceCodes: ["BP", "SUGAR", "HR", "SPO2"], price: 449, mrp: 546, popular: false, sortOrder: 1 },
-  { slug: "heart-check", name: "Heart Check", tagline: "ECG and stethoscope, reviewed live by a cardiologist", description: "Smart ECG and digital stethoscope streamed live to a Nivar doctor, plus BP, heart rate and a video consult with a written report.", serviceCodes: ["BP", "ECG", "STETH", "HR", "CONSULT"], price: 1499, mrp: 2195, popular: true, sortOrder: 2 },
+  { slug: "heart-check", name: "Heart Check", tagline: "ECG and stethoscope, reviewed live by a doctor", description: "Smart ECG and digital stethoscope streamed live to a Nivar doctor, plus BP, heart rate and a video consult with a written report.", serviceCodes: ["BP", "ECG", "STETH", "HR", "CONSULT"], price: 1499, mrp: 2195, popular: true, sortOrder: 2 },
   { slug: "complete-home-checkup", name: "Complete Home Check-up", tagline: "Everything, in one visit", description: "All vitals, smart ECG, digital stethoscope and a doctor video consult with a full report and prescription.", serviceCodes: ["BP", "ECG", "SUGAR", "HR", "SPO2", "STETH", "CONSULT"], price: 1899, mrp: 2643, popular: false, sortOrder: 3 },
   { slug: "diabetes-care", name: "Diabetes Care", tagline: "Sugar, BP and a doctor who follows up", description: "Blood sugar, blood pressure and heart rate, with a doctor consult to review medication and diet.", serviceCodes: ["SUGAR", "BP", "HR", "CONSULT"], price: 899, mrp: 946, popular: false, sortOrder: 4 },
 ];

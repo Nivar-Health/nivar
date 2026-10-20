@@ -4,7 +4,6 @@ import { BreathingCard } from "./breathing-card";
 import {
   CONTENT_REVIEW,
   EMERGENCY_NOTE,
-  HEALTH_FACTS,
   HEALTH_TIPS,
   VISIT_CHECKLIST,
   tipOfTheDayIndex,
@@ -14,10 +13,10 @@ import { ExternalLink, HealthDisclaimer } from "./health-facts";
 import { Container, Section, SectionTitle, revealProps } from "./primitives";
 import { TipDeck } from "./tip-deck";
 
-/** Every unique source URL behind the featured facts and all tips, in first-seen order. */
+/** Every unique source URL behind the tips, in first-seen order (the facts list theirs on "Why Nivar Health?"). */
 const ALL_SOURCES: HealthSource[] = (() => {
   const seen = new Map<string, HealthSource>();
-  for (const s of [...HEALTH_FACTS.filter((f) => f.featured), ...HEALTH_TIPS].flatMap((x) => x.sources)) {
+  for (const s of HEALTH_TIPS.flatMap((x) => x.sources)) {
     if (!seen.has(s.url)) seen.set(s.url, s);
   }
   return [...seen.values()];

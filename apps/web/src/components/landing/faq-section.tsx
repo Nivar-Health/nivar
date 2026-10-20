@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
@@ -10,49 +11,61 @@ const EMERGENCY_NOW = `${SITE.emergency.short.replace(/\.$/, "")} straight away.
 export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; completePrice: number }) {
   const items: FaqItem[] = [
     {
-      q: "How much does a home check-up cost?",
+      q: "What can a Nivar nurse do at home?",
       a: (
         <p>
-          Programmes start at {inr(fromPrice)} and the Complete Home Check-up is {inr(completePrice)}. The price
-          covers the nurse visit, the devices, the doctor consult and the report. There is no travel charge and
-          no separate consultation fee.
+          Injections and vaccines (IM, IV, B12, tetanus), IV drips as prescribed, wound dressings and post-surgery
+          care, health check-ups with a smart ECG and digital stethoscope, and blood sample collection for a partner
+          lab. A Nivar doctor joins on video when you need one.
         </p>
       ),
     },
     {
-      q: "Which tests can be done at home?",
+      q: "Where and when do you visit?",
       a: (
         <p>
-          Blood pressure, blood sugar, heart rate, oxygen saturation, a resting smart ECG and digital auscultation
-          of the heart and lungs. Anything that needs a lab, such as a blood panel, is not part of a Nivar visit yet.
+          Homes in {SITE.area}, {SITE.city}, {SITE.hours.inSentence}. If you are a little further away, ask us
+          anyway and we will tell you if we can reach you.
         </p>
       ),
     },
     {
-      q: "How quickly can a nurse reach me?",
+      q: "How much does it cost?",
       a: (
         <p>
-          In most of {SITE.city} a same-day slot is available within an hour or two of booking, {SITE.hours.inSentence}.
-          You see the live arrival time in the app once the nurse sets off.
+          Health check-ups start at {inr(fromPrice)}, and the Complete Home Check-up is {inr(completePrice)}. For
+          injections, drips, dressings and lab tests, we tell you the full price on WhatsApp or on the call before we
+          confirm. There is no travel charge, no surge pricing and no hidden consultation fee.
         </p>
       ),
     },
     {
-      q: "How soon do I get my report?",
+      q: "Do I need a prescription?",
       a: (
         <p>
-          {SITE.report.chip} of the visit. Your Nivar doctor signs it, explains every reading in plain words and adds
-          a prescription if you need one. It lands in the app, and in your family member&apos;s app if you booked for
-          them.
+          For injections and drips, yes: the nurse gives medicines only as a doctor has prescribed them. Send us a
+          photo of the prescription on WhatsApp. If you do not have one, our doctor will talk you through the options
+          on the call.
         </p>
       ),
     },
     {
-      q: "Is the doctor a real, registered doctor?",
+      q: "When do I get my report?",
       a: (
         <p>
-          Yes. Every Nivar doctor is MBBS or higher, registered with the Karnataka Medical Council and employed
-          full-time by Nivar. Their name and registration number appear on your report.
+          After the visit, {SITE.report.channel}. For a check-up it is {SITE.report.checkup}: your Nivar doctor
+          reviews every reading, explains it in plain words and adds a prescription if you need one. If you booked
+          for a family member, we can send it to them too.
+        </p>
+      ),
+    },
+    {
+      q: "Who are the nurses and doctors?",
+      a: (
+        <p>
+          Our nurses are registered with the Karnataka State Nursing Council. Our doctors are MBBS or higher and
+          registered with the Karnataka Medical Council. All of them are trained on our devices and protocols before
+          their first visit, and the doctor&apos;s name and registration number appear on your report.
         </p>
       ),
     },
@@ -61,8 +74,8 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
       a: (
         <p>
           The doctor sees it as it is recorded and will usually ask the nurse to repeat the measurement. If something
-          needs urgent attention, the doctor tells you directly on the video call and explains the next step.{" "}
-          {EMERGENCY_NOW}
+          needs urgent attention, the doctor tells you directly on the video call and explains the next step, including
+          a hospital referral if you need one. {EMERGENCY_NOW}
         </p>
       ),
     },
@@ -83,8 +96,8 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
       q: "Can I cancel or reschedule?",
       a: (
         <p>
-          Yes, free of charge until the nurse starts travelling to you. After that, a small visit fee applies. You can
-          move a booking to any open slot from the app.
+          Yes, free of charge until the nurse sets off. After that, a small visit fee applies. Message us on WhatsApp,
+          or ask us to call you, to move your visit to another slot.
         </p>
       ),
     },
@@ -108,8 +121,8 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
             <FaqAccordion items={items} />
             <p className="mt-8 text-body text-foreground-2">
               Still unsure?{" "}
-              <a
-                href="#callback"
+              <Link
+                href="/#callback"
                 className={cn(
                   "inline-flex items-center gap-1 rounded-sm font-semibold text-primary underline decoration-border-strong underline-offset-4 hover:decoration-current focus-ring",
                   ARROW_NUDGE,
@@ -117,7 +130,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number; co
               >
                 Ask us to call you
                 <ArrowRight aria-hidden className="size-4" />
-              </a>
+              </Link>
             </p>
           </div>
         </div>

@@ -1,11 +1,23 @@
-/* Landing page ("Garden City morning"): scoped tokens and motion.
+/* Public site ("Nivar Teal"): scoped tokens and motion.
    Loops carry .motion-loop so prefers-reduced-motion stops them on their rest pose (globals.css). One-shots use fill-mode `backwards`: an element's base style
    is its final pose, so without JS, or with reduced motion, everything simply shows at rest. */
 
-/* ---- 0. Tokens: the landing page is white, with jade as its action colour ---- */
+/* ---- 0. Tokens: the site is white, with Nivar teal for headings, icons and buttons ---- */
 [data-landing],
 [data-landing] .theme-light {
   --background: #ffffff;
+  --ink: #013a48;
+  --ink-2: #3d5862;
+  --ink-3: #4f6973; /* 4.98:1 on aqua; never on aqua-2 */
+  --teal: #016a80;
+  /* Re-declared here: on :root these resolved against the app's ink before it was re-tinted above. */
+  --foreground: var(--ink);
+  --foreground-2: var(--ink-2);
+  --muted-foreground: var(--ink-3);
+  --card-foreground: var(--ink);
+  --popover-foreground: var(--ink);
+  --secondary-foreground: var(--ink);
+  --accent-foreground: var(--ink);
   --primary: var(--jade);
   --primary-hover: var(--jade-hover);
   --primary-active: var(--jade-active);
@@ -13,14 +25,24 @@
   --heading-accent: var(--jade);
   --muted: var(--aqua);
   --accent: var(--aqua);
-  --border: #dbe9e4;
-  --border-strong: #c2d8d0;
+  --border: #d5e4e9;
+  --border-strong: #bcd3da;
+}
+/* Deep teal panels: the pine tokens, re-tinted from green to the uniform's teal. */
+[data-landing] {
+  --pine: #012b36;
+  --pine-raised: #063845;
+  --on-pine: #f0f7f9;
+  --on-pine-2: #b4ccd3;
+  --on-pine-3: #8faeb8;
+  --pine-accent: #9ccfdb;
+  --ring-on-dark: #8ed3e0;
 }
 
 /* Deep pond bands (Live, footer): pine tokens on a pond gradient. */
 .band-pond {
   background:
-    radial-gradient(900px 480px at 85% 0%, rgb(127 224 196 / 0.14), transparent 65%),
+    radial-gradient(900px 480px at 85% 0%, rgb(142 211 224 / 0.14), transparent 65%),
     radial-gradient(700px 420px at 0% 100%, rgb(47 109 181 / 0.12), transparent 60%),
     linear-gradient(180deg, var(--pond) 0%, var(--pond-2) 100%);
 }
@@ -131,9 +153,9 @@
 /* ---- 3. Hero: morning light, doorway, ripples, floating readings ---- */
 .hero-sky {
   background:
-    radial-gradient(760px 520px at 82% 18%, rgb(127 224 196 / 0.32), transparent 62%),
-    radial-gradient(640px 460px at 6% 4%, var(--sky-tint), transparent 64%),
-    linear-gradient(180deg, #f1faf7 0%, #f7fcfa 55%, #ffffff 100%);
+    radial-gradient(760px 520px at 82% 18%, rgb(142 211 224 / 0.3), transparent 62%),
+    radial-gradient(640px 460px at 6% 4%, var(--aqua), transparent 64%),
+    linear-gradient(180deg, #eef5f7 0%, #f6fafb 55%, #ffffff 100%);
 }
 .hero-orb {
   position: absolute;
@@ -380,7 +402,7 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
 }
 [data-nv-revealed] .ecg-draw { animation: draw 1800ms var(--curve-calm) 200ms backwards; }
 
-/* ---- 13. Nav link underline + scroll-spy ---- */
+/* ---- 13. Nav link underline, and the current page ---- */
 .nav-link {
   position: relative;
 }
@@ -397,6 +419,6 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
   transition: transform 240ms var(--curve-standard);
 }
 .nav-link:hover::after,
-.nav-link[aria-current="true"]::after {
+.nav-link[aria-current="page"]::after {
   transform: scaleX(1);
 }

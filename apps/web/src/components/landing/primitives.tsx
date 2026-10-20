@@ -1,13 +1,12 @@
 import Link from "next/link";
 import type { ComponentProps, CSSProperties, HTMLAttributes, ReactNode } from "react";
-import { bookingEnabled } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------------- */
 /* Buttons: one shape (pill), one focus recipe, 44px default target          */
 /* ------------------------------------------------------------------------- */
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "inverse";
+export type ButtonVariant = "primary" | "accent" | "whatsapp" | "secondary" | "ghost" | "inverse";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const BUTTON_BASE =
@@ -22,7 +21,13 @@ const BUTTON_SIZE: Record<ButtonSize, string> = {
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary text-primary-foreground shadow-[0_10px_24px_-12px_rgb(11_115_102/0.7)] hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:bg-primary-active",
+    "bg-primary text-primary-foreground shadow-[0_10px_24px_-12px_rgb(1_76_94/0.7)] hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:bg-primary-active",
+  /** Amber, dark text (6.02:1). The main call to action only, so it stands out. */
+  accent:
+    "bg-marigold text-ink shadow-[0_10px_24px_-12px_rgb(176_104_10/0.7)] hover:-translate-y-px hover:bg-marigold-hover active:translate-y-0",
+  /** WhatsApp green with dark text (6.36:1); white on this green fails contrast. */
+  whatsapp:
+    "bg-whatsapp text-whatsapp-ink shadow-[0_10px_24px_-12px_rgb(7_94_60/0.6)] hover:-translate-y-px hover:bg-whatsapp-hover active:translate-y-0",
   secondary:
     "border border-border-strong bg-card text-foreground shadow-xs hover:-translate-y-px hover:border-input hover:bg-card active:translate-y-0",
   ghost: "text-foreground hover:bg-muted",
@@ -38,15 +43,8 @@ export function buttonClass(variant: ButtonVariant = "primary", className?: stri
   return cn(BUTTON_BASE, BUTTON_SIZE[size], BUTTON_VARIANT[variant], className);
 }
 
-/** Booking CTAs open the booking flow, or the callback form while booking is switched off. */
-export function bookHref(query?: string) {
-  if (!bookingEnabled) return "#callback";
-  return query ? `/app/book?${query}` : "/app/book";
-}
-
-export const BOOK_LABEL = bookingEnabled ? "Book a check-up" : "Request a callback";
-/** Short per-row CTA (programme cards, pricing rows). */
-export const ROW_CTA_LABEL = bookingEnabled ? "Book" : "Enquire";
+/** The callback form lives on the home page; this reaches it from every page. */
+export const CALLBACK_HREF = "/#callback";
 
 export function ButtonLink({
   variant = "primary",
@@ -142,6 +140,7 @@ export function SectionTitle({
   lede,
   align = "left",
   id,
+  as: Heading = "h2",
   reveal = false,
   className,
 }: {
@@ -155,6 +154,8 @@ export function SectionTitle({
   align?: "left" | "center";
   /** Put the same id in <Section titleId>. */
   id?: string;
+  /** h1 for the first section of a sub-page; it keeps the h2 size. */
+  as?: "h1" | "h2";
   reveal?: boolean;
   className?: string;
   /** @deprecated no-op: .theme-pine recolours automatically */
@@ -167,10 +168,10 @@ export function SectionTitle({
       className={cn("flex flex-col", align === "center" && "items-center text-center", className)}
     >
       {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
-      <h2 id={id} className="max-w-[20ch] text-h2 text-balance text-foreground">
+      <Heading id={id} className="max-w-[20ch] text-h2 text-balance text-foreground">
         {title}
         {acc && <> {acc}</>}
-      </h2>
+      </Heading>
       {lede && <p className="mt-5 max-w-[54ch] text-lede text-pretty text-foreground-2">{lede}</p>}
     </div>
   );

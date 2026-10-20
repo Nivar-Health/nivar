@@ -1,6 +1,7 @@
 import Image from "next/image";
-import { BOOK_LABEL, ButtonLink, Container, GlassCard, LiveDot, Pill, Section, SectionTitle, bookHref } from "./primitives";
+import { Container, GlassCard, LiveDot, Pill, Section, SectionTitle } from "./primitives";
 import { LiveDashboard } from "./live-dashboard";
+import { ContactCtas } from "./whatsapp";
 
 export function LiveSection() {
   return (
@@ -15,14 +16,14 @@ export function LiveSection() {
         <SectionTitle
           id="live-title"
           title="Readings that reach your doctor while you're still on the sofa."
-          lede="The nurse's devices stream straight to a Nivar doctor's console. If a reading looks off, the doctor asks for a repeat on the spot instead of calling you back next week."
+          lede="The smart ECG and digital stethoscope stream straight to a Nivar doctor's console, so the doctor sees the heart's rhythm and hears the heart and lungs as the nurse records them. If something looks or sounds off, the doctor asks for a repeat on the spot."
         />
 
         <div className="mt-12 grid gap-6 lg:mt-14 lg:grid-cols-2 lg:gap-8">
           <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] bg-pine-raised ring-1 ring-white/10 lg:aspect-auto">
             <Image
               src="/img/doctor.jpg"
-              alt="A Nivar doctor at her desk reviewing a patient's live readings on a monitor"
+              alt="A doctor at a desk reviewing a patient's live readings on a monitor"
               fill
               sizes="(min-width: 1024px) 600px, 100vw"
               className="object-cover"
@@ -44,11 +45,9 @@ export function LiveSection() {
 
         <p className="mt-4 text-caption text-pretty text-muted-foreground">Demo with simulated readings and an illustrative patient.</p>
 
-        <div className="mt-12 flex flex-col items-start gap-4 border-t border-border-strong pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col items-start gap-4 border-t border-border-strong pt-8 md:flex-row md:items-center md:justify-between">
           <p className="text-body text-pretty text-foreground-2">See your own readings reach a Nivar doctor, live.</p>
-          <ButtonLink href={bookHref()} variant="inverse" size="lg">
-            {BOOK_LABEL}
-          </ButtonLink>
+          <ContactCtas tone="dark" message="Hi Nivar, I'd like to book a health check-up at home." />
         </div>
       </Container>
     </Section>

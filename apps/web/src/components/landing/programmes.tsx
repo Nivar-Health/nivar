@@ -1,10 +1,9 @@
-import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { Package } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ProgrammeGlyph, programmeStyle } from "./programme-glyphs";
-import { Container, ROW_CTA_LABEL, Section, SectionTitle, bookHref, inr, revealProps } from "./primitives";
+import { Container, Section, SectionTitle, inr, revealProps } from "./primitives";
+import { EnquireButton } from "./whatsapp";
 
 /** Plain names for the tests a programme includes. */
 const TEST_NAMES: Record<string, string> = {
@@ -25,16 +24,19 @@ const LG_COLS: Record<number, string> = {
   4: "lg:grid-cols-2 xl:grid-cols-4",
 };
 
-/** Catalog-driven: `packages` arrives sorted by sortOrder, so admin edits and deactivations show up here. */
+/**
+ * Services page, "Health check-ups". Catalog-driven: `packages` arrives sorted by sortOrder, so admin
+ * edits and deactivations show up here. One price per check-up; no reference ("usual") price is shown.
+ */
 export function Programmes({ packages }: { packages: Package[] }) {
   return (
-    <Section id="what-we-test" titleId="what-we-test-title">
+    <Section id="check-ups" titleId="check-ups-title" divider="top">
       <Container>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <SectionTitle
-            id="what-we-test-title"
-            title="Programmes designed around what you worry about."
-            lede="Pick the check-up that matches the question on your mind. Every programme includes the nurse visit, the devices and the doctor's written report."
+            id="check-ups-title"
+            title="Health check-ups"
+            lede="Pick the check-up that matches the question on your mind. Each one includes the nurse visit, the devices and the doctor's written report."
           />
           <p className="max-w-[34ch] text-small text-ink-3 lg:pb-2 lg:text-right">
             Prices include the home visit and the report. No surge pricing, no hidden consultation fee.
@@ -47,20 +49,19 @@ export function Programmes({ packages }: { packages: Package[] }) {
             const tests = p.serviceCodes.map((c) => TEST_NAMES[c] ?? c);
             return (
               <li key={p.slug} {...revealProps(i)}>
-                <Link
-                  href={bookHref(`package=${p.slug}`)}
-                  className="group relative flex h-full flex-col rounded-[1.75rem] bg-(--pg-tint) p-6 ring-1 ring-ink/[0.05] transition-[transform,box-shadow] duration-300 ease-calm focus-ring hover:-translate-y-1 hover:shadow-[0_28px_50px_-28px_rgb(6_47_45/0.45)] motion-reduce:hover:translate-y-0 sm:p-7"
+                <article
+                  className="group relative flex h-full flex-col rounded-[1.75rem] bg-(--pg-tint) p-6 ring-1 ring-ink/[0.05] sm:p-7"
                   style={{ "--pg-tint": style.tint } as CSSProperties}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span
                       aria-hidden
-                      className="flex size-[5.5rem] items-center justify-center rounded-full bg-white shadow-[0_14px_28px_-16px_rgb(6_47_45/0.4)]"
+                      className="flex size-[5.5rem] items-center justify-center rounded-full bg-white shadow-[0_14px_28px_-16px_rgb(1_43_54/0.4)]"
                     >
                       <ProgrammeGlyph slug={p.slug} className="size-16" />
                     </span>
                     {p.popular && (
-                      <span className="rounded-full bg-marigold px-3 py-1 text-xs font-semibold text-ink">Most booked</span>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary">Most booked</span>
                     )}
                   </div>
 
@@ -75,31 +76,20 @@ export function Programmes({ packages }: { packages: Package[] }) {
                     ))}
                   </ul>
 
-                  <div className="mt-auto flex items-end justify-between gap-4 pt-8">
-                    <p className="flex flex-col tabular-nums">
-                      {p.mrp > p.price && (
-                        <s className="text-small text-ink-3">
-                          <span className="sr-only">Usual price </span>
-                          {inr(p.mrp)}
-                        </s>
-                      )}
-                      <span className="text-[1.75rem] leading-none font-semibold tracking-[-0.03em] text-ink">
-                        {inr(p.price)}
-                      </span>
+                  <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-8">
+                    <p className="text-[1.75rem] leading-none font-semibold tracking-[-0.03em] text-ink tabular-nums">
+                      {inr(p.price)}
                     </p>
-                    <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white pr-3 pl-4 text-[0.9375rem] font-semibold text-primary shadow-[0_8px_18px_-12px_rgb(6_47_45/0.5)] transition-colors duration-200 group-hover:bg-primary group-hover:text-white">
-                      {ROW_CTA_LABEL}
-                      <ArrowUpRight aria-hidden className="size-4 transition-transform duration-200 group-hover:translate-x-px group-hover:-translate-y-px" />
-                    </span>
+                    <EnquireButton service={`the ${p.name}`} label={p.name} />
                   </div>
-                </Link>
+                </article>
               </li>
             );
           })}
         </ul>
 
         <p className="mt-8 text-small text-ink-3">
-          Every visit is carried out by a certified Nivar nurse and reviewed by a Nivar doctor on our payroll.
+          Every check-up is carried out by a registered Nivar nurse and reviewed by a Nivar doctor.
         </p>
       </Container>
     </Section>

@@ -1,24 +1,25 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowRight, ChevronDown, CircleAlert, LoaderCircle, Lock } from "lucide-react";
+import { ArrowRight, ChevronDown, CircleAlert, LoaderCircle, Lock, MapPin } from "lucide-react";
 import { ApiError, api } from "@/lib/api";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
 import { LANGUAGES } from "./l10n";
 import { buttonClass } from "./primitives";
 
-const CITIES = ["Bangalore", "Mysuru", "Hyderabad", "Pune", "Chennai", "Other"];
+/** The pilot serves one area, so the city is fixed rather than chosen. */
+const CITY = `${SITE.city} (${SITE.area})`;
 
-const WHO_FOR = ["Myself", "A parent", "Someone else"] as const;
+const WHO_FOR = ["Myself", "A parent", "A child", "Someone else"] as const;
 type WhoFor = "" | (typeof WHO_FOR)[number];
 type CallLanguage = "" | (typeof LANGUAGES)[number]["english"];
 
-type Fields = { name: string; phone: string; city: string; message: string };
+type Fields = { name: string; phone: string; message: string };
 type Errors = Partial<Record<keyof Fields, string>>;
 
-const EMPTY: Fields = { name: "", phone: "", city: "Bangalore", message: "" };
-const FIELD_ORDER: (keyof Fields)[] = ["name", "phone", "city", "message"];
+const EMPTY: Fields = { name: "", phone: "", message: "" };
+const FIELD_ORDER: (keyof Fields)[] = ["name", "phone", "message"];
 
 /** The user's own note. The composed message (who for + language + note) stays under the 1000-character API cap. */
 const MESSAGE_MAX = 900;
@@ -29,12 +30,11 @@ function validate(f: Fields): Errors {
   else if (f.name.trim().length > 80) e.name = "Keep the name under 80 characters.";
   // No-break space: the example number never splits across lines.
   if (!/^[6-9]\d{9}$/.test(f.phone)) e.phone = "Enter a 10-digit mobile number, like 98450\u00a012345.";
-  if (!f.city) e.city = "Choose a city.";
   if (f.message.length > MESSAGE_MAX) e.message = "Keep the message under 900 characters.";
   return e;
 }
 
-/** Keep each number with its unit ("7 am", "30 minutes") while the sentence wraps freely. */
+/** Keep each number with its unit ("7 AM", "30 minutes") while the sentence wraps freely. */
 const units = (s: string) => s.replace(/(\d) /g, "$1\u00a0");
 
 const SERVER_ERROR = `We could not send your request. Please try again in a minute.${
@@ -118,7 +118,7 @@ export function CallbackForm() {
         {
           name: fields.name.trim(),
           phone: fields.phone,
-          city: fields.city,
+          city: CITY,
           ...(composed ? { message: composed } : {}),
         },
         { anonymous: true },
@@ -218,7 +218,7 @@ export function CallbackForm() {
     >
       <fieldset>
         <legend className="flex w-full items-baseline justify-between gap-x-1.5 text-[0.9375rem] font-medium text-balance text-foreground">
-          Who is the check-up for? <span className="text-caption font-normal text-muted-foreground">Optional</span>
+          Who is the visit for? <span className="text-caption font-normal text-muted-foreground">Optional</span>
         </legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {WHO_FOR.map((v) => (
@@ -292,29 +292,14 @@ export function CallbackForm() {
         </div>
       </Field>
 
-      <Field label="City" htmlFor={id("city")} error={errors.city} errorId={id("city-error")}>
-        <div className="relative">
-          <select
-            id={id("city")}
-            name="city"
-            value={fields.city}
-            onChange={(e) => set("city", e.target.value)}
-            aria-invalid={!!errors.city}
-            aria-describedby={describe("city")}
-            className={cn(FIELD, "appearance-none pr-10")}
-          >
-            {CITIES.map((c) => (
-              <option key={c} value={c}>
-                {c === "Bangalore" ? c : c === "Other" ? "Another city" : `${c} (coming soon)`}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-primary"
-          />
-        </div>
-      </Field>
+      <div className="flex flex-col gap-2">
+        <p className="text-[0.9375rem] font-medium text-foreground">City</p>
+        <p className="flex h-13 items-center gap-2.5 rounded-xl border border-border bg-aqua px-4 text-base text-foreground"
+        >
+          <MapPin aria-hidden className="size-4 shrink-0 text-primary" />
+          {CITY}
+        </p>
+      </div>
 
       <Field
         label="Preferred language for the call"
@@ -359,7 +344,7 @@ export function CallbackForm() {
           id={id("message")}
           name="message"
           rows={3}
-          placeholder="For example, monthly BP checks for my mother in Jayanagar"
+          placeholder="For example, a B12 injection for my mother in HSR Layout Sector 2"
           value={fields.message}
           onChange={(e) => set("message", e.target.value)}
           aria-invalid={!!errors.message}
@@ -383,7 +368,7 @@ export function CallbackForm() {
         <button
           type="submit"
           aria-disabled={submitting || undefined}
-          className={buttonClass("primary", "w-full", "lg")}
+          className={buttonClass("accent", "w-full", "lg")}
         >
           {submitting ? (
             <>

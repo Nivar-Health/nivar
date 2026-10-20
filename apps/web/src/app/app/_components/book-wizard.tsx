@@ -111,8 +111,6 @@ export function BookWizard({
   const extras = (extraCodes.filter((c) => c in services && !included.includes(c as ServiceCode)) as ServiceCode[]);
   const extrasTotal = extras.reduce((sum, c) => sum + (services[c]?.price ?? 0), 0);
   const total = (pkg?.price ?? 0) + extrasTotal;
-  const mrpTotal = (pkg?.mrp ?? 0) + extrasTotal;
-  const savings = Math.max(0, mrpTotal - total);
   const testCount = new Set([...included, ...extras]).size;
 
   const addresses = user?.addresses ?? [];
@@ -372,7 +370,6 @@ export function BookWizard({
               pkg={pkg}
               extras={extras}
               total={total}
-              mrpTotal={mrpTotal}
               patient={patient}
               notes={notes}
               address={address}
@@ -390,7 +387,6 @@ export function BookWizard({
             pkg={pkg}
             extras={extras}
             total={total}
-            savings={savings}
             testCount={testCount}
             date={step >= 3 || slot ? date : null}
             slot={slot}
@@ -423,14 +419,10 @@ export function BookWizard({
               <>
                 <p className="flex items-baseline gap-2">
                   <span className="tabular text-lg leading-none font-semibold">{formatINR(total)}</span>
-                  {savings > 0 && (
-                    <span className="tabular text-xs text-muted-foreground line-through">{formatINR(mrpTotal)}</span>
-                  )}
                 </p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">
                   {pkg ? pkg.name : `${testCount} test${testCount === 1 ? "" : "s"}`}
                   {pkg && extras.length ? ` + ${extras.length} add-on${extras.length === 1 ? "" : "s"}` : ""}
-                  {savings > 0 && !isLast ? ` · Save ${formatINR(savings)}` : ""}
                 </p>
               </>
             ) : (
@@ -562,7 +554,6 @@ function TestsStep({
         <div className="grid gap-3 sm:grid-cols-2">
           {catalog.packages.map((p) => {
             const selected = pkg?.id === p.id;
-            const save = p.mrp - p.price;
             return (
               <button
                 key={p.id}
@@ -611,17 +602,7 @@ function TestsStep({
                   })}
                 </div>
                 <div className="mt-auto flex items-end justify-between gap-2 pt-4">
-                  <p className="flex items-baseline gap-2">
-                    <span className="tabular text-xl leading-none font-semibold">{formatINR(p.price)}</span>
-                    {p.mrp > p.price && (
-                      <span className="tabular text-[13px] text-muted-foreground line-through">{formatINR(p.mrp)}</span>
-                    )}
-                  </p>
-                  {save > 0 && (
-                    <span className="tabular rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-success">
-                      Save {formatINR(save)}
-                    </span>
-                  )}
+                  <p className="tabular text-xl leading-none font-semibold">{formatINR(p.price)}</p>
                 </div>
               </button>
             );
@@ -1133,7 +1114,6 @@ function ReviewStep({
   pkg,
   extras,
   total,
-  mrpTotal,
   patient,
   notes,
   address,
@@ -1145,7 +1125,6 @@ function ReviewStep({
   pkg: Package | null;
   extras: ServiceCode[];
   total: number;
-  mrpTotal: number;
   patient: { name: string; age: string; gender: Gender | ""; relation: Relation };
   notes: string;
   address: { label: string; line1: string; area: string; city: string; pincode: string } | null;
@@ -1155,7 +1134,6 @@ function ReviewStep({
 }) {
   const services = serviceMap(catalog);
   const isExpress = slot === EXPRESS_SLOT;
-  const discount = mrpTotal - total;
   return (
     <div className="space-y-3">
       <ReviewCard title="Tests" icon={Sparkles} onEdit={() => onEdit(0)}>
@@ -1219,12 +1197,11 @@ function ReviewStep({
         <p className="mb-3 text-sm font-semibold">Price details</p>
         <dl className="space-y-2 text-sm">
           {pkg && (
-            <PriceRow label={pkg.name} value={formatINR(pkg.mrp)} />
+            <PriceRow label={pkg.name} value={formatINR(pkg.price)} />
           )}
           {extras.map((c) => (
             <PriceRow key={c} label={services[c]?.name ?? c} value={formatINR(services[c]?.price ?? 0)} />
           ))}
-          {discount > 0 && <PriceRow label="Package discount" value={`−${formatINR(discount)}`} tone="success" />}
           <PriceRow label="Home visit" value="Free" tone="success" />
           <div className="my-2 border-t border-dashed border-border" />
           <div className="flex items-baseline justify-between">
@@ -1232,11 +1209,6 @@ function ReviewStep({
             <dd className="tabular text-lg font-semibold">{formatINR(total)}</dd>
           </div>
         </dl>
-        {discount > 0 && (
-          <p className="mt-3 rounded-lg border border-border bg-muted px-3 py-2 text-[13px] font-medium text-foreground">
-            You save {formatINR(discount)} on this booking
-          </p>
-        )}
       </Surface>
       <p className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
         <ShieldCheck className="size-3.5 text-muted-foreground" aria-hidden /> Free cancellation until the nurse arrives.
@@ -1302,7 +1274,6 @@ function Summary({
   pkg,
   extras,
   total,
-  savings,
   testCount,
   date,
   slot,
@@ -1311,7 +1282,6 @@ function Summary({
   pkg: Package | null;
   extras: ServiceCode[];
   total: number;
-  savings: number;
   testCount: number;
   date: string | null;
   slot: string | null;
@@ -1356,12 +1326,7 @@ function Summary({
       </div>
       <div className="flex items-baseline justify-between border-t border-dashed border-border px-4 py-3.5">
         <span className="text-sm font-semibold">Total</span>
-        <span className="text-right">
-          <span className="tabular block text-xl leading-none font-semibold">{formatINR(total)}</span>
-          {savings > 0 && (
-            <span className="tabular mt-1 block text-xs font-medium text-success">You save {formatINR(savings)}</span>
-          )}
-        </span>
+        <span className="tabular text-xl leading-none font-semibold">{formatINR(total)}</span>
       </div>
     </Surface>
   );

@@ -7,7 +7,7 @@ const SELECTOR = "[data-nv-reveal]:not([data-nv-revealed])";
 /**
  * One observer for the whole landing page. Elements carry `data-nv-reveal` (see revealProps).
  * Hiding is CSS-only and applies only once <html data-nv-reveal-ready> is set here, and only under
- * prefers-reduced-motion: no-preference (landing.css). Rendered once by app/page.tsx.
+ * prefers-reduced-motion: no-preference (landing.css). Rendered once by app/(site)/layout.tsx.
  * Elements added (or marked) after mount are picked up too, so nothing stays hidden.
  */
 export function RevealObserver() {

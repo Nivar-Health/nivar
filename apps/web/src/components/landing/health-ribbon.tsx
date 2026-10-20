@@ -1,24 +1,20 @@
 import { PROVERBS, STAY_HEALTHY, type Phrase } from "./l10n";
 
-/** Native-reviewed lines only (l10n.ts), alternating languages so every change of script is visible. */
-const LINE: readonly Phrase[] = [
-  STAY_HEALTHY[0],
-  PROVERBS[0],
-  STAY_HEALTHY[2],
-  PROVERBS[2],
-  STAY_HEALTHY[1],
-  PROVERBS[1],
-  STAY_HEALTHY[3],
-];
+/**
+ * Native-reviewed lines only (l10n.ts), alternating languages so every change of script is visible.
+ * Played twice per track so one track is always wider than a 2560px screen.
+ */
+const PHRASES: readonly Phrase[] = [STAY_HEALTHY[0], PROVERBS[0], STAY_HEALTHY[2], STAY_HEALTHY[1], PROVERBS[1]];
+const LINE: readonly Phrase[] = [...PHRASES, ...PHRASES];
 
 /**
  * A slow ribbon of "stay healthy" and each language's own saying about health, between the hero and
- * the programmes. Two identical tracks loop seamlessly; the second is hidden from screen readers.
+ * the services. Two identical tracks loop seamlessly; the second is hidden from screen readers.
  * It is a .motion-loop, so reduced motion leaves it still.
  */
 export function HealthRibbon() {
   return (
-    <section aria-label="Stay healthy, in English, Kannada, Hindi and Marathi" className="overflow-hidden bg-primary text-white">
+    <section aria-label="Stay healthy, in English, Kannada and Hindi" className="overflow-hidden bg-primary text-white">
       <div className="ribbon-track motion-loop flex w-max">
         <Track />
         <Track hidden />
@@ -38,21 +34,21 @@ function Track({ hidden = false }: { hidden?: boolean }) {
           >
             {p.text}
           </span>
-          <Marigold />
+          <Jasmine />
         </li>
       ))}
     </ul>
   );
 }
 
-/** A small marigold, the flower of Indian welcomes and celebrations. */
-function Marigold() {
+/** A sprig of jasmine (Mysuru mallige), the flower of Karnataka's welcomes. Marigold is kept for the CTA. */
+function Jasmine() {
   return (
     <svg aria-hidden viewBox="0 0 24 24" className="size-5 shrink-0 sm:size-6">
-      {Array.from({ length: 8 }, (_, k) => (
-        <ellipse key={k} cx="12" cy="6.2" rx="3" ry="5" fill="var(--marigold)" transform={`rotate(${k * 45} 12 12)`} />
+      {Array.from({ length: 5 }, (_, k) => (
+        <ellipse key={k} cx="12" cy="6.4" rx="3.2" ry="5.2" fill="#ffffff" transform={`rotate(${k * 72} 12 12)`} />
       ))}
-      <circle cx="12" cy="12" r="3.4" fill="#ffd88f" />
+      <circle cx="12" cy="12" r="2.6" fill="var(--mint-glow)" />
     </svg>
   );
 }
