@@ -1,194 +1,204 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
-import { BadgeCheck, Check, Clock, HeartPulse, IndianRupee, Stethoscope } from "lucide-react";
+import {
+  ArrowDown,
+  BadgeCheck,
+  BriefcaseMedical,
+  Gauge,
+  IndianRupee,
+  PackageCheck,
+  Video,
+  type LucideIcon,
+} from "lucide-react";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
-import { HealthWords } from "./health-words";
-import { MiniTrace } from "./mini-trace";
-import { Avatar, BOOK_LABEL, ButtonLink, Container, bookHref, buttonClass, inr } from "./primitives";
+import { Container } from "./primitives";
+import { ContactCtas } from "./whatsapp";
+import "./hero.css";
 
 const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
-/**
- * The first screen. Copy on the left; on the right the visit itself, framed as a doorway with the
- * morning sun behind it, heartbeat ripples, and three sample readings floating beside it.
- * The H1, lede, CTAs and photo never fade in (they are the LCP candidates); everything else
- * arrives once, in sequence, then breathes.
- */
-export function Hero({ fromPrice }: { fromPrice: number }) {
-  const promises = [
-    { icon: Stethoscope, text: "Doctors on the Nivar payroll" },
-    { icon: Clock, text: SITE.report.strip },
-    { icon: IndianRupee, text: `From ${inr(fromPrice)}, all inclusive` },
-  ];
+const CHIPS: { icon: LucideIcon; text: ReactNode; key: string }[] = [
+  { key: "nurses", icon: BadgeCheck, text: "Registered nurses" },
+  { key: "doctor", icon: Video, text: "Doctor on video" },
+  { key: "price", icon: IndianRupee, text: "Price told upfront" },
+  {
+    key: "kits",
+    icon: PackageCheck,
+    // Kept on one line when it wraps on phones, so it never splits at the hyphen.
+    text: (
+      <>
+        Sealed, <span className="whitespace-nowrap">single-use kits</span>
+      </>
+    ),
+  },
+];
 
+/**
+ * The first screen, nurse first. On phones the photo leads (3:2) and the H1, lede and callback button
+ * still fit the first screen at 390×844; from sm the photo is an arch beside or below the copy.
+ * The H1, lede, CTAs and photo never fade (the photo is the LCP). Only the pill, the chips and, on
+ * large screens, the sample card arrive, once.
+ */
+export function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
+    <section id="top" aria-labelledby="hero-title" className="relative isolate scroll-mt-24 overflow-hidden">
       <div aria-hidden className="hero-sky absolute inset-0 -z-20" />
       <div
         aria-hidden
-        className="hero-orb motion-loop -top-40 -left-32 -z-10 size-[520px] bg-[radial-gradient(closest-side,rgb(127_224_196/0.45),transparent)]"
-      />
-      <div
-        aria-hidden
-        className="hero-orb motion-loop top-1/3 -right-48 -z-10 hidden size-[560px] bg-[radial-gradient(closest-side,rgb(47_109_181/0.18),transparent)] [animation-delay:-9s] lg:block"
+        className="hero-orb motion-loop -top-40 -left-32 -z-10 hidden size-[520px] bg-[radial-gradient(closest-side,rgb(142_211_224/0.45),transparent)] lg:block"
       />
 
-      <Container className="pt-28 pb-20 sm:pt-32 lg:pt-36 lg:pb-28">
-        <div className="grid items-center gap-x-12 gap-y-16 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-          <div>
+      <Container className="pt-24 pb-10 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-28">
+        {/* Side by side from md, so tablets and landscape phones see the nurse beside the headline. */}
+        <div className="grid grid-cols-1 items-center gap-x-8 gap-y-4 sm:gap-y-14 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-x-12">
+          <div className="@container">
+            {/* One line down to 360px (tighter under 380px); if it ever wraps, the radius keeps it a soft card. */}
             <p
-              className="hero-in inline-flex items-center gap-2.5 rounded-full border border-white bg-white/75 py-1.5 pr-4 pl-2 text-sm font-medium text-ink-2 shadow-[0_6px_18px_-12px_rgb(6_47_45/0.4)] backdrop-blur"
+              className="hero-in inline-flex max-w-full items-center gap-2 rounded-[1.25rem] border border-white bg-white/80 py-1 pr-3 pl-1 text-[0.8125rem] font-medium text-balance text-ink-2 shadow-[0_6px_18px_-12px_rgb(1_43_54/0.4)] max-[379px]:gap-1.5 max-[379px]:pr-2.5 sm:gap-2.5 sm:py-1.5 sm:pr-4 sm:pl-2 sm:text-sm"
               style={delay(0)}
             >
-              <span className="flex size-6 items-center justify-center rounded-full bg-aqua text-primary">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-aqua text-primary sm:size-6">
                 <span aria-hidden className="live-dot size-1.5 text-primary motion-loop" />
               </span>
-              Now visiting homes across {SITE.city}
+              Now visiting homes in {SITE.area}
             </p>
 
-            <h1 id="hero-title" className="mt-7 text-h1 text-balance text-ink">
-              Your doctor&apos;s <span className="whitespace-nowrap">check-up,</span>{" "}
-              <span className="min-[380px]:whitespace-nowrap">at your doorstep.</span>
+            <h1 id="hero-title" className="nv-hero-title mt-3 text-h1 text-ink sm:mt-7">
+              <span className="block">A registered nurse,</span> <span className="block">at your door.</span>
             </h1>
 
-            <HealthWords className="hero-in mt-7" />
-
-            <p className="mt-7 max-w-[50ch] text-lede text-pretty text-ink-2">
-              A Nivar nurse brings clinic-grade devices to your home. A Nivar doctor watches every reading live,
-              talks with you on video, and sends your report, {SITE.report.promise}.
+            <p className="mt-3 max-w-[50ch] text-lede text-pretty text-ink-2 sm:mt-6">
+              For injections, IV drips, wound dressings, <span className="whitespace-nowrap">check-ups</span> and blood
+              tests, at home. A Nivar doctor joins on video when needed, and we tell you the price before we confirm.
             </p>
 
-            <div className="mt-9 flex flex-col gap-3 min-[420px]:flex-row min-[420px]:flex-wrap">
-              <ButtonLink href={bookHref()} size="lg" className="h-14 px-8 text-[1.0625rem]">
-                {BOOK_LABEL}
-              </ButtonLink>
-              <a href="#how-it-works" className={buttonClass("secondary", "h-14 px-8 text-[1.0625rem]", "lg")}>
-                See how it works
+            <div className="mt-5 flex flex-col items-start gap-x-6 gap-y-1 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center sm:gap-y-3">
+              <ContactCtas className="w-full sm:w-auto" buttonClassName="h-14 w-full px-8 text-[1.0625rem] sm:w-auto" />
+              <a href="#services" className="nv-hero-link">
+                See services and prices
+                <ArrowDown aria-hidden className="size-4" strokeWidth={2.25} />
               </a>
             </div>
+            <p className="text-caption text-balance text-ink-3 sm:mt-3">
+              A care coordinator calls back within {SITE.callbackWithin}, {SITE.hours.short}.
+            </p>
 
-            <ul className="hero-in mt-12 grid gap-x-6 gap-y-3 sm:grid-cols-3" style={delay(300)}>
-              {promises.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3 text-small font-medium text-ink-2">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-[0_4px_12px_-6px_rgb(6_47_45/0.35)] ring-1 ring-aqua-2">
-                    <Icon aria-hidden className="size-4" strokeWidth={2.25} />
+            <ul
+              className="hero-in mt-6 grid grid-cols-2 gap-x-3 gap-y-3 sm:mt-10 sm:gap-x-6 sm:gap-y-3.5 sm:border-t sm:border-ink/10 sm:pt-8"
+              style={delay(300)}
+            >
+              {CHIPS.map(({ key, icon: Icon, text }) => (
+                <li key={key} className="flex items-center gap-2 text-[0.875rem] leading-snug font-medium text-ink-2 sm:gap-3 sm:text-small">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-[0_4px_12px_-6px_rgb(1_43_54/0.35)] ring-1 ring-aqua-2 sm:size-9">
+                    <Icon aria-hidden className="size-3.5 sm:size-4" strokeWidth={2.25} />
                   </span>
-                  <span className="text-pretty">{text}</span>
+                  <span className="min-w-0 text-pretty">{text}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <Doorway />
+          <HeroPhoto />
         </div>
       </Container>
     </section>
   );
 }
 
-/** The visit, framed as an open doorway. Decorative cards are sample data and labelled as such. */
-function Doorway() {
+/**
+ * Phones: a 3:2 photo above the copy, with the reading the nurse is taking and the caption on it.
+ * From sm: the arch inside slow heartbeat ripples, with sample cards that float beside it: the
+ * doctor always, the blood pressure reading where the arch is wide enough (not in the narrow md
+ * column), the nurse's update on large screens. Cards sit on the wall, the lap and the floor, never
+ * on a face. All of it is decoration, so it stays out of the accessibility tree.
+ */
+function HeroPhoto() {
   return (
-    <figure className="@container relative mx-auto w-full max-w-[340px] sm:max-w-[420px] lg:max-w-[480px]">
-      {/* Morning sun rising behind the doorway */}
-      <div
-        aria-hidden
-        className="hero-sun motion-loop absolute -top-16 -right-14 -z-10 size-56 rounded-full bg-[radial-gradient(closest-side,rgb(255_222_160/0.95),rgb(242_163_58/0.5)_45%,rgb(242_163_58/0.14)_72%,transparent)] sm:size-64 lg:-top-20 lg:-right-20 lg:size-80"
-      />
-      {/* Heartbeat ripples */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
-        {[0, 1.8, 3.6].map((d) => (
-          <span
-            key={d}
-            className="hero-ripple motion-loop absolute aspect-square w-[118%] rounded-full border border-primary/25 bg-primary/[0.03]"
-            style={{ "--d": `${d}s` } as CSSProperties}
-          />
-        ))}
-      </div>
-
-      <div className="hero-settle relative aspect-[4/5] w-full overflow-hidden rounded-t-[50cqw] rounded-b-[2.5rem] bg-aqua shadow-[0_48px_90px_-40px_rgb(6_47_45/0.5)] ring-[10px] ring-white">
-        <Image
-          src="/img/hero-nurse.jpg"
-          alt="A Nivar nurse placing a smart ECG patch on a woman seated at home"
-          fill
-          loading="eager"
-          fetchPriority="high"
-          sizes="(min-width: 1024px) 480px, (min-width: 640px) 420px, 340px"
-          className="object-cover object-[50%_40%]"
+    <figure className="@container relative mx-auto w-full max-sm:order-first sm:max-w-[420px] lg:max-w-[480px]">
+      <div className="relative">
+        {/* Morning light behind the photo. Static: it never loops. */}
+        <div
+          aria-hidden
+          className="absolute -top-16 -right-14 -z-10 size-56 rounded-full bg-[radial-gradient(closest-side,rgb(255_236_204/0.9),rgb(142_211_224/0.35)_55%,transparent)] sm:size-64 lg:-top-20 lg:-right-20 lg:size-80"
         />
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-pond/30 to-transparent" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 hidden items-center justify-center sm:flex">
+          {RIPPLES.map(({ start, rest }) => (
+            <span
+              key={start}
+              className="nv-hero-ripple motion-loop absolute aspect-square w-[118%] rounded-full border border-primary/25 bg-primary/[0.03]"
+              style={{ "--d": start, "--rest": rest } as CSSProperties}
+            />
+          ))}
+        </div>
+
+        <div className="hero-settle relative aspect-[3/2] max-h-[38svh] w-full overflow-hidden rounded-[1.75rem] bg-aqua shadow-[0_24px_48px_-30px_rgb(1_43_54/0.55)] ring-4 ring-white sm:aspect-[4/5] sm:max-h-none sm:rounded-t-[50cqw] sm:rounded-b-[2.5rem] sm:shadow-[0_48px_90px_-40px_rgb(1_43_54/0.5)] sm:ring-[10px]">
+          <Image
+            src="/img/nurse-bp-home.jpg"
+            alt="A Nivar nurse in teal scrubs kneels beside an older woman on her sofa and fits a blood pressure cuff on her arm"
+            fill
+            loading="eager"
+            fetchPriority="high"
+            sizes="(min-width: 1024px) 480px, (min-width: 640px) 420px, 100vw"
+            className="object-cover object-[50%_38%] sm:object-[50%_30%]"
+          />
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-pond/30 to-transparent" />
+        </div>
+
+        {/* Phones: the reading being taken, on the floor of the photo, clear of both faces. */}
+        <div aria-hidden className="hero-pop absolute bottom-3 left-3 z-10 sm:hidden" style={delay(450)}>
+          <div className="flex h-8 items-center gap-1.5 rounded-full bg-white/95 pr-1 pl-2 text-[0.8125rem] leading-none text-ink shadow-[0_10px_24px_-14px_rgb(1_43_54/0.6)]">
+            <Gauge className="size-4 shrink-0 text-rose" strokeWidth={2.25} />
+            <span className="font-semibold whitespace-nowrap tabular-nums">
+              118/76<span className="font-medium text-ink-2 @max-[19rem]:hidden"> mmHg</span>
+            </span>
+            <span className="rounded-full bg-aqua px-2 py-1.5 font-semibold text-primary">Normal</span>
+          </div>
+        </div>
+
+        <FloatCard position="top-[8%] -right-[2%] hidden lg:block xl:-right-[10%]" enter={500} float="8s" floatDelay="-1s">
+          <StatusCard icon={BriefcaseMedical} title="Your nurse is on the way" sub="Sample update" />
+        </FloatCard>
+        <FloatCard
+          position="top-[54%] -right-[8%] hidden w-[220px] sm:block md:max-lg:hidden lg:-right-[2%] xl:-right-[12%]"
+          className="px-4 py-3"
+          enter={750}
+          float="7.5s"
+          floatDelay="-3s"
+        >
+          <BpCard />
+        </FloatCard>
+        <FloatCard
+          position="bottom-[5%] -left-8 hidden sm:block md:-left-4 lg:-left-10"
+          enter={1000}
+          float="9s"
+          floatDelay="-5s"
+        >
+          <StatusCard icon={Video} title="Your Nivar doctor" sub="On video when you need one" online />
+        </FloatCard>
       </div>
 
-      {/* Heart rhythm, streaming */}
-      <FloatCard position="top-[14%] -left-4 w-[178px] sm:-left-12 sm:w-[212px]" enter={500} float="7.5s" floatDelay="-1s">
-        <div className="flex items-center justify-between">
-          <span className="font-semibold text-ink">Heart rhythm</span>
-          <span className="flex items-center gap-1.5 text-xs font-medium text-signal-ink">
-            <span aria-hidden className="live-dot size-1.5 motion-loop" />
-            Live
-          </span>
-        </div>
-        <MiniTrace className="mt-2.5 h-7 text-primary" />
-        <div className="mt-2 flex items-center justify-between">
-          <span className="flex items-baseline gap-1.5">
-            <span aria-hidden className="hero-heart motion-loop self-center text-rose">
-              <HeartPulse className="size-4" strokeWidth={2.25} />
-            </span>
-            <span className="text-lg font-semibold tracking-tight text-ink tabular-nums">72</span>
-            <span className="text-xs font-medium text-ink-3">bpm</span>
-          </span>
-          <span className="rounded-full bg-aqua px-2 py-0.5 text-xs font-semibold text-primary">Normal</span>
-        </div>
-      </FloatCard>
-
-      {/* The doctor, watching live */}
-      <FloatCard
-        position="top-[52%] -right-3 hidden sm:block lg:-right-14"
-        className="flex items-center gap-3 pr-4"
-        enter={750}
-        float="8.5s"
-        floatDelay="-3s"
-      >
-        <span className="relative">
-          <Avatar initials="AR" className="size-10 text-[0.8125rem]" />
-          <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-white">
-            <span className="size-2.5 rounded-full bg-signal" />
-          </span>
+      <figcaption className="absolute right-3 bottom-3 rounded-full bg-white/85 px-2.5 py-0.5 text-caption text-ink-2 sm:static sm:mt-6 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-center">
+        <span className="sm:hidden">
+          Illustrative<span className="sr-only"> photo and reading</span>
         </span>
-        <span>
-          <span className="block font-semibold text-ink">Dr. Ananya Rao</span>
-          <span className="block text-xs text-ink-3">Watching your readings live</span>
-        </span>
-      </FloatCard>
-
-      {/* The report */}
-      <FloatCard
-        position="bottom-[9%] -left-3 sm:-left-10"
-        className="flex items-center gap-3 pr-5"
-        enter={1000}
-        float="9s"
-        floatDelay="-5s"
-      >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-          <Check aria-hidden className="size-5" strokeWidth={2.75} />
-        </span>
-        <span>
-          <span className="flex items-center gap-1.5 font-semibold text-ink">
-            Report ready
-            <BadgeCheck aria-hidden className="size-4 text-primary" />
-          </span>
-          <span className="block text-xs text-ink-3">Signed by your doctor at 5:27 pm</span>
-        </span>
-      </FloatCard>
-
-      <figcaption className="mt-8 text-center text-caption text-ink-3">
-        Sample screens. Names and readings are illustrative.
+        <span className="max-sm:hidden md:max-lg:hidden">Photo and readings are illustrative.</span>
+        <span className="hidden md:max-lg:inline">Photo is illustrative.</span>
       </figcaption>
     </figure>
   );
 }
 
+/* Three rings, a third of a cycle apart. With motion off they rest as three still circles. */
+const RIPPLES = [
+  { start: "0s", rest: 0.96 },
+  { start: "1.8s", rest: 1.08 },
+  { start: "3.6s", rest: 1.2 },
+];
+
+const CARD = "rounded-2xl bg-white/95 shadow-[0_20px_40px_-24px_rgb(1_43_54/0.45)] ring-1 ring-ink/5";
+
+/** Placement and entrance on the outside; the slow float on the card itself. */
 function FloatCard({
   position,
   className,
@@ -197,9 +207,7 @@ function FloatCard({
   floatDelay,
   children,
 }: {
-  /** Placement and visibility of the card on the doorway. */
   position: string;
-  /** Layout inside the card. */
   className?: string;
   enter: number;
   float: string;
@@ -208,15 +216,71 @@ function FloatCard({
 }) {
   return (
     <div aria-hidden className={cn("hero-pop absolute z-10", position)} style={delay(enter)}>
-      <div
-        className={cn(
-          "hero-float motion-loop rounded-2xl border border-white/80 bg-white/90 px-4 py-3 text-[0.8125rem] leading-snug shadow-[0_20px_40px_-20px_rgb(6_47_45/0.45)] backdrop-blur-md",
-          className,
-        )}
-        style={{ "--t": float, "--d": floatDelay } as CSSProperties}
-      >
+      <div className={cn("nv-hero-float motion-loop", CARD, className)} style={{ "--t": float, "--fd": floatDelay } as CSSProperties}>
         {children}
       </div>
     </div>
+  );
+}
+
+function StatusCard({ icon: Icon, title, sub, online = false }: { icon: LucideIcon; title: string; sub: string; online?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 py-3 pr-5 pl-3">
+      <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+        <Icon className="size-[1.125rem]" strokeWidth={2} />
+        {online && (
+          <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-white">
+            <span className="size-2.5 rounded-full bg-signal" />
+          </span>
+        )}
+      </span>
+      <span className="leading-snug">
+        <span className="block text-[0.9375rem] font-semibold whitespace-nowrap text-ink">{title}</span>
+        <span className="block text-caption whitespace-nowrap text-ink-3">{sub}</span>
+      </span>
+    </div>
+  );
+}
+
+/** The reading in the photo, as the nurse's monitor would show it. Sample values. */
+function BpCard() {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2 text-[0.8125rem]">
+        <span className="flex items-center gap-1.5 font-semibold text-ink">
+          <Gauge className="size-4 text-rose" strokeWidth={2.25} />
+          Blood pressure
+        </span>
+        <span className="text-xs text-ink-3">Just now</span>
+      </div>
+      <div className="mt-2 flex items-baseline justify-between gap-2">
+        <span className="flex items-baseline gap-1">
+          <span className="text-xl font-semibold tracking-tight text-ink tabular-nums">118/76</span>
+          <span className="text-xs font-medium text-ink-3">mmHg</span>
+        </span>
+        <span className="rounded-full bg-aqua px-2 py-0.5 text-xs font-semibold text-primary">Normal</span>
+      </div>
+      <BpScale />
+    </>
+  );
+}
+
+/*
+ * Where the reading falls, on a systolic scale from 90 to 160 mmHg: normal below 120, elevated to
+ * 139, high from 140 (the bands the clinical console uses). 118 sits at 40%. The bands draw in,
+ * then the marker slides to the reading (hero.css), once.
+ */
+function BpScale() {
+  return (
+    <span className="relative mt-3 block h-3.5">
+      <span className="nv-hero-bp-bands absolute inset-x-0 top-1/2 flex h-1.5 -translate-y-1/2 gap-0.5 overflow-hidden rounded-full">
+        <span className="basis-[43%] bg-signal" />
+        <span className="basis-[28%] bg-saffron/45" />
+        <span className="flex-1 bg-rose/55" />
+      </span>
+      <span className="nv-hero-bp-slide absolute inset-0">
+        <span className="absolute top-0 left-[40%] size-3.5 -translate-x-1/2 rounded-full bg-white shadow-[0_2px_6px_rgb(1_43_54/0.35)] ring-2 ring-primary" />
+      </span>
+    </span>
   );
 }

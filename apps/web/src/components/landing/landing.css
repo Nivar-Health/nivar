@@ -1,11 +1,23 @@
-/* Landing page ("Garden City morning"): scoped tokens and motion.
-   Loops carry .motion-loop so prefers-reduced-motion stops them on their rest pose (globals.css). One-shots use fill-mode `backwards`: an element's base style
+/* Public site ("Nivar Teal"): scoped tokens and motion.
+   Loops carry .motion-loop so reduced motion, or the visitor's own pause (html[data-motion="paused"], motion.tsx), stops them on their rest pose (globals.css). One-shots use fill-mode `backwards`: an element's base style
    is its final pose, so without JS, or with reduced motion, everything simply shows at rest. */
 
-/* ---- 0. Tokens: the landing page is white, with jade as its action colour ---- */
+/* ---- 0. Tokens: the site is white, with Nivar teal for headings, icons and buttons ---- */
 [data-landing],
 [data-landing] .theme-light {
   --background: #ffffff;
+  --ink: #013a48;
+  --ink-2: #3d5862;
+  --ink-3: #4f6973; /* 4.98:1 on aqua; never on aqua-2 */
+  --teal: #016a80;
+  /* Re-declared here: on :root these resolved against the app's ink before it was re-tinted above. */
+  --foreground: var(--ink);
+  --foreground-2: var(--ink-2);
+  --muted-foreground: var(--ink-3);
+  --card-foreground: var(--ink);
+  --popover-foreground: var(--ink);
+  --secondary-foreground: var(--ink);
+  --accent-foreground: var(--ink);
   --primary: var(--jade);
   --primary-hover: var(--jade-hover);
   --primary-active: var(--jade-active);
@@ -13,14 +25,24 @@
   --heading-accent: var(--jade);
   --muted: var(--aqua);
   --accent: var(--aqua);
-  --border: #dbe9e4;
-  --border-strong: #c2d8d0;
+  --border: #d5e4e9;
+  --border-strong: #bcd3da;
+}
+/* Deep teal panels: the pine tokens, re-tinted from green to the uniform's teal. */
+[data-landing] {
+  --pine: #012b36;
+  --pine-raised: #063845;
+  --on-pine: #f0f7f9;
+  --on-pine-2: #b4ccd3;
+  --on-pine-3: #8faeb8;
+  --pine-accent: #9ccfdb;
+  --ring-on-dark: #8ed3e0;
 }
 
 /* Deep pond bands (Live, footer): pine tokens on a pond gradient. */
 .band-pond {
   background:
-    radial-gradient(900px 480px at 85% 0%, rgb(127 224 196 / 0.14), transparent 65%),
+    radial-gradient(900px 480px at 85% 0%, rgb(142 211 224 / 0.14), transparent 65%),
     radial-gradient(700px 420px at 0% 100%, rgb(47 109 181 / 0.12), transparent 60%),
     linear-gradient(180deg, var(--pond) 0%, var(--pond-2) 100%);
 }
@@ -42,31 +64,10 @@
   from { transform: scale(0.965); }
   to { transform: none; }
 }
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-9px); }
-}
-@keyframes ripple {
-  0% { transform: scale(0.82); opacity: 0; }
-  20% { opacity: 0.55; }
-  100% { transform: scale(1.32); opacity: 0; }
-}
 @keyframes drift {
   0% { transform: translate3d(0, 0, 0) scale(1); }
   50% { transform: translate3d(4%, 6%, 0) scale(1.08); }
   100% { transform: translate3d(-3%, 2%, 0) scale(0.96); }
-}
-@keyframes sun-glow {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.06); opacity: 1; }
-}
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-@keyframes landing-trace {
-  from { transform: translateX(0); }
-  to { transform: translateX(-240px); }
 }
 @keyframes lubdub {
   0% { transform: scale(1); }
@@ -90,14 +91,6 @@
   0%, 100% { transform: scale(1); }
   50% { transform: scale(0.94); }
 }
-@keyframes breathe {
-  0%, 100% { transform: scale(0.62); }
-  50% { transform: scale(1); }
-}
-@keyframes breathe-halo {
-  0%, 100% { transform: scale(0.7); opacity: 0.35; }
-  50% { transform: scale(1.12); opacity: 0.8; }
-}
 @keyframes tip-in {
   from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 10px)); }
   to { opacity: 1; transform: none; }
@@ -106,34 +99,43 @@
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
-@keyframes step-in {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: none; }
-}
 
-/* ---- 2. Scroll reveal (RevealObserver), used sparingly on groups ---- */
+/* ---- 2. Scroll reveal (RevealObserver), used sparingly on groups. Not while the visitor has paused
+   animations (motion.tsx): everything then simply shows. ---- */
 @media (prefers-reduced-motion: no-preference) {
-  html[data-nv-reveal-ready] [data-nv-reveal] {
+  html[data-nv-reveal-ready]:not([data-motion="paused"]) [data-nv-reveal] {
     transition:
       opacity 700ms var(--curve-calm),
       transform 700ms var(--curve-calm);
     transition-delay: calc(var(--i, 0) * 90ms);
   }
-  html[data-nv-reveal-ready] [data-nv-reveal]:not([data-nv-revealed]) {
+  html[data-nv-reveal-ready]:not([data-motion="paused"]) [data-nv-reveal]:not([data-nv-revealed]) {
     opacity: 0;
     transform: translateY(18px);
+  }
+}
+/* Phones and touch screens (mobile addendum M8): shorter and closer, so a fast flick never lands on
+   a group that is still fading in. */
+@media (prefers-reduced-motion: no-preference) and (max-width: 39.99rem),
+  (prefers-reduced-motion: no-preference) and (pointer: coarse) {
+  html[data-nv-reveal-ready]:not([data-motion="paused"]) [data-nv-reveal] {
+    transition-duration: 480ms;
+    transition-delay: calc(var(--i, 0) * 60ms);
+  }
+  html[data-nv-reveal-ready]:not([data-motion="paused"]) [data-nv-reveal]:not([data-nv-revealed]) {
+    transform: translateY(12px);
   }
 }
 @media print {
   [data-nv-reveal] { opacity: 1 !important; transform: none !important; }
 }
 
-/* ---- 3. Hero: morning light, doorway, ripples, floating readings ---- */
+/* ---- 3. Hero: morning light behind the photo, and the page-load sequence ---- */
 .hero-sky {
   background:
-    radial-gradient(760px 520px at 82% 18%, rgb(127 224 196 / 0.32), transparent 62%),
-    radial-gradient(640px 460px at 6% 4%, var(--sky-tint), transparent 64%),
-    linear-gradient(180deg, #f1faf7 0%, #f7fcfa 55%, #ffffff 100%);
+    radial-gradient(760px 520px at 82% 18%, rgb(142 211 224 / 0.3), transparent 62%),
+    radial-gradient(640px 460px at 6% 4%, var(--aqua), transparent 64%),
+    linear-gradient(180deg, #eef5f7 0%, #f6fafb 55%, #ffffff 100%);
 }
 .hero-orb {
   position: absolute;
@@ -154,55 +156,31 @@
 .hero-settle {
   animation: settle 1200ms var(--curve-calm) backwards;
 }
-.hero-float {
-  animation: float var(--t, 7s) var(--curve-breath) var(--d, 0s) infinite;
-}
-.hero-ripple {
-  animation: ripple 5.4s var(--curve-calm) var(--d, 0s) infinite backwards;
-}
-.hero-sun {
-  animation: sun-glow 9s var(--curve-breath) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-ripple { opacity: 0.35; transform: scale(1.1); }
-}
-html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); }
-
-/* Mini ECG: 4 beats per 240-unit strip at 72 bpm = 3333ms. Keep the "72 bpm" label in sync. */
-.landing-trace {
-  animation: landing-trace 3333ms linear infinite;
-}
-.hero-heart {
-  display: inline-flex;
-  transform-origin: center;
-  animation: lubdub 833ms var(--curve-standard) -610ms infinite;
-}
 
 /* ---- 4. Multilingual line (health-words.tsx): cycles on its own ---- */
 .hw-cell {
   display: grid;
 }
+/* Opacity and transform only (mobile addendum M8: no blur filters). The leaving line is gone (300ms)
+   before the next one starts (320ms): two scripts never sit on one baseline. EXIT_MS matches. */
 .hw-item {
   grid-area: 1 / 1;
+  align-self: center;
   opacity: 0;
   visibility: hidden;
-  filter: blur(8px);
   transform: translateY(0.3em);
   transition:
-    opacity 500ms var(--curve-exit),
-    filter 500ms var(--curve-exit),
-    transform 500ms var(--curve-exit),
-    visibility 0s linear 500ms;
+    opacity 300ms var(--curve-exit),
+    transform 300ms var(--curve-exit),
+    visibility 0s linear 300ms;
 }
 .hw-item[data-state="active"] {
   opacity: 1;
   visibility: visible;
-  filter: none;
   transform: none;
   transition:
-    opacity 800ms var(--curve-calm) 250ms,
-    filter 800ms var(--curve-calm) 250ms,
-    transform 800ms var(--curve-calm) 250ms,
+    opacity 800ms var(--curve-calm) 320ms,
+    transform 800ms var(--curve-calm) 320ms,
     visibility 0s;
 }
 .hw-item[data-state="leaving"] {
@@ -215,13 +193,80 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
 .hw-beat[data-draw] path {
   animation: draw 1000ms var(--curve-calm) both;
 }
-
-/* ---- 5. Multilingual ribbon (health-ribbon.tsx) ---- */
-.ribbon-track {
-  animation: marquee 70s linear infinite;
+/* Its Pause (WCAG 2.2.2): a quiet ring, 32px on phones so even the Kannada line keeps to one line
+   beside it, 36px from sm; the target is 44px either way. Nothing moves under reduced motion or the
+   page-wide pause, so it goes then. */
+.hw-toggle {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  color: var(--muted-foreground);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.hw-toggle::before {
+  content: "";
+  position: absolute;
+  inset: -0.375rem;
+  border-radius: inherit;
+}
+@media (min-width: 40rem) {
+  .hw-toggle {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  .hw-toggle::before {
+    inset: -0.25rem;
+  }
+}
+.hw-toggle > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 9999px;
+  background: var(--background);
+  transition:
+    transform 180ms var(--curve-standard),
+    background-color 180ms var(--curve-standard),
+    color 180ms var(--curve-standard);
+}
+.hw-toggle svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+.hw-toggle:focus-visible > span {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.hw-toggle:active > span {
+  background-color: var(--aqua);
+  color: var(--foreground);
+  transform: scale(0.97);
+  transition-duration: 90ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hw-toggle:hover > span {
+    background-color: var(--aqua);
+    color: var(--foreground);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hw-toggle {
+    display: none;
+  }
+}
+html[data-motion="paused"] .hw-toggle {
+  display: none;
 }
 
-/* ---- 6. Programme glyphs (programme-glyphs.tsx). The card link carries .group. ---- */
+/* ---- 5. Programme glyphs (programme-glyphs.tsx): once on reveal, unless the visitor paused animations;
+   check-ups.css replays them on hover ---- */
 .pg-glyph .pg-heart,
 .pg-glyph .pg-heart-h,
 .pg-glyph .pg-rings-h {
@@ -236,30 +281,20 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
 .pg-glyph .pg-arc {
   stroke-dasharray: 1;
 }
-[data-nv-revealed] .pg-heart { animation: lubdub 900ms var(--curve-standard) 300ms backwards; }
-[data-nv-revealed] .pg-level { --rise: 18px; animation: rise-in 1400ms var(--curve-calm) 200ms backwards; }
-[data-nv-revealed] .pg-arc {
+html:not([data-motion="paused"]) [data-nv-revealed] .pg-heart { animation: lubdub 900ms var(--curve-standard) 300ms backwards; }
+html:not([data-motion="paused"]) [data-nv-revealed] .pg-level { --rise: 18px; animation: rise-in 1400ms var(--curve-calm) 200ms backwards; }
+html:not([data-motion="paused"]) [data-nv-revealed] .pg-arc {
   animation: draw 1200ms var(--curve-calm) backwards;
   animation-delay: calc(200ms + var(--k, 0) * 120ms);
 }
-[data-nv-revealed] .pg-needle { --from: -70deg; animation: needle-in 900ms var(--curve-calm) 250ms backwards; }
-.group:is(:hover, :focus-visible) .pg-heart-h { animation: lubdub-hover 900ms var(--curve-standard); }
-.group:is(:hover, :focus-visible) .pg-level-h { --rise: 8px; animation: rise-in-hover 700ms var(--curve-calm); }
-.group:is(:hover, :focus-visible) .pg-rings-h { animation: ring-breathe 900ms var(--curve-breath); }
-.group:is(:hover, :focus-visible) .pg-needle-h { --from: -14deg; animation: needle-in-hover 600ms var(--curve-calm); }
+html:not([data-motion="paused"]) [data-nv-revealed] .pg-needle { --from: -70deg; animation: needle-in 900ms var(--curve-calm) 250ms backwards; }
 
-/* ---- 7. How it works: the visit story (visit-journey.tsx). Each scene remounts when it becomes
+/* ---- 6. How it works: the visit story (visit-journey.tsx). Each scene remounts when it becomes
    active, so its one-shot animations replay; --d staggers them. Under reduced motion every
    duration and delay collapses (globals.css), so each scene simply shows its finished state. ---- */
 @keyframes jn-scene {
   from { opacity: 0; transform: translateY(8px) scale(0.985); }
   to { opacity: 1; transform: none; }
-}
-@keyframes jn-select {
-  from { background-color: #ffffff; color: var(--ink-2); }
-}
-@keyframes jn-select-card {
-  from { background-color: #ffffff; box-shadow: 0 0 0 1px var(--border); }
 }
 @keyframes jn-press {
   0%, 100% { transform: none; }
@@ -287,8 +322,6 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
 .jn-scene { animation: jn-scene 450ms var(--curve-calm) both; }
 .jn-in { animation: rise 600ms var(--curve-calm) var(--d, 0ms) backwards; --rise: 10px; }
 .jn-pop { animation: pop 500ms var(--curve-calm) var(--d, 0ms) backwards; }
-.jn-select { animation: jn-select 300ms var(--curve-standard) var(--d, 0ms) backwards; }
-.jn-select-card { animation: jn-select-card 300ms var(--curve-standard) var(--d, 0ms) backwards; }
 .jn-press {
   --rise: 10px;
   animation:
@@ -318,7 +351,7 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
 }
 .jn-progress[data-paused] { animation-play-state: paused; }
 
-/* ---- 7b. Health facts: each picture plays once when its card scrolls in ---- */
+/* ---- 6b. Health facts: each picture plays once when its card scrolls in (not while paused) ---- */
 @keyframes ring-fill {
   from { stroke-dashoffset: var(--pct, 50); }
   to { stroke-dashoffset: 0; }
@@ -332,39 +365,16 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
   transform-box: fill-box;
   transform-origin: center bottom;
 }
-[data-nv-revealed] .fact-person { animation: pop 700ms var(--curve-calm) 350ms backwards; }
-[data-nv-revealed] .fact-ring { animation: ring-fill 1600ms var(--curve-calm) 300ms backwards; }
-[data-nv-revealed] .fact-bar { animation: bar-settle 1400ms var(--curve-calm) 400ms backwards; }
+html:not([data-motion="paused"]) [data-nv-revealed] .fact-person { animation: pop 700ms var(--curve-calm) 350ms backwards; }
+html:not([data-motion="paused"]) [data-nv-revealed] .fact-ring { animation: ring-fill 1600ms var(--curve-calm) 300ms backwards; }
+html:not([data-motion="paused"]) [data-nv-revealed] .fact-bar { animation: bar-settle 1400ms var(--curve-calm) 400ms backwards; }
 
-/* ---- 8. Families timeline: updates arrive one by one ---- */
-[data-nv-revealed] .tl-step {
-  animation: step-in 600ms var(--curve-calm) backwards;
-  animation-delay: calc(300ms + var(--step, 0) * 380ms);
-}
-
-/* ---- 9. Breathing orb (breathing-card.tsx): breathes on its own at 5s in, 5s out ---- */
-.breath-disc,
-.breath-halo {
-  transform-origin: center;
-}
-.breath-disc { transform: scale(0.8); }
-.breath-halo { transform: scale(0.9); opacity: 0.5; }
-.breath-disc.motion-loop { animation: breathe 10s var(--curve-breath) infinite; }
-.breath-halo.motion-loop { animation: breathe-halo 10s var(--curve-breath) infinite; }
-
-/* ---- 10. Tip deck ---- */
+/* ---- 7. Tip deck ---- */
 .tip-in {
   animation: tip-in 320ms var(--curve-standard) both;
 }
-.tip-progress {
-  transform-origin: left center;
-  animation: progress var(--dwell, 9s) linear both;
-}
-.tip-progress[data-paused] {
-  animation-play-state: paused;
-}
 
-/* ---- 11. Callback success check ---- */
+/* ---- 8. Callback success check ---- */
 .success-ring {
   stroke-dasharray: 1;
   animation: draw 600ms var(--curve-calm) both;
@@ -374,29 +384,23 @@ html[data-motion="paused"] .hero-ripple { opacity: 0.35; transform: scale(1.1); 
   animation: draw 400ms var(--curve-calm) 550ms both;
 }
 
-/* ---- 12. ECG hairline that draws once (EcgLine draw) ---- */
+/* ---- 9. ECG hairline that draws once (EcgLine draw), not while paused ---- */
 .ecg-draw {
   stroke-dasharray: 1;
 }
-[data-nv-revealed] .ecg-draw { animation: draw 1800ms var(--curve-calm) 200ms backwards; }
+html:not([data-motion="paused"]) [data-nv-revealed] .ecg-draw { animation: draw 1800ms var(--curve-calm) 200ms backwards; }
 
-/* ---- 13. Nav link underline + scroll-spy ---- */
-.nav-link {
-  position: relative;
+/* ---- 10. Touch (mobile addendum M2): no double-tap-to-zoom wait on anything tappable. Base layer
+   and zero specificity, so a component's own touch-action (a swipe zone, a tap pad) always wins. ---- */
+@layer base {
+  :where([data-landing]) :where(a, button) {
+    touch-action: manipulation;
+  }
 }
-.nav-link::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0.75rem;
-  bottom: 0.3rem;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--primary);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 240ms var(--curve-standard);
-}
-.nav-link:hover::after,
-.nav-link[aria-current="true"]::after {
-  transform: scaleX(1);
+
+/* ---- 11. Keyboard focus clears the fixed chrome (WCAG 2.4.11): a control the browser scrolls into
+   view stops below the nav pill (and the notch) and above the corner buttons. Page content only:
+   the menu sheet and Take a minute keep their own scroll padding. ---- */
+[data-landing] :is(main, footer) :is(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])) {
+  scroll-margin-block: calc(6.5rem + env(safe-area-inset-top, 0px)) 6rem;
 }

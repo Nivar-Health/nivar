@@ -37,8 +37,8 @@ export function LogoMark({
   variant?: LogoVariant;
   title?: string;
 }) {
-  const tile = variant === "light" ? "#FFFFFF" : "#0E4F45";
-  const stroke = variant === "light" ? "#0D2420" : "#FFFFFF";
+  const tile = variant === "light" ? "#FFFFFF" : "#014C5E";
+  const stroke = variant === "light" ? "#012B36" : "#FFFFFF";
   const dot = variant === "light" ? "#1E9563" : "#5FD6A6";
   return (
     <svg

@@ -86,7 +86,7 @@
   --color-glyph-amber: var(--glyph-amber);
   --color-glyph-sky: var(--glyph-sky);
 
-  /* Landing palette "Garden City morning" (used by the landing page only) */
+  /* Landing palette "Nivar Teal" (used by the public site only) */
   --color-pond: var(--pond);
   --color-pond-2: var(--pond-2);
   --color-jade: var(--jade);
@@ -95,6 +95,7 @@
   --color-aqua-2: var(--aqua-2);
   --color-mint-glow: var(--mint-glow);
   --color-marigold: var(--marigold);
+  --color-marigold-hover: var(--marigold-hover);
   --color-marigold-tint: var(--marigold-tint);
   --color-marigold-ink: var(--marigold-ink);
   --color-rose: var(--rose);
@@ -102,6 +103,9 @@
   --color-rose-ink: var(--rose-ink);
   --color-sky-tint: var(--sky-tint);
   --color-sky-ink: var(--sky-ink);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-hover: var(--whatsapp-hover);
+  --color-whatsapp-ink: var(--whatsapp-ink);
 
   /* Type families */
   --font-sans: var(--font-general), ui-sans-serif, system-ui, sans-serif;
@@ -273,25 +277,31 @@
   --glyph-amber: #9a6b1e;
   --glyph-sky: #3d6684;
 
-  /* Landing: "Garden City morning". Contrast (WCAG): white on jade 5.74, jade on aqua 5.12,
-     ink-3 on aqua 4.77, white on pond 14.46, marigold-ink on marigold-tint 5.87,
-     rose-ink on rose-tint 5.05, sky-ink on sky-tint 4.58. Marigold and rose are fills only. */
-  --pond: #062f2d;
-  --pond-2: #0a4743;
-  --jade: #0b7366;
-  --jade-hover: #085e54;
-  --jade-active: #064d45;
-  --aqua: #e7f5f1;
-  --aqua-2: #cdebe3;
-  --mint-glow: #7fe0c4;
-  --marigold: #f2a33a;
-  --marigold-tint: #fff4e2;
+  /* Landing: "Nivar Teal", the colour of the nurses' uniform. Contrast (WCAG): white on jade 9.56,
+     jade on aqua 8.16, landing ink-3 on aqua 4.98, white on pond 13.9, ink on marigold 6.02,
+     whatsapp-ink on whatsapp 6.36, marigold-ink on marigold-tint 5.81, rose-ink on rose-tint 5.05,
+     sky-ink on sky-tint 4.58. Marigold is the one accent: the main call to action only. */
+  --pond: #012b36;
+  --pond-2: #013a48;
+  --jade: #014c5e;
+  --jade-hover: #013f4e;
+  --jade-active: #01323e;
+  --aqua: #e4eff2;
+  --aqua-2: #cbe0e6;
+  --mint-glow: #8ed3e0;
+  --marigold: #f2a541;
+  --marigold-hover: #e8952b;
+  --marigold-tint: #fdf3e3;
   --marigold-ink: #8a5200;
   --rose: #e0546c;
   --rose-tint: #fdebee;
   --rose-ink: #b23a52;
   --sky-tint: #e6f0fb;
   --sky-ink: #2f6db5;
+  /* WhatsApp green stays WhatsApp green. White on it is 1.98:1, so its text is dark. */
+  --whatsapp: #25d366;
+  --whatsapp-hover: #1ebe5a;
+  --whatsapp-ink: #073b28;
 
   --chart-1: #0e4f45;
   --chart-2: #2f8a6e;
@@ -397,18 +407,29 @@
   }
 }
 
+/* General Sans 700 sits outside next/font (app/fonts.ts), so no page preloads it: the landing never
+   sets bold, while the product app's bold text still gets the real face. The family name must match
+   the one next/font emits for `generalSans` in app/fonts.ts. */
+@font-face {
+  font-family: generalSans;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/GeneralSans-700.woff2") format("woff2");
+}
+
 /* Indic text: General Sans stays first so every language shares one baseline; Noto supplies
-   the Kannada / Devanagari glyphs. Unlayered on purpose so it beats tracking utilities. */
-:lang(kn) {
+   the Kannada / Devanagari glyphs. Unlayered on purpose so it beats tracking utilities. Noto applies
+   only once <html data-indic-fonts> is set, just before Indic text is seen (reveal.tsx), so a first
+   load never fetches it; until then the system's own Indic fonts draw that far-off text. */
+html[data-indic-fonts] :lang(kn) {
   font-family: var(--font-general), var(--font-noto-kn), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
 }
-:lang(hi),
-:lang(mr) {
+html[data-indic-fonts] :lang(hi) {
   font-family: var(--font-general), var(--font-noto-deva), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
 }
 :lang(kn),
-:lang(hi),
-:lang(mr) {
+:lang(hi) {
   letter-spacing: 0;
   font-feature-settings: normal;
   font-synthesis: none;
@@ -487,7 +508,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Landing loops stop on their rest pose when <html data-motion="paused"> (reduced motion; motion.tsx). */
+/* Landing loops stop on their rest pose when <html data-motion="paused"> (reduced motion, or the
+   visitor's own pause; motion.tsx). */
 html[data-motion="paused"] .motion-loop,
 html[data-motion="paused"] .live-dot::after {
   animation: none !important;

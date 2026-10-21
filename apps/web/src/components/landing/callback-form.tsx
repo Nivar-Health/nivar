@@ -1,27 +1,44 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowRight, ChevronDown, CircleAlert, LoaderCircle, Lock } from "lucide-react";
-import { ApiError, api } from "@/lib/api";
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import { ChevronDown, CircleAlert, LoaderCircle, Lock, MapPin, X } from "lucide-react";
+import { ApiError, publicApi } from "@/lib/http";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
 import { LANGUAGES } from "./l10n";
 import { buttonClass } from "./primitives";
+import { Pearl } from "./take-a-minute/pearl";
+import type { WhoFor as LinkWhoFor } from "./whatsapp";
 
-const CITIES = ["Bangalore", "Mysuru", "Hyderabad", "Pune", "Chennai", "Other"];
+/** The pilot serves one area, so the city is fixed rather than chosen. */
+const CITY = `${SITE.city} (${SITE.area})`;
 
-const WHO_FOR = ["Myself", "A parent", "Someone else"] as const;
-type WhoFor = "" | (typeof WHO_FOR)[number];
+/** The "For" pills. Prefill links name one of them in `data-for` (whatsapp.tsx WhoFor). */
+const WHO_FOR: readonly LinkWhoFor[] = ["Myself", "A parent", "A child", "Someone else"];
+type WhoFor = "" | LinkWhoFor;
 type CallLanguage = "" | (typeof LANGUAGES)[number]["english"];
 
-type Fields = { name: string; phone: string; city: string; message: string };
+const isWhoFor = (v: string | undefined): v is LinkWhoFor => WHO_FOR.some((w) => w === v);
+
+type Fields = { name: string; phone: string; message: string };
 type Errors = Partial<Record<keyof Fields, string>>;
 
-const EMPTY: Fields = { name: "", phone: "", city: "Bangalore", message: "" };
-const FIELD_ORDER: (keyof Fields)[] = ["name", "phone", "city", "message"];
+const EMPTY: Fields = { name: "", phone: "", message: "" };
+const FIELD_ORDER: (keyof Fields)[] = ["name", "phone", "message"];
 
-/** The user's own note. The composed message (who for + language + note) stays under the 1000-character API cap. */
+/** The user's own note. The composed message (who for, asking about, language, note) is capped below. */
 const MESSAGE_MAX = 900;
+/** The API's cap on the composed message (api/leads). */
+const COMPOSED_MAX = 1000;
 
 function validate(f: Fields): Errors {
   const e: Errors = {};
@@ -29,12 +46,31 @@ function validate(f: Fields): Errors {
   else if (f.name.trim().length > 80) e.name = "Keep the name under 80 characters.";
   // No-break space: the example number never splits across lines.
   if (!/^[6-9]\d{9}$/.test(f.phone)) e.phone = "Enter a 10-digit mobile number, like 98450\u00a012345.";
-  if (!f.city) e.city = "Choose a city.";
   if (f.message.length > MESSAGE_MAX) e.message = "Keep the message under 900 characters.";
   return e;
 }
 
-/** Keep each number with its unit ("7 am", "30 minutes") while the sentence wraps freely. */
+/**
+ * "For: …" / "Asking about: …" / "Preferred language for the call: …" / the note. Only a near-full note
+ * can push it past the API cap; then our own "Asking about" label is shortened, never the visitor's words.
+ */
+function composeMessage(whoFor: WhoFor, topic: string | null, language: CallLanguage, note: string) {
+  const lines = (label: string | null) =>
+    [
+      whoFor && `For: ${whoFor}`,
+      label && `Asking about: ${label}`,
+      language && `Preferred language for the call: ${language}`,
+      note.trim(),
+    ]
+      .filter(Boolean)
+      .join("\n");
+  const full = lines(topic);
+  if (!topic || full.length <= COMPOSED_MAX) return full;
+  const keep = topic.length - (full.length - COMPOSED_MAX) - 1;
+  return lines(keep > 0 ? `${topic.slice(0, keep)}…` : null);
+}
+
+/** Keep each number with its unit ("7 AM", "30 minutes") while the sentence wraps freely. */
 const units = (s: string) => s.replace(/(\d) /g, "$1\u00a0");
 
 const SERVER_ERROR = `We could not send your request. Please try again in a minute.${
@@ -49,15 +85,134 @@ function serverErrorText(err: unknown): string {
   return SERVER_ERROR;
 }
 
-const FIELD =
-  "h-13 w-full scroll-mt-28 rounded-xl border border-input bg-white px-4 text-base text-foreground transition-[border-color,box-shadow,background-color] duration-160 placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-solid focus-visible:outline-transparent hover:border-input-hover focus-visible:border-primary focus-visible:shadow-[0_0_0_1px_var(--primary),0_0_0_5px_color-mix(in_oklab,var(--primary)_14%,transparent)] aria-invalid:border-danger aria-invalid:bg-danger-bg aria-invalid:focus-visible:shadow-[0_0_0_1px_var(--danger),0_0_0_5px_color-mix(in_oklab,var(--danger)_14%,transparent)]";
+const prefersReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+  document.documentElement.dataset.motion === "paused";
+const coarsePointer = () => window.matchMedia("(pointer: coarse)").matches;
 
-const RADIO_PILL =
-  "relative inline-flex h-11 cursor-pointer items-center rounded-full border border-border-strong bg-card px-4 text-[0.9375rem] font-medium text-foreground transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-aqua has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-ring";
+/** Input from the visitor while a jump settles: they have taken over, so nothing moves or takes focus. */
+const TAKEOVER = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+
+/** Where a jump to `el` comes to rest: its top less its scroll margin, within the scroll range. */
+function landingY(el: HTMLElement) {
+  const y = window.scrollY + el.getBoundingClientRect().top - (parseFloat(getComputedStyle(el).scrollMarginTop) || 0);
+  return Math.min(Math.max(0, y), document.documentElement.scrollHeight - window.innerHeight);
+}
 
 /**
- * Text link / text button in the success state. Text flows inline (so a wrapped line keeps its arrow on the
- * last word); the outline hugs the text and ::before makes the hit area 44px.
+ * Runs `then` once the jump to #callback has settled (spec §4.8): on the scrollend that leaves the page
+ * at `targetY`, or from 700 ms on, as soon as nothing is scrolling (no scrollend, nothing to scroll, or
+ * the jump ended elsewhere). A scrollend left over from an earlier scroll is ignored, and a long smooth
+ * scroll is waited out. Reduced motion jumps instantly, so it runs as soon as the page is at the target
+ * (allowing up to 700 ms for the router's scroll). Returns a cancel function.
+ *
+ * next/link does not scroll at all when the URL already ends in #callback (a second callback link after
+ * a first one), so if nothing has moved by 150 ms the jump is made here, to the same place.
+ */
+function afterJump(targetY: number, reduced: boolean, then: () => void): () => void {
+  const start = performance.now();
+  let lastScroll = 0;
+  let timer = 0;
+  let rescueTimer = 0;
+  const arrived = () => Math.abs(window.scrollY - targetY) < 2;
+  const onScroll = () => {
+    lastScroll = performance.now();
+  };
+  const onScrollEnd = () => {
+    if (arrived()) finish();
+  };
+  const cancel = () => {
+    window.removeEventListener("scrollend", onScrollEnd);
+    window.removeEventListener("scroll", onScroll);
+    for (const type of TAKEOVER) window.removeEventListener(type, cancel, true);
+    window.clearTimeout(timer);
+    window.clearTimeout(rescueTimer);
+  };
+  function finish() {
+    cancel();
+    then();
+  }
+  const rescue = () => {
+    if (!lastScroll && !arrived()) window.scrollTo({ top: targetY, behavior: reduced ? "instant" : "smooth" });
+  };
+  const poll = () => {
+    const now = performance.now();
+    const quiet = now - lastScroll > 150;
+    const settled = reduced ? arrived() || (quiet && now - start >= 700) : quiet;
+    if (settled || now - start > 3000) finish();
+    else timer = window.setTimeout(poll, reduced ? 16 : 100);
+  };
+  for (const type of TAKEOVER) window.addEventListener(type, cancel, { capture: true, passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true });
+  if (!reduced) window.addEventListener("scrollend", onScrollEnd);
+  rescueTimer = window.setTimeout(rescue, 150);
+  timer = window.setTimeout(poll, reduced ? 0 : 700);
+  return cancel;
+}
+
+/**
+ * Brings a focused field clear of the fixed nav and of the visible bottom edge (or the keyboard). When
+ * it has to move, it shows `context` (the chip and the pills above the field) just under the nav if
+ * the field still fits below it, as on a phone held sideways; otherwise it centres the field.
+ */
+function keepInView(el: HTMLElement, smooth: boolean, context?: HTMLElement | null) {
+  const nav = document.querySelector("[data-landing] > header")?.getBoundingClientRect().bottom ?? 0;
+  const vv = window.visualViewport;
+  const bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  const r = el.getBoundingClientRect();
+  if (r.top >= nav + 8 && r.bottom <= bottom - 8) return;
+  const behavior = smooth ? "smooth" : "instant";
+  const c = context?.getBoundingClientRect();
+  if (c && r.bottom - c.top <= bottom - nav - 24) window.scrollBy({ top: c.top - (nav + 12), behavior });
+  else el.scrollIntoView({ block: "center", behavior });
+}
+
+/**
+ * On touch screens the keyboard may open over the focused field: once the visual viewport shrinks,
+ * centre the field in what is left (mobile addendum M7). Gives up after a second and a half.
+ */
+function centreAboveKeyboard(el: HTMLElement) {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const before = vv.height;
+  const onResize = () => {
+    if (vv.height > before - 80) return;
+    stop();
+    if (document.activeElement === el) el.scrollIntoView({ block: "center" });
+  };
+  const stop = () => {
+    vv.removeEventListener("resize", onResize);
+    window.clearTimeout(timer);
+  };
+  vv.addEventListener("resize", onResize);
+  const timer = window.setTimeout(stop, 1500);
+}
+
+/** A soft settle on what a prefill link just filled in, so the eye finds it. Transform and opacity only. */
+function settle(el: Element | null | undefined, delay = 0) {
+  el?.animate(
+    [
+      { opacity: 0.4, transform: "translateY(6px) scale(0.97)" },
+      { opacity: 1, transform: "none" },
+    ],
+    { duration: 460, delay, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "backwards" },
+  );
+}
+
+const FIELD =
+  "h-13 w-full scroll-mt-28 rounded-xl border border-input bg-white px-4 text-base text-foreground transition-[border-color,background-color] duration-160 placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-solid focus-visible:outline-transparent hover:border-input-hover focus-visible:border-primary focus-visible:shadow-[0_0_0_1px_var(--primary),0_0_0_5px_color-mix(in_oklab,var(--primary)_14%,transparent)] aria-invalid:border-danger aria-invalid:bg-danger-bg aria-invalid:focus-visible:shadow-[0_0_0_1px_var(--danger),0_0_0_5px_color-mix(in_oklab,var(--danger)_14%,transparent)]";
+
+/**
+ * 44px pills; pressed: a tint and, with motion, a 0.98 scale (90 ms in, 180 ms out). In forced colours
+ * the chosen pill keeps its own Highlight fill: without forced-color-adjust:none the browser would
+ * paint a Canvas backplate behind HighlightText and the label would vanish.
+ */
+const RADIO_PILL =
+  "relative inline-flex h-11 cursor-pointer items-center rounded-full border border-border-strong bg-card px-4 text-[0.9375rem] font-medium text-foreground transition-[background-color,border-color,color,transform] duration-180 ease-standard select-none hover:bg-muted active:bg-aqua-2/60 active:duration-90 motion-safe:active:scale-[0.98] has-[:checked]:border-primary has-[:checked]:bg-aqua has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-ring forced-colors:has-[:checked]:border-[Highlight] forced-colors:has-[:checked]:bg-[Highlight] forced-colors:has-[:checked]:text-[HighlightText] forced-colors:has-[:checked]:forced-color-adjust-none forced-colors:has-[:checked]:outline-[CanvasText]";
+
+/**
+ * Text button in the success state. Text flows inline; the outline hugs the text and ::before makes
+ * the hit area 44px.
  */
 const SUCCESS_ACTION =
   "relative rounded-sm text-sm font-semibold text-balance underline underline-offset-4 hover:decoration-current focus-ring before:absolute before:-inset-x-2 before:-inset-y-3";
@@ -67,19 +222,38 @@ export function CallbackForm() {
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [whoFor, setWhoFor] = useState<WhoFor>("");
   const [language, setLanguage] = useState<CallLanguage>("");
+  /** What a prefill link asked about (the chip, and the "Asking about" line). */
+  const [topic, setTopic] = useState<string | null>(null);
+  /** The note a prefill link wrote, while it may still be replaced or cleared with the chip. */
+  const [prefilled, setPrefilled] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [done, setDone] = useState<Fields | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const chipRef = useRef<HTMLDivElement>(null);
+  const pillsRef = useRef<HTMLDivElement>(null);
   const refocusForm = useRef(false);
+  const cancelJump = useRef<(() => void) | null>(null);
   const [formHeight, setFormHeight] = useState<number | null>(null);
 
   // The control that held focus (submit, or "Send another request") is gone after each swap: move focus on.
+  // On success the message is sticky inside the card; nudge the page just enough that all of it clears
+  // the fixed nav and the bottom edge (the card's own edge can pin it under the nav on a phone).
   useEffect(() => {
     if (done) {
-      headingRef.current?.focus();
+      headingRef.current?.focus({ preventScroll: true });
+      const box = successRef.current?.getBoundingClientRect();
+      if (!box) return;
+      const nav = document.querySelector("[data-landing] > header")?.getBoundingClientRect().bottom ?? 0;
+      const view = window.visualViewport?.height ?? window.innerHeight;
+      const up = nav + 12 - box.top;
+      const down = box.bottom - (view - 12);
+      const by = up > 0 ? -up : down > 0 ? Math.min(down, box.top - nav - 12) : 0;
+      if (by) window.scrollBy({ top: by, behavior: prefersReducedMotion() ? "instant" : "smooth" });
     } else if (refocusForm.current) {
       refocusForm.current = false;
       formRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
@@ -92,6 +266,95 @@ export function CallbackForm() {
   };
 
   const id = (k: string) => `${uid}-${k}`;
+
+  const clearForm = () => {
+    setFields(EMPTY);
+    setWhoFor("");
+    setLanguage("");
+    setTopic(null);
+    setPrefilled(null);
+    setErrors({});
+    setServerError(null);
+    setDone(null);
+  };
+
+  /**
+   * A prefill link was clicked (spec §4.8): `data-for` picks the pill; `data-need` fills the note when
+   * it is empty (or still holds an earlier prefill) and `data-need-label` shows the chip. From the
+   * success state it starts a fresh request. Once the jump settles, "Your name" takes focus in place.
+   */
+  const prefill = useEffectEvent((link: HTMLAnchorElement) => {
+    const forWho = link.dataset.for;
+    const need = link.dataset.need?.trim() || null;
+    const label = link.dataset.needLabel?.trim() || null;
+    const fresh = done !== null;
+    const note = fresh ? "" : fields.message;
+    const untouched = note.trim() === "" || (prefilled !== null && note === prefilled);
+
+    if (fresh) clearForm();
+    if (isWhoFor(forWho)) setWhoFor(forWho);
+    if (need && untouched) {
+      setFields((f) => ({ ...f, message: need }));
+      setPrefilled(need);
+      if (errors.message) setErrors((e) => ({ ...e, message: undefined }));
+    }
+    if (need || label) setTopic(label);
+
+    const reduced = prefersReducedMotion();
+    const section = document.getElementById("callback");
+    cancelJump.current?.();
+    cancelJump.current = afterJump(section ? landingY(section) : window.scrollY, reduced, () => {
+      cancelJump.current = null;
+      const name = nameRef.current;
+      if (!name) return;
+      name.focus({ preventScroll: true });
+      keepInView(name, !reduced, chipRef.current?.parentElement);
+      if (coarsePointer()) centreAboveKeyboard(name);
+      if (!reduced) {
+        settle(chipRef.current);
+        if (isWhoFor(forWho)) settle(pillsRef.current?.querySelector("input:checked")?.closest("label"), 70);
+      }
+    });
+  });
+
+  // One capture-phase listener for every prefill link on the page (CareCta, ContactCtas). Capture runs
+  // before next/link's own handler; nothing calls preventDefault, so the native (or router) hash scroll
+  // still runs, and without JS the links simply land on #callback.
+  useEffect(() => {
+    const jump = cancelJump;
+    const onClick = (e: MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const link = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>("a[data-need], a[data-for]") : null;
+      if (!link) return;
+      const url = new URL(link.href, window.location.href);
+      if (url.hash !== "#callback" || url.pathname !== window.location.pathname) return;
+      prefill(link);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      jump.current?.();
+    };
+  }, []);
+
+  const clearTopic = () => {
+    if (prefilled !== null && fields.message === prefilled) set("message", "");
+    setPrefilled(null);
+    setTopic(null);
+    nameRef.current?.focus();
+  };
+
+  /** Touch keyboards: "next" moves on and "send" submits (enterKeyHint, M7). Hardware keys keep their defaults. */
+  const enterMovesTo = (next: string) => (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing || !coarsePointer()) return;
+    e.preventDefault();
+    document.getElementById(id(next))?.focus();
+  };
+  const enterSends = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing || !coarsePointer()) return;
+    e.preventDefault();
+    formRef.current?.requestSubmit();
+  };
 
   const onSubmit = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -106,23 +369,13 @@ export function CallbackForm() {
     }
     setSubmitting(true);
     try {
-      const composed = [
-        whoFor && `For: ${whoFor}`,
-        language && `Preferred language for the call: ${language}`,
-        fields.message.trim(),
-      ]
-        .filter(Boolean)
-        .join("\n");
-      await api.post(
-        "/leads",
-        {
-          name: fields.name.trim(),
-          phone: fields.phone,
-          city: fields.city,
-          ...(composed ? { message: composed } : {}),
-        },
-        { anonymous: true },
-      );
+      const composed = composeMessage(whoFor, topic, language, fields.message);
+      await publicApi.post("/leads", {
+        name: fields.name.trim(),
+        phone: fields.phone,
+        city: CITY,
+        ...(composed ? { message: composed } : {}),
+      });
       setFormHeight(formRef.current?.offsetHeight ?? null);
       setDone(fields);
     } catch (err) {
@@ -134,71 +387,74 @@ export function CallbackForm() {
 
   const reset = () => {
     refocusForm.current = true;
-    setFields(EMPTY);
-    setWhoFor("");
-    setLanguage("");
-    setErrors({});
-    setServerError(null);
-    setDone(null);
+    clearForm();
   };
 
   if (done) {
     const first = done.name.trim().split(/\s+/)[0];
     return (
-      <div
-        role="status"
-        className="flex flex-col items-center justify-center px-2 text-center"
-        style={{ minHeight: formHeight ?? 460 }}
-      >
-        <svg viewBox="0 0 64 64" aria-hidden className="size-16">
-          <circle cx="32" cy="32" r="30" fill="var(--mint)" />
-          <circle
-            className="success-ring"
-            cx="32"
-            cy="32"
-            r="30"
-            stroke="var(--teal)"
-            strokeWidth={2}
-            fill="none"
-            pathLength={1}
-            transform="rotate(-90 32 32)"
-          />
-          <path
-            // Reduced motion: show the final pose at once (globals shorten durations but keep the 550ms delay).
-            className="success-check motion-reduce:[animation-delay:0s]!"
-            d="M21 33l8 8 15-16"
-            stroke="var(--teal-deep)"
-            strokeWidth={3.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-            pathLength={1}
-          />
-        </svg>
-        <h3
-          ref={headingRef}
-          tabIndex={-1}
-          className="font-display mt-5 text-[1.75rem] leading-tight font-medium tracking-[-0.02em] text-balance text-foreground outline-none"
+      // Keeps the form's height (nothing below moves), and the message is sticky inside it: centred
+      // while the card fits the screen, held in view while a tall phone card is scrolled.
+      <div role="status" className="flex flex-col justify-center" style={{ minHeight: formHeight ?? 460 }}>
+        <div
+          ref={successRef}
+          className="sticky top-[max(6rem,calc(50svh-15rem))] bottom-6 flex flex-col items-center px-2 py-6 text-center"
         >
-          Thanks, {first}. We will call you soon.
-        </h3>
-        <p className="mt-3 max-w-[38ch] text-body text-balance text-foreground-2">
-          A Nivar care coordinator will call you on{" "}
-          <span className="font-medium whitespace-nowrap text-foreground tabular-nums">
-            +91 {done.phone.slice(0, 5)} {done.phone.slice(5)}
-          </span>
-          , usually within {units(SITE.callbackWithin)} {units(SITE.hours.inSentence)}.
-        </p>
-        <a href="#health-tips" className={cn(SUCCESS_ACTION, "mt-6 text-primary decoration-border-strong")}>
-          While you wait: take one calm{" "}
-          <span className="whitespace-nowrap">
-            minute
-            <ArrowRight aria-hidden className="ml-1.5 inline-block size-4 align-[-0.1875rem]" />
-          </span>
-        </a>
-        <button type="button" onClick={reset} className={cn(SUCCESS_ACTION, "mt-6 text-foreground decoration-border-strong")}>
-          Send another request
-        </button>
+          <svg viewBox="0 0 64 64" aria-hidden className="size-16">
+            <circle cx="32" cy="32" r="30" fill="var(--mint)" />
+            <circle
+              className="success-ring"
+              cx="32"
+              cy="32"
+              r="30"
+              stroke="var(--teal)"
+              strokeWidth={2}
+              fill="none"
+              pathLength={1}
+              transform="rotate(-90 32 32)"
+            />
+            <path
+              // Reduced motion: show the final pose at once (globals shorten durations but keep the 550ms delay).
+              className="success-check motion-reduce:[animation-delay:0s]!"
+              d="M21 33l8 8 15-16"
+              stroke="var(--teal-deep)"
+              strokeWidth={3.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              pathLength={1}
+            />
+          </svg>
+          <h3
+            ref={headingRef}
+            tabIndex={-1}
+            className="font-display mt-5 text-[1.75rem] leading-tight font-medium tracking-[-0.02em] text-balance text-foreground outline-none"
+          >
+            Thanks, {first}. We will call you soon.
+          </h3>
+          <p className="mt-3 max-w-[38ch] text-body text-balance text-foreground-2">
+            A Nivar care coordinator will call you on{" "}
+            <span className="font-medium whitespace-nowrap text-foreground tabular-nums">
+              +91 {done.phone.slice(0, 5)} {done.phone.slice(5)}
+            </span>
+            , usually within {units(SITE.callbackWithin)} {units(SITE.hours.inSentence)}.
+          </p>
+          {/* Opens Take a minute on Breathe (cluster.tsx listens for data-minute-open); the orb rises
+              from this pearl, and focus comes back here when it closes. */}
+          <button
+            type="button"
+            data-minute-open="breathe"
+            data-minute-scope=""
+            aria-haspopup="dialog"
+            className="nv-cb-minute mt-8 flex w-full max-w-[20rem] cursor-pointer items-center gap-3.5 rounded-2xl py-3 pr-5 pl-3.5 text-left text-[0.9375rem] leading-snug font-semibold text-ink focus-ring"
+          >
+            <Pearl size={32} data-minute-origin="" />
+            <span className="text-balance">While you wait, take a minute</span>
+          </button>
+          <button type="button" onClick={reset} className={cn(SUCCESS_ACTION, "mt-6 text-foreground decoration-border-strong")}>
+            Send another request
+          </button>
+        </div>
       </div>
     );
   }
@@ -216,37 +472,70 @@ export function CallbackForm() {
       className="flex flex-col gap-6"
       aria-describedby={serverError ? id("server") : undefined}
     >
-      <fieldset>
-        <legend className="flex w-full items-baseline justify-between gap-x-1.5 text-[0.9375rem] font-medium text-balance text-foreground">
-          Who is the check-up for? <span className="text-caption font-normal text-muted-foreground">Optional</span>
-        </legend>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {WHO_FOR.map((v) => (
-            <label key={v} className={RADIO_PILL}>
-              <input
-                type="radio"
-                name="whoFor"
-                value={v}
-                className="sr-only"
-                checked={whoFor === v}
-                onChange={() => setWhoFor(v)}
-              />
-              {v}
-            </label>
-          ))}
+      <div className="flex flex-col">
+        {/* The chip row is always in the DOM (empty and zero-height without a topic), so its status
+            text is announced when a prefill link fills it. The clear button sits outside the region. */}
+        <div
+          ref={chipRef}
+          className={cn(
+            "nv-cb-chip flex items-center",
+            topic && "mb-5 min-h-12 gap-1 rounded-2xl bg-aqua py-0.5 pr-0.5 pl-4 ring-1 ring-primary/12 ring-inset",
+          )}
+        >
+          <p role="status" className={cn("min-w-0 flex-1 text-small text-pretty text-ink-2", topic && "py-2")}>
+            {topic && (
+              <>
+                Asking about: <span className="font-semibold text-ink">{topic}</span>
+              </>
+            )}
+          </p>
+          {topic && (
+            <button
+              type="button"
+              onClick={clearTopic}
+              aria-label={`Clear: ${topic}`}
+              className="nv-cb-clear flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-primary focus-ring"
+            >
+              <X aria-hidden className="size-[1.125rem]" />
+            </button>
+          )}
         </div>
-      </fieldset>
+
+        <fieldset>
+          <legend className="flex w-full items-baseline justify-between gap-x-1.5 text-[0.9375rem] font-medium text-balance text-foreground">
+            Who is the visit for? <span className="text-caption font-normal text-muted-foreground">Optional</span>
+          </legend>
+          <div ref={pillsRef} className="mt-2 flex flex-wrap gap-2">
+            {WHO_FOR.map((v) => (
+              <label key={v} className={RADIO_PILL}>
+                <input
+                  type="radio"
+                  name="whoFor"
+                  value={v}
+                  className="sr-only"
+                  checked={whoFor === v}
+                  onChange={() => setWhoFor(v)}
+                />
+                {v}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </div>
 
       <Field label="Your name" htmlFor={id("name")} error={errors.name} errorId={id("name-error")}>
         <input
+          ref={nameRef}
           id={id("name")}
           name="name"
           autoComplete="name"
           autoCapitalize="words"
+          enterKeyHint="next"
           spellCheck={false}
           placeholder="Full name"
           value={fields.name}
           onChange={(e) => set("name", e.target.value)}
+          onKeyDown={enterMovesTo("phone")}
           aria-invalid={!!errors.name}
           aria-describedby={describe("name")}
           className={FIELD}
@@ -256,7 +545,7 @@ export function CallbackForm() {
       <Field
         label="Mobile number"
         htmlFor={id("phone")}
-        hint="10-digit mobile number. We only call about this request."
+        hint="10-digit mobile number."
         hintId={id("phone-hint")}
         error={errors.phone}
         errorId={id("phone-error")}
@@ -277,6 +566,7 @@ export function CallbackForm() {
             type="tel"
             inputMode="numeric"
             autoComplete="tel-national"
+            enterKeyHint="next"
             placeholder="98450 12345"
             value={fields.phone.length > 5 ? `${fields.phone.slice(0, 5)} ${fields.phone.slice(5)}` : fields.phone}
             onChange={(e) => {
@@ -285,6 +575,7 @@ export function CallbackForm() {
               if (digits.length > 10 && digits.startsWith("0")) digits = digits.slice(1);
               set("phone", digits.slice(0, 10));
             }}
+            onKeyDown={enterMovesTo("language")}
             aria-invalid={!!errors.phone}
             aria-describedby={describe("phone", true)}
             className={cn(FIELD, "pl-[4.5rem] tabular-nums")}
@@ -292,29 +583,13 @@ export function CallbackForm() {
         </div>
       </Field>
 
-      <Field label="City" htmlFor={id("city")} error={errors.city} errorId={id("city-error")}>
-        <div className="relative">
-          <select
-            id={id("city")}
-            name="city"
-            value={fields.city}
-            onChange={(e) => set("city", e.target.value)}
-            aria-invalid={!!errors.city}
-            aria-describedby={describe("city")}
-            className={cn(FIELD, "appearance-none pr-10")}
-          >
-            {CITIES.map((c) => (
-              <option key={c} value={c}>
-                {c === "Bangalore" ? c : c === "Other" ? "Another city" : `${c} (coming soon)`}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-primary"
-          />
-        </div>
-      </Field>
+      <div className="flex flex-col gap-2">
+        <p className="text-[0.9375rem] font-medium text-foreground">City</p>
+        <p className="flex min-h-13 items-center gap-2.5 rounded-xl border border-border bg-aqua px-4 py-2.5 text-base leading-snug text-foreground">
+          <MapPin aria-hidden className="size-4 shrink-0 text-primary" />
+          {CITY}
+        </p>
+      </div>
 
       <Field
         label="Preferred language for the call"
@@ -359,9 +634,12 @@ export function CallbackForm() {
           id={id("message")}
           name="message"
           rows={3}
-          placeholder="For example, monthly BP checks for my mother in Jayanagar"
+          enterKeyHint="send"
+          // No-break space: "2" never sits alone on the last line.
+          placeholder={"For example, a B12 injection for my mother in HSR Layout Sector 2"}
           value={fields.message}
           onChange={(e) => set("message", e.target.value)}
+          onKeyDown={enterSends}
           aria-invalid={!!errors.message}
           aria-describedby={describe("message")}
           className={cn(FIELD, "h-auto min-h-28 resize-y py-3 leading-relaxed")}
@@ -383,7 +661,11 @@ export function CallbackForm() {
         <button
           type="submit"
           aria-disabled={submitting || undefined}
-          className={buttonClass("primary", "w-full", "lg")}
+          className={buttonClass(
+            "accent",
+            "h-14 w-full text-[1.0625rem] duration-180 active:bg-marigold-hover active:duration-90 motion-safe:active:scale-[0.97] motion-reduce:active:scale-100 sm:h-13",
+            "lg",
+          )}
         >
           {submitting ? (
             <>

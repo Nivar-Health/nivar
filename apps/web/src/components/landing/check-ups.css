@@ -1,0 +1,220 @@
+/* Check-ups, the second act (check-ups.tsx, programmes.tsx, single-checks.tsx, live-panel.tsx): spec §4.6.
+   In a layer, so Tailwind utilities on the same elements win. */
+@layer components {
+  /* ---- Package cards. Up to lg the glyph sits beside the name and price, which keeps the phone row
+     short; at xl (four narrow columns) the glyph and price share the top row and the name goes under
+     them, so prices line up across the row. The call to action always sits on the bottom edge. ---- */
+  .nv-chk-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 16px;
+    border-radius: 24px;
+    background: var(--pg-tint);
+    box-shadow: inset 0 0 0 1px rgb(1 58 72 / 0.06);
+  }
+  .nv-chk-head {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 16px;
+  }
+  .nv-chk-id {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .nv-chk-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow:
+      inset 0 0 0 1px rgb(1 58 72 / 0.04),
+      0 12px 22px -16px rgb(1 43 54 / 0.5);
+  }
+  .nv-chk-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nv-chk-tagline {
+    margin-top: 14px;
+  }
+  .nv-chk-tests {
+    margin-top: 12px;
+    margin-bottom: 16px;
+  }
+  .nv-chk-cta {
+    margin-top: auto;
+  }
+  @media (min-width: 40rem) {
+    .nv-chk-card {
+      padding: 20px;
+    }
+    .nv-chk-tagline {
+      margin-top: 18px;
+    }
+    .nv-chk-tests {
+      margin-top: 16px;
+      margin-bottom: 24px;
+    }
+  }
+  @media (min-width: 64rem) {
+    .nv-chk-card {
+      padding: 24px;
+    }
+  }
+  @media (min-width: 80rem) {
+    .nv-chk-head {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas:
+        "glyph price"
+        "name name";
+      align-items: start;
+    }
+    .nv-chk-id {
+      display: contents;
+    }
+    .nv-chk-glyph {
+      grid-area: glyph;
+    }
+    .nv-chk-price {
+      grid-area: price;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-self: end;
+      padding-top: 4px;
+    }
+    .nv-chk-name {
+      grid-area: name;
+      margin-top: 22px;
+    }
+    .nv-chk-tagline {
+      margin-top: 6px;
+    }
+  }
+
+  /* The glyph plays once more on hover (fine pointers) or while the card's button has keyboard focus.
+     The keyframes and transform origins are the programme glyphs' own (landing.css section 5). */
+  @media (hover: hover) and (pointer: fine) {
+    .nv-chk-card:hover .pg-heart-h {
+      animation: lubdub-hover 900ms var(--curve-standard);
+    }
+    .nv-chk-card:hover .pg-level-h {
+      --rise: 8px;
+      animation: rise-in-hover 700ms var(--curve-calm);
+    }
+    .nv-chk-card:hover .pg-rings-h {
+      animation: ring-breathe 900ms var(--curve-breath);
+    }
+    .nv-chk-card:hover .pg-needle-h {
+      --from: -14deg;
+      animation: needle-in-hover 600ms var(--curve-calm);
+    }
+  }
+  .nv-chk-card:has(:focus-visible) .pg-heart-h {
+    animation: lubdub-hover 900ms var(--curve-standard);
+  }
+  .nv-chk-card:has(:focus-visible) .pg-level-h {
+    --rise: 8px;
+    animation: rise-in-hover 700ms var(--curve-calm);
+  }
+  .nv-chk-card:has(:focus-visible) .pg-rings-h {
+    animation: ring-breathe 900ms var(--curve-breath);
+  }
+  .nv-chk-card:has(:focus-visible) .pg-needle-h {
+    --from: -14deg;
+    animation: needle-in-hover 600ms var(--curve-calm);
+  }
+
+  /* ---- Single checks: a closed disclosure between hairlines ---- */
+  .nv-chk-summary {
+    list-style: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 160ms var(--curve-standard);
+  }
+  .nv-chk-summary::-webkit-details-marker {
+    display: none;
+  }
+  .nv-chk-sum-inner {
+    transform-origin: left center;
+    transition: transform 180ms var(--curve-standard);
+  }
+  .nv-chk-chev {
+    transition:
+      transform 160ms var(--curve-standard),
+      background-color 160ms var(--curve-standard);
+  }
+  .nv-chk-details[open] > .nv-chk-summary .nv-chk-chev {
+    transform: rotate(90deg);
+  }
+  .nv-chk-summary:active .nv-chk-chev {
+    background-color: var(--aqua-2);
+    transition-duration: 90ms;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .nv-chk-summary:active .nv-chk-sum-inner {
+      transform: scale(0.98);
+      transition-duration: 90ms;
+    }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-chk-summary:hover {
+      color: var(--jade);
+    }
+    .nv-chk-summary:hover .nv-chk-chev {
+      background-color: var(--aqua-2);
+    }
+  }
+  .nv-chk-details[open] > .nv-chk-body {
+    animation: nv-chk-open 260ms var(--curve-calm) backwards;
+  }
+
+  /* ---- Live panel: the skeleton holds the dashboard's exact box until the chunk arrives, then the
+     dashboard fades in over it and the skeleton steps away. ---- */
+  .nv-chk-skel {
+    transition:
+      opacity 500ms var(--curve-calm),
+      visibility 0s linear 500ms;
+  }
+  .nv-chk-frame[data-ready] .nv-chk-skel {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .nv-chk-frame[data-ready] .nv-chk-loading {
+    display: none;
+  }
+  /* A monitor with its leads off: the dashed isoelectric line the real ECG draws before a signal. */
+  .nv-chk-skel-trace {
+    background: repeating-linear-gradient(90deg, rgb(25 195 125 / 0.35) 0 6px, transparent 6px 12px);
+  }
+  .nv-chk-dash {
+    animation: nv-chk-fade 500ms var(--curve-calm) backwards;
+  }
+}
+
+@keyframes nv-chk-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes nv-chk-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The glyph tile borrows the page's reveal observer only to start its one-shot glyph animation
+   (landing.css section 5 keys it off [data-nv-revealed]); the tile itself never fades or moves.
+   Unlayered, to outrank the reveal's hidden pose in landing.css. */
+html[data-nv-reveal-ready] .nv-chk-glyph[data-nv-reveal]:not([data-nv-revealed]) {
+  opacity: 1;
+  transform: none;
+}

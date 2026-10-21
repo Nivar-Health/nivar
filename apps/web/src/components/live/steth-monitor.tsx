@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Headphones, HeadphoneOff, Stethoscope } from "lucide-react";
 import type { Feed, StethChunk } from "@/lib/device-sim";
 import { createHeartSound, type HeartSound } from "@/lib/heart-sound";
@@ -31,6 +31,10 @@ export type StethMonitorProps = {
   /** Hide the Listen button (e.g. on the nurse's own device). */
   hideListen?: boolean;
   className?: string;
+  /** The landing page's reduced-motion rest: no feed, and this label in place of "Waiting for device". */
+  paused?: boolean;
+  /** Overlay shown while paused before any signal has arrived. Default "Paused". */
+  pausedLabel?: ReactNode;
 };
 
 const NO_SIGNAL_MS = 1800;
@@ -46,6 +50,8 @@ export function StethMonitor({
   site = "Mitral area",
   hideListen = false,
   className,
+  paused = false,
+  pausedLabel = "Paused",
 }: StethMonitorProps) {
   const [hasSignal, setHasSignal] = useState(false);
   const [listening, setListening] = useState(false);
@@ -329,7 +335,9 @@ export function StethMonitor({
 
   const live = hasSignal && status !== "stopped" && status !== "connecting";
   const overlay =
-    status === "connecting" ? (
+    paused && !hasSignal ? (
+      pausedLabel
+    ) : status === "connecting" ? (
       <>
         <WaitingDots /> Connecting to Smart Stethoscope
       </>
@@ -355,7 +363,7 @@ export function StethMonitor({
           <span className="truncate rounded border border-[#E6E6E1]/25 px-1.5 py-px font-medium text-[#F7D88E]">{site}</span>
           <span className="hidden text-[#8F8F89] sm:inline">20 to 400 Hz</span>
         </div>
-        <LiveBadge live={live} />
+        <LiveBadge live={live && !paused} paused={paused} />
       </div>
 
       <div className="flex min-h-0 flex-1">

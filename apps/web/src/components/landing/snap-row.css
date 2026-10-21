@@ -1,0 +1,269 @@
+/* SnapRow (snap-row.tsx): a scroll-snap row on phones that can become a plain grid from a breakpoint.
+   In a layer, so the Tailwind classes callers pass (basis, gap, grid columns) win over these defaults. */
+@layer components {
+  .nv-snap-wrap {
+    position: relative;
+    min-width: 0;
+  }
+
+  /* The region is the scroller. It bleeds 20px into the parent's padding; the track's own padding puts
+     the first item back on the content edge, and the vertical padding leaves room for card shadows. */
+  .nv-snap {
+    --nv-snap-fade: 2rem;
+    position: relative;
+    margin: -8px -20px -24px;
+    padding: 8px 0 24px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 20px;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--nv-snap-fade)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--nv-snap-fade)), transparent);
+  }
+  .nv-snap::-webkit-scrollbar {
+    display: none;
+  }
+  .nv-snap[data-scrolled] {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--nv-snap-fade),
+      #000 calc(100% - var(--nv-snap-fade)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--nv-snap-fade),
+      #000 calc(100% - var(--nv-snap-fade)),
+      transparent
+    );
+  }
+  .nv-snap[data-at-end] {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .nv-snap[data-scrolled][data-at-end] {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--nv-snap-fade));
+    mask-image: linear-gradient(to right, transparent, #000 var(--nv-snap-fade));
+  }
+  /* The fades would clip the focus ring, so they lift while the region has keyboard focus. */
+  .nv-snap:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .nv-snap-track {
+    display: flex;
+    gap: 12px;
+    margin: 0;
+    padding: 0 20px;
+    list-style: none;
+  }
+  /* The end gutter: 12px gap + 8px = the same 20px as the start. */
+  .nv-snap-track::after {
+    content: "";
+    flex: none;
+    width: 8px;
+  }
+  .nv-snap-item {
+    flex: none;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+  .nv-snap[data-snap-stop="always"] .nv-snap-item {
+    scroll-snap-stop: always;
+  }
+
+  /* Phones: dots. The active one is a 16px jade pill. */
+  .nv-snap-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .nv-snap-dots > span {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--aqua-2);
+    transition:
+      width 200ms var(--curve-standard),
+      background-color 200ms var(--curve-standard);
+  }
+  .nv-snap-dots > span[data-active] {
+    width: 16px;
+    background: var(--jade);
+  }
+
+  /* From sm: "2 / 4" and 44px previous and next buttons. Start-aligned, so the fixed corner buttons
+     (Take a minute, WhatsApp) never sit on top of Next. */
+  .nv-snap-ctrl {
+    display: none;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .nv-snap-cue {
+    margin-inline-start: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-foreground);
+  }
+  .nv-snap-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-strong);
+    background: var(--card);
+    color: var(--foreground);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard),
+      opacity 180ms var(--curve-standard);
+  }
+  .nv-snap-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  .nv-snap-btn:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .nv-snap-btn:active:not([aria-disabled="true"]) {
+    transform: scale(0.97);
+    background: var(--aqua);
+    transition-duration: 90ms;
+  }
+  .nv-snap-btn[aria-disabled="true"] {
+    opacity: 0.4;
+    cursor: default;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-snap-btn:not([aria-disabled="true"]):hover {
+      background: var(--aqua);
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .nv-snap-dots {
+      display: none;
+    }
+    .nv-snap-ctrl {
+      display: flex;
+    }
+  }
+  .nv-snap-wrap[data-fits] .nv-snap-dots,
+  .nv-snap-wrap[data-fits] .nv-snap-ctrl {
+    display: none;
+  }
+
+  /* gridFrom: a plain grid, with no scroller, fades, cue or buttons. */
+  @media (min-width: 40rem) {
+    .nv-snap-wrap[data-grid-from="sm"] > .nv-snap {
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+      scroll-snap-type: none;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .nv-snap-wrap[data-grid-from="sm"] .nv-snap-track {
+      display: grid;
+      padding: 0;
+    }
+    .nv-snap-wrap[data-grid-from="sm"] .nv-snap-track::after {
+      content: none;
+    }
+    .nv-snap-wrap[data-grid-from="sm"] .nv-snap-ctrl {
+      display: none;
+    }
+    /* The sliding cards must not widen the page. */
+    .nv-snap-wrap[data-grid-from="sm"][data-reveal] {
+      overflow-x: clip;
+    }
+  }
+  @media (min-width: 48rem) {
+    .nv-snap-wrap[data-grid-from="md"] > .nv-snap {
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+      scroll-snap-type: none;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .nv-snap-wrap[data-grid-from="md"] .nv-snap-track {
+      display: grid;
+      padding: 0;
+    }
+    .nv-snap-wrap[data-grid-from="md"] .nv-snap-track::after {
+      content: none;
+    }
+    .nv-snap-wrap[data-grid-from="md"] .nv-snap-ctrl {
+      display: none;
+    }
+    /* The sliding cards must not widen the page. */
+    .nv-snap-wrap[data-grid-from="md"][data-reveal] {
+      overflow-x: clip;
+    }
+  }
+  @media (min-width: 64rem) {
+    .nv-snap-wrap[data-grid-from="lg"] > .nv-snap {
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+      scroll-snap-type: none;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .nv-snap-wrap[data-grid-from="lg"] .nv-snap-track {
+      display: grid;
+      padding: 0;
+    }
+    .nv-snap-wrap[data-grid-from="lg"] .nv-snap-track::after {
+      content: none;
+    }
+    .nv-snap-wrap[data-grid-from="lg"] .nv-snap-ctrl {
+      display: none;
+    }
+    /* The sliding cards must not widen the page. */
+    .nv-snap-wrap[data-grid-from="lg"][data-reveal] {
+      overflow-x: clip;
+    }
+  }
+
+  /* First reveal (M3): once, from 28px to the right, 60ms apart. Never under reduced motion. Snapping
+     pauses meanwhile, or the scroller would re-snap to the moving items and cancel the slide. */
+  .nv-snap-wrap[data-reveal] > .nv-snap {
+    scroll-snap-type: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-motion="paused"]) .nv-snap-wrap[data-reveal="armed"] .nv-snap-item {
+      opacity: 0;
+      transform: translateX(28px);
+    }
+    html:not([data-motion="paused"]) .nv-snap-wrap[data-reveal="in"] .nv-snap-item {
+      transition:
+        opacity 700ms var(--curve-calm),
+        transform 700ms var(--curve-calm);
+      transition-delay: calc(var(--nv-snap-i, 0) * 60ms);
+    }
+  }
+  @media print {
+    .nv-snap-wrap[data-reveal] .nv-snap-item {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
