@@ -1,11 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   Activity,
+  BriefcaseMedical,
   Check,
   CheckCheck,
+  ChevronDown,
+  ClipboardPen,
   Clock3,
   DoorOpen,
   FileHeart,
@@ -14,39 +25,68 @@ import {
   MessageCircle,
   Mic,
   PackageCheck,
+  Pause,
   PhoneCall,
   Pill,
+  Play,
   Stethoscope,
+  UserRound,
   Video,
   type LucideIcon,
 } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo";
+import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
+import { LANGUAGES } from "./l10n";
 import { useMotionPaused } from "./motion";
+import "./visit-journey.css";
 
 export type JourneyStep = { title: string; text: string; time: string };
 
-const ICONS: LucideIcon[] = [MessageCircle, PhoneCall, DoorOpen, Video];
+/** Step 1 is a WhatsApp chat only when WhatsApp exists; otherwise it is the callback request. */
+const ICONS: LucideIcon[] = [SITE.whatsapp ? MessageCircle : ClipboardPen, PhoneCall, DoorOpen, Video];
 /** How long each step stays on screen; each scene finishes its own animation about 2s before. */
 const DWELL_MS = [6000, 6200, 6400, 7000];
+
+type Direction = "next" | "prev" | null;
 
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
 /**
- * "How it works" as a short story: four steps on the left, and a phone that acts each one out
- * (a WhatsApp chat, the doctor's call, the nurse's arrival, the video and the report).
- * It starts at step 1 when it scrolls into view, advances on its own and loops; any step can be
- * picked. It holds while off screen or in a hidden tab, and under reduced motion it does not
- * advance and every scene shows its finished state.
+ * "How it works" as a short story: four steps, and a phone that acts each one out (the request, the
+ * doctor's call, the nurse's arrival, the video and the report).
+ *
+ * It starts at step 1 when it scrolls into view, advances on its own and loops. It holds while off
+ * screen or in a hidden tab. Pause stops it (WCAG 2.2.2), and so does any sign that the visitor has
+ * taken over: picking a step, swiping the phone or moving focus into the story. Play resumes it.
+ * Under reduced motion it never advances, Pause is not shown, and every scene shows its finished state.
+ *
+ * Below lg the steps are story bars over the phone, with the current step's words above it and an
+ * sr-only list of all four for screen readers; the phone is scaled to fit a 390 x 844 screen.
  */
 export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [run, setRun] = useState(0);
+  const [dir, setDir] = useState<Direction>(null);
   const [inView, setInView] = useState(false);
   const [tabVisible, setTabVisible] = useState(true);
+  const [userPaused, setUserPaused] = useState(false);
+  const [tookOver, setTookOver] = useState(false);
+  const reduced = useMotionPaused();
+  const held = userPaused || tookOver;
+  const playing = !reduced && inView && tabVisible && !held;
+  const n = steps.length;
+
   const seen = useRef(false);
-  const still = useMotionPaused();
-  const playing = !still && inView && tabVisible;
+  const heldRef = useRef(held);
+  /** Time already played of the current run, so Play continues a paused step instead of restarting it. */
+  const clock = useRef({ key: "", ms: 0 });
+  const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    heldRef.current = held;
+  }, [held]);
 
   useEffect(() => {
     const el = ref.current;
@@ -56,12 +96,15 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
         const visible = entries[entries.length - 1].isIntersecting;
         setInView(visible);
         if (!visible) return;
-        // First time in view: tell the story from the beginning. Afterwards: replay the current step.
+        // First time in view: tell the story from the beginning. Afterwards: replay the current step,
+        // unless the visitor is holding it.
         if (!seen.current) {
           seen.current = true;
           setActive(0);
+          setRun((r) => r + 1);
+        } else if (!heldRef.current) {
+          setRun((r) => r + 1);
         }
-        setRun((r) => r + 1);
       },
       { threshold: 0.35 },
     );
@@ -69,7 +112,7 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
     const onVisibility = () => {
       const visible = document.visibilityState === "visible";
       setTabVisible(visible);
-      if (visible) setRun((r) => r + 1);
+      if (visible && !heldRef.current) setRun((r) => r + 1);
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
@@ -80,35 +123,89 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
 
   useEffect(() => {
     if (!playing) return;
-    const t = window.setTimeout(() => {
-      setActive((a) => (a + 1) % steps.length);
-      setRun((r) => r + 1);
-    }, DWELL_MS[active] ?? 6000);
-    return () => window.clearTimeout(t);
-  }, [playing, active, run, steps.length]);
+    const key = `${active}:${run}`;
+    if (clock.current.key !== key) clock.current = { key, ms: 0 };
+    const started = performance.now();
+    const t = window.setTimeout(
+      () => {
+        setActive((a) => (a + 1) % n);
+        setRun((r) => r + 1);
+        setDir(null);
+      },
+      Math.max(0, (DWELL_MS[active] ?? 6000) - clock.current.ms),
+    );
+    return () => {
+      window.clearTimeout(t);
+      if (clock.current.key === key) clock.current.ms += performance.now() - started;
+    };
+  }, [playing, active, run, n]);
 
-  const pick = (i: number) => {
+  /** The visitor chose what to see: show it and stop advancing until they press Play. */
+  const show = (i: number, how: Direction) => {
     setActive(i);
     setRun((r) => r + 1);
+    setDir(how);
+    setTookOver(true);
+  };
+
+  const toggle = () => {
+    if (held) {
+      setUserPaused(false);
+      setTookOver(false);
+    } else {
+      setUserPaused(true);
+    }
+  };
+
+  // Focus moving into the steps means someone is reading or choosing: hold the story (Pause itself excepted).
+  const onFocus = (e: FocusEvent<HTMLDivElement>) => {
+    if (!(e.target as HTMLElement).closest("[data-jn-toggle]")) setTookOver(true);
+  };
+
+  // Touch: swipe the phone like stories, left for the next step and right for the previous one.
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse") return;
+    swipe.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  };
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const s = swipe.current;
+    swipe.current = null;
+    if (!s || s.id !== e.pointerId) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
+      show((active + (dx < 0 ? 1 : n - 1)) % n, dx < 0 ? "next" : "prev");
+    }
+  };
+  const onPointerCancel = () => {
+    swipe.current = null;
   };
 
   return (
-    <div ref={ref} className="grid items-center gap-10 lg:grid-cols-12 lg:gap-14">
-      <div className="lg:order-2 lg:col-span-7">
-        {/* Phones: one bar per step above the phone (tap to jump), the current step's words below it. */}
-        <div className="mb-3 grid grid-cols-4 gap-2 lg:hidden">
+    <div ref={ref} onFocus={onFocus} className="grid items-center gap-10 lg:grid-cols-12 lg:gap-14">
+      <div className="min-w-0 lg:order-2 lg:col-span-7">
+        {/* Phones and tablets: the steps for screen readers (the bars, caption and phone are visual). */}
+        <ol className="sr-only lg:hidden">
+          {steps.map((s, i) => (
+            <li key={s.title}>
+              Step {i + 1}, {s.title} ({s.time}): {s.text}
+            </li>
+          ))}
+        </ol>
+
+        {/* Phones and tablets: one story bar per step (each picks its step), then the current step's words. */}
+        <div className="grid grid-cols-4 gap-2 lg:hidden">
           {steps.map((s, i) => (
             <button
               key={s.title}
               type="button"
-              onClick={() => pick(i)}
+              onClick={() => show(i, null)}
               aria-current={i === active ? "step" : undefined}
               aria-label={`Step ${i + 1}: ${s.title}`}
-              className="group flex flex-col gap-1.5 rounded-md py-2 text-left focus-ring"
+              className="nv-jn-bar focus-ring"
             >
-              <span className={cn("text-xs font-semibold", i === active ? "text-primary" : "text-ink-3")}>Step {i + 1}</span>
-              <span aria-hidden className="block h-1.5 overflow-hidden rounded-full bg-primary/15">
-                {i < active || (i === active && still) ? (
+              <span aria-hidden className="nv-jn-track">
+                {i < active || (i === active && reduced) ? (
                   <span className="block h-full w-full rounded-full bg-primary" />
                 ) : i === active ? (
                   <span
@@ -123,21 +220,48 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
           ))}
         </div>
 
-        <Stage active={active} run={run} />
-
-        <div key={`${active}-${run}`} className="jn-scene mt-5 lg:hidden">
-          <p className="flex items-center gap-2 text-small font-semibold text-primary">
-            Step {active + 1}
-            <span className="inline-flex items-center gap-1 text-caption font-medium text-ink-3">
-              <Clock3 aria-hidden className="size-3.5" />
-              {steps[active]?.time}
-            </span>
-          </p>
-          <p className="mt-1 text-h4 text-ink">{steps[active]?.title}</p>
-          <p className="mt-1.5 text-small text-pretty text-ink-2">{steps[active]?.text}</p>
+        {/* It tucks into the bars' 44px hit area; taps there still reach the bars. */}
+        <div aria-hidden className="nv-jn-caption pointer-events-none -mt-2.5 lg:hidden">
+          {steps.map((s, i) => (
+            <div key={s.title} className="nv-jn-cap" data-active={i === active ? "" : undefined}>
+              <p className="flex items-center gap-2 text-small font-semibold text-primary">
+                Step {i + 1}
+                <span className="inline-flex items-center gap-1 text-caption font-medium text-ink-3">
+                  <Clock3 className="size-3.5" />
+                  {s.time}
+                </span>
+              </p>
+              <p className="mt-0.5 text-h4 text-ink">{s.title}</p>
+              <p className="mt-1 text-small text-pretty text-ink-2">{s.text}</p>
+            </div>
+          ))}
         </div>
 
-        <p className="mt-4 text-center text-caption text-ink-3 lg:mt-4">Illustrative screens. Names are examples.</p>
+        <div className="relative mt-3 lg:mt-0">
+          <Stage
+            active={active}
+            run={run}
+            dir={dir}
+            still={!playing}
+            onPointerDown={onPointerDown}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerCancel}
+          />
+          {!reduced && (
+            <button
+              type="button"
+              data-jn-toggle=""
+              onClick={toggle}
+              aria-label={held ? "Play the story" : "Pause the story"}
+              className="nv-jn-toggle focus-ring"
+            >
+              {held ? <Play aria-hidden /> : <Pause aria-hidden />}
+              <span className="hidden sm:inline">{held ? "Play" : "Pause"}</span>
+            </button>
+          )}
+        </div>
+
+        <p className="mt-2 text-center text-caption text-ink-3 lg:mt-3">Illustrative screens.</p>
       </div>
 
       <ol className="relative hidden flex-col gap-2 lg:order-1 lg:col-span-5 lg:flex">
@@ -160,11 +284,11 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
               )}
               <button
                 type="button"
-                onClick={() => pick(i)}
+                onClick={() => show(i, null)}
                 aria-current={isActive ? "step" : undefined}
                 className={cn(
-                  "group flex w-full gap-5 rounded-[1.5rem] p-4 text-left transition-[background-color,box-shadow] duration-300 ease-calm focus-ring",
-                  isActive ? "bg-white shadow-[0_20px_44px_-30px_rgb(1_43_54/0.55)]" : "hover:bg-white/60",
+                  "nv-jn-pick group flex w-full gap-5 rounded-[1.5rem] p-4 text-left focus-ring",
+                  isActive && "bg-white shadow-[0_20px_44px_-30px_rgb(1_43_54/0.55)]",
                 )}
               >
                 <span
@@ -201,7 +325,7 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
                   >
                     {s.text}
                   </span>
-                  {isActive && !still && (
+                  {isActive && !reduced && (
                     <span aria-hidden className="mt-4 block h-1 overflow-hidden rounded-full bg-primary/12">
                       <span
                         key={run}
@@ -225,21 +349,46 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
 /* The phone and its four scenes                                              */
 /* ------------------------------------------------------------------------- */
 
-const SCENES = [ChatScene, CallScene, ArriveScene, DoneScene];
+const SCENES = [SITE.whatsapp ? ChatScene : RequestScene, CallScene, ArriveScene, DoneScene];
 
-function Stage({ active, run }: { active: number; run: number }) {
-  const Scene = SCENES[active] ?? ChatScene;
+function Stage({
+  active,
+  run,
+  dir,
+  still,
+  onPointerDown,
+  onPointerUp,
+  onPointerCancel,
+}: {
+  active: number;
+  run: number;
+  dir: Direction;
+  /** Not playing (held, off screen, hidden tab or reduced motion): the scene's loops rest too. */
+  still: boolean;
+  onPointerDown(e: PointerEvent<HTMLDivElement>): void;
+  onPointerUp(e: PointerEvent<HTMLDivElement>): void;
+  onPointerCancel(): void;
+}) {
+  const Scene = SCENES[active] ?? SCENES[0];
   return (
     <div
       aria-hidden
-      className="relative isolate flex justify-center overflow-hidden rounded-[2rem] bg-[linear-gradient(160deg,#ffffff_0%,var(--aqua)_60%,var(--aqua-2)_100%)] px-4 py-10 ring-1 ring-white sm:py-12"
+      data-still={still ? "" : undefined}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      className="nv-jn-stage relative isolate flex justify-center px-4 py-6 lg:py-12"
     >
-      <div className="absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(142_211_224/0.35),transparent)]" />
-      <div className="absolute -bottom-28 -left-24 -z-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(1_76_94/0.16),transparent)]" />
-      <div className="relative w-full max-w-[19.5rem]">
-        <div className="relative h-[30.5rem] overflow-hidden rounded-[2.25rem] border-[6px] border-pond bg-white shadow-[0_40px_80px_-36px_rgb(1_43_54/0.6)]">
+      <div className="absolute -top-24 -right-24 -z-10 hidden size-80 rounded-full bg-[radial-gradient(closest-side,rgb(142_211_224/0.35),transparent)] sm:block" />
+      <div className="absolute -bottom-28 -left-24 -z-10 hidden size-80 rounded-full bg-[radial-gradient(closest-side,rgb(1_76_94/0.16),transparent)] sm:block" />
+      <div className="nv-jn-fit relative w-full max-w-[19.5rem]">
+        <div className="nv-jn-device relative h-[30.5rem] overflow-hidden rounded-[2.25rem] border-[6px] border-pond bg-white shadow-[0_40px_80px_-36px_rgb(1_43_54/0.6)]">
           <div className="absolute top-2 left-1/2 z-20 h-5 w-24 -translate-x-1/2 rounded-full bg-pond" />
-          <div key={`${active}-${run}`} className="jn-scene absolute inset-0 px-4 pt-11 pb-4">
+          <div
+            key={`${active}-${run}`}
+            data-dir={dir ?? undefined}
+            className={cn(dir ? "nv-jn-scene" : "jn-scene", "absolute inset-0 px-4 pt-11 pb-4")}
+          >
             <Scene />
           </div>
         </div>
@@ -276,7 +425,7 @@ function Bubble({ out = false, delay, time, children }: { out?: boolean; delay: 
   );
 }
 
-/** Step 1: the family messages Nivar on WhatsApp, with the prescription. */
+/** Step 1 (WhatsApp set): the family messages Nivar on WhatsApp, with the prescription. */
 function ChatScene() {
   return (
     <div className="-mx-4 -mt-11 flex h-[calc(100%+3.75rem)] flex-col bg-aqua text-[0.75rem]">
@@ -327,6 +476,78 @@ function ChatScene() {
   );
 }
 
+/** Step 1 (no WhatsApp): the family asks for a callback on this site, with the real form's questions. */
+function RequestScene() {
+  const kannada = LANGUAGES[1];
+  return (
+    <div className="relative flex h-full flex-col text-[0.75rem]">
+      {/* Inset 4px, so the logo's corner stays hidden behind the rounded "Request sent" card. */}
+      <div className="jn-in flex items-center gap-2.5 pt-1 pl-1" style={d(0)}>
+        <LogoMark className="size-8" />
+        <span>
+          <span className="block text-[0.9375rem] font-semibold text-ink">Request a callback</span>
+          <span className="block text-[0.6875rem] text-ink-3">Nivar Health</span>
+        </span>
+      </div>
+
+      <div className="jn-in mt-7" style={d(300)}>
+        <p className="font-semibold text-ink">Who is the visit for?</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {["Myself", "A parent", "A child"].map((who) => (
+            <span
+              key={who}
+              className={cn(
+                "rounded-full border px-2.5 py-1.5 font-medium",
+                who === "A parent" ? "nv-jn-select border-primary bg-aqua text-primary" : "border-border-strong bg-white text-ink-2",
+              )}
+              style={who === "A parent" ? d(800) : undefined}
+            >
+              {who}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="jn-in mt-4" style={d(1100)}>
+        <p className="font-semibold text-ink">Preferred language for the call</p>
+        <p className="mt-2 flex h-9 items-center justify-between rounded-xl border border-border-strong bg-white px-3 text-ink">
+          <span>
+            <span lang={kannada.lang}>{kannada.endonym}</span> ({kannada.english})
+          </span>
+          <ChevronDown className="size-3.5 text-primary" />
+        </p>
+      </div>
+
+      <div className="jn-in mt-4" style={d(1600)}>
+        <p className="font-semibold text-ink">Anything we should know?</p>
+        <p className="mt-2 rounded-xl border border-border-strong bg-white px-3 py-2.5 leading-snug text-ink">
+          A B12 injection for my mother in HSR Layout. We have her prescription.
+        </p>
+      </div>
+
+      <span
+        className="jn-press mt-auto flex h-10 shrink-0 items-center justify-center rounded-full bg-primary text-[0.8125rem] font-semibold text-white"
+        style={d(200)}
+      >
+        Request a callback
+      </span>
+
+      <div
+        className="jn-drop absolute inset-x-0 top-0 z-10 flex items-center gap-2.5 rounded-2xl bg-white p-3 text-ink shadow-lg ring-1 ring-border"
+        style={d(2800)}
+      >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+          <Check className="size-4" strokeWidth={3} />
+        </span>
+        <span>
+          <span className="block font-semibold">Request sent</span>
+          <span className="block text-[0.6875rem] text-ink-3">We&apos;ll call you back within {SITE.callbackWithin}.</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** Step 2: a Nivar doctor calls, and the visit plan fills in. */
 function CallScene() {
   const plan = ["B12 injection, IM", "Prescription checked", "Today, 6:00 PM", "Price told upfront"];
@@ -369,7 +590,7 @@ function CallScene() {
         </span>
         <span>
           <span className="block font-semibold">Visit confirmed</span>
-          <span className="block text-[0.6875rem] text-ink-3">Today, 6:00 PM. Priya will come.</span>
+          <span className="block text-[0.6875rem] text-ink-3">Today, 6:00 PM. Your nurse will come.</span>
         </span>
       </div>
     </div>
@@ -415,12 +636,12 @@ function ArriveScene() {
       </div>
 
       <div className="jn-in mt-3 flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-border" style={d(300)}>
-        <span className="flex size-9 items-center justify-center rounded-full bg-primary text-[0.8125rem] font-semibold text-white">P</span>
+        <NurseAvatar />
         <span className="relative flex-1">
-          <span className="block font-semibold text-ink">Priya, your Nivar nurse</span>
+          <span className="block font-semibold text-ink">Your Nivar nurse</span>
           <span className="relative block h-4 text-[0.6875rem]">
             <span className="jn-out absolute inset-0 text-ink-3" style={d(2900)}>
-              On her way, about 12 min
+              On the way
             </span>
             <span className="jn-in absolute inset-0 font-semibold text-primary" style={d(3000)}>
               Has arrived at your door
@@ -430,7 +651,7 @@ function ArriveScene() {
       </div>
 
       <p className="jn-in mt-3 font-semibold text-ink-3" style={d(3300)}>
-        In her bag
+        In the nurse&apos;s bag
       </p>
       <div className="mt-1.5 grid grid-cols-4 gap-1.5">
         {[
@@ -451,6 +672,15 @@ function ArriveScene() {
   );
 }
 
+/** The nurse, unnamed: the kit bag on a jade disc, as on the hero's "on the way" card. */
+function NurseAvatar() {
+  return (
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+      <BriefcaseMedical className="size-[1.125rem]" />
+    </span>
+  );
+}
+
 /** Step 4: the doctor joins on video, the care is done, and the report arrives on WhatsApp. */
 function DoneScene() {
   const rows = [
@@ -461,15 +691,15 @@ function DoneScene() {
     <div className="relative flex h-full flex-col text-[0.75rem]">
       <div className="jn-in relative h-[8.5rem] shrink-0 overflow-hidden rounded-2xl bg-pond" style={d(0)}>
         <Image src="/img/doctor.jpg" alt="" fill sizes="300px" className="object-cover object-[50%_30%]" />
-        <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-pond/80 px-2 py-1 text-[0.625rem] font-semibold text-white backdrop-blur">
+        <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-pond/85 px-2 py-1 text-[0.625rem] font-semibold text-white">
           <span className="size-1.5 rounded-full bg-mint-glow" />
           On video
         </span>
-        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/90 px-2.5 py-1 text-[0.6875rem] font-semibold text-ink backdrop-blur">
+        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/95 px-2.5 py-1 text-[0.6875rem] font-semibold text-ink">
           Your Nivar doctor
         </span>
-        <span className="jn-pop absolute right-2.5 bottom-2.5 flex size-11 items-center justify-center rounded-xl bg-aqua-2 text-[0.8125rem] font-semibold text-primary ring-2 ring-white" style={d(500)}>
-          KI
+        <span className="jn-pop absolute right-2.5 bottom-2.5 flex size-11 items-center justify-center rounded-xl bg-aqua-2 text-primary ring-2 ring-white" style={d(500)}>
+          <UserRound className="size-5" />
         </span>
       </div>
 

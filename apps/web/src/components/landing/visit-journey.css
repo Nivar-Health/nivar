@@ -1,0 +1,203 @@
+/* VisitJourney (visit-journey.tsx): the phone story's stage, fit, story bars, caption and Pause.
+   The scenes' own one-shot animations (jn-*) live in landing.css §6. In a layer, so the Tailwind classes
+   on the same elements (lg:hidden and friends) win. */
+@layer components {
+  /* ---- Stage. Phones: it spans the screen as a soft pool of light, which leaves room in its corner
+     for Pause beside the scaled phone. From sm: the rounded card. Horizontal swipes are ours,
+     vertical ones scroll the page. ---- */
+  .nv-jn-stage {
+    margin-inline: -1.25rem;
+    background: radial-gradient(64% 54% at 50% 48%, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0) 74%);
+    touch-action: pan-y;
+  }
+  @media (min-width: 40rem) {
+    .nv-jn-stage {
+      margin-inline: 0;
+      overflow: hidden;
+      border-radius: 2rem;
+      background: linear-gradient(160deg, #ffffff 0%, var(--aqua) 60%, var(--aqua-2) 100%);
+      box-shadow: 0 0 0 1px #ffffff;
+    }
+  }
+
+  /* Below lg the 30.5rem phone is scaled to 26rem (0.8525), so bars, caption and phone fit 390 x 844. */
+  @media (max-width: 63.98rem) {
+    .nv-jn-fit {
+      height: 26rem;
+    }
+    .nv-jn-device {
+      transform: scale(0.8525);
+      transform-origin: top center;
+    }
+  }
+
+  /* A swiped-to scene arrives from the side it was swiped from. */
+  @keyframes nv-jn-from-next {
+    from { opacity: 0; transform: translateX(28px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes nv-jn-from-prev {
+    from { opacity: 0; transform: translateX(-28px); }
+    to { opacity: 1; transform: none; }
+  }
+  .nv-jn-scene[data-dir="next"] {
+    animation: nv-jn-from-next 380ms var(--curve-calm) both;
+  }
+  .nv-jn-scene[data-dir="prev"] {
+    animation: nv-jn-from-prev 380ms var(--curve-calm) both;
+  }
+
+  /* The request scene's "A parent" pill gets picked. */
+  @keyframes nv-jn-select {
+    from { background-color: #ffffff; border-color: var(--border-strong); color: var(--ink-2); }
+  }
+  .nv-jn-select {
+    animation: nv-jn-select 300ms var(--curve-standard) var(--d, 0ms) backwards;
+  }
+
+  /* ---- Story bars (phones and tablets): 3px bars in 44px step pickers. ---- */
+  .nv-jn-bar {
+    display: flex;
+    align-items: center;
+    height: 2.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  .nv-jn-track {
+    display: block;
+    width: 100%;
+    height: 3px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--primary) 16%, transparent);
+    transition: background-color 180ms var(--curve-standard);
+  }
+  .nv-jn-bar:active {
+    transform: scale(0.98);
+    background-color: color-mix(in oklab, var(--aqua-2) 60%, transparent);
+    transition-duration: 90ms;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-jn-bar:hover .nv-jn-track {
+      background-color: color-mix(in oklab, var(--primary) 28%, transparent);
+    }
+  }
+
+  /* ---- The caption above the phone: all four share one cell, so the phone never moves. The current one
+     crossfades in over 220ms (instant under reduced motion, via globals.css). ---- */
+  .nv-jn-caption {
+    display: grid;
+  }
+  .nv-jn-cap {
+    grid-area: 1 / 1;
+    align-self: start;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 220ms var(--curve-standard),
+      visibility 0s linear 220ms;
+  }
+  .nv-jn-cap[data-active] {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 220ms var(--curve-standard),
+      visibility 0s;
+  }
+
+  /* ---- Desktop step list ---- */
+  .nv-jn-pick {
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background-color 300ms var(--curve-calm),
+      box-shadow 300ms var(--curve-calm),
+      transform 180ms var(--curve-standard);
+  }
+  .nv-jn-pick:active {
+    transform: scale(0.98);
+    transition-duration: 300ms, 300ms, 90ms;
+  }
+  .nv-jn-pick:not([aria-current]):active {
+    background-color: rgb(255 255 255 / 0.6);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-jn-pick:not([aria-current]):hover {
+      background-color: rgb(255 255 255 / 0.6);
+    }
+  }
+
+  /* ---- Pause / Play: a sibling of the (aria-hidden) stage, on its top-right corner. Phones: a 44px
+     circle in the corner of the full-width stage; from sm a labelled pill inside the card. ---- */
+  .nv-jn-toggle {
+    position: absolute;
+    top: 0.25rem;
+    right: -0.75rem;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.85);
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    box-shadow:
+      0 0 0 1px var(--border),
+      0 10px 24px -14px rgb(1 43 54 / 0.5);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  .nv-jn-toggle svg {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+  }
+  .nv-jn-toggle:active {
+    transform: scale(0.97);
+    background-color: #ffffff;
+    transition-duration: 90ms;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-jn-toggle:hover {
+      background-color: #ffffff;
+    }
+  }
+  @media (min-width: 40rem) {
+    .nv-jn-toggle {
+      top: 1rem;
+      right: 1rem;
+      width: auto;
+      padding: 0 1.125rem 0 0.9375rem;
+    }
+  }
+  /* Nothing moves under reduced motion, so there is nothing to pause. */
+  @media (prefers-reduced-motion: reduce) {
+    .nv-jn-toggle {
+      display: none;
+    }
+    .nv-jn-bar:active,
+    .nv-jn-pick:active,
+    .nv-jn-toggle:active {
+      transform: none;
+    }
+  }
+  html[data-motion="paused"] .nv-jn-toggle {
+    display: none;
+  }
+}
+
+/* Loops run only while the story plays (in view, not held); the one-shots still finish their scene.
+   Unlayered, to beat the loop animations in landing.css. */
+.nv-jn-stage[data-still] .motion-loop {
+  animation: none;
+}

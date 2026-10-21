@@ -5,7 +5,7 @@ const SHARE_IMAGE = {
   url: "/img/og-home.jpg",
   width: 1200,
   height: 630,
-  alt: "A Nivar nurse placing a smart ECG patch on a woman at home",
+  alt: "A Nivar nurse checking an older woman's blood pressure at home",
 };
 
 /**

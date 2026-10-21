@@ -1,0 +1,183 @@
+/* Small habits (health-tips.tsx, health-facts.tsx, tip-deck.tsx, take-a-minute-tile.tsx,
+   visit-checklist.tsx). Unlayered on purpose: the one reveal override below must beat landing.css. */
+
+/* ---- Facts: figure and scope beside the picture on phones and tablets; picture first from lg ---- */
+.nv-habits-fact-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "scope viz"
+    "figure viz";
+  align-items: end;
+  column-gap: 12px;
+  row-gap: 10px;
+}
+.nv-habits-fact-scope {
+  grid-area: scope;
+  justify-self: start;
+}
+.nv-habits-fact-figure {
+  grid-area: figure;
+}
+.nv-habits-fact-viz {
+  grid-area: viz;
+  align-self: center;
+}
+@media (min-width: 64rem) {
+  .nv-habits-fact-head {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "viz scope"
+      "figure figure";
+    align-items: start;
+    row-gap: 24px;
+  }
+  .nv-habits-fact-scope {
+    justify-self: end;
+  }
+  /* One picture height, so the four figures share a baseline. */
+  .nv-habits-fact-viz {
+    display: flex;
+    height: 64px;
+    align-items: center;
+  }
+}
+
+/* The fact cards carry data-nv-reveal only to start their pictures ([data-nv-revealed], landing.css §6b).
+   The row already has its own entrance (SnapRow), so the usual fade-up stays off. */
+html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed]) {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- Tip deck ---- */
+/* Follows the finger a little while a swipe is in progress (tip-deck.tsx writes the offset). */
+.nv-habits-tip-layer {
+  transform: translateX(var(--nv-habits-drag, 0px));
+  opacity: var(--nv-habits-fade, 1);
+}
+.nv-habits-tip-layer[data-settle] {
+  transition:
+    transform 220ms var(--curve-standard),
+    opacity 220ms var(--curve-standard);
+}
+/* "Copied": a small note above the Share button, in for 2 s. */
+.nv-habits-share-note {
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms var(--curve-exit),
+    transform 160ms var(--curve-exit);
+}
+.nv-habits-share-note[data-show] {
+  opacity: 1;
+  transform: none;
+  transition-duration: 240ms;
+  transition-timing-function: var(--curve-calm);
+}
+
+/* ---- Take a minute tile: a still pearl in a pond. Nothing here animates. ---- */
+.nv-habits-tile {
+  /* The glows stay faint enough to keep on-pine-2 copy at 4.5:1 or more over every part of the card. */
+  background:
+    radial-gradient(340px 300px at 100% 0%, rgb(142 211 224 / 0.12), transparent 70%),
+    radial-gradient(520px 360px at 100% 100%, rgb(1 106 128 / 0.22), transparent 65%),
+    linear-gradient(160deg, var(--jade) 0%, var(--pond-2) 52%, var(--pond) 100%);
+}
+/* The pearl floats right and the copy wraps around its circle; two faint still ripples ring it. */
+.nv-habits-tile-pearl {
+  position: relative;
+  float: right;
+  margin: 2px 0 8px 14px;
+  shape-outside: circle(50%);
+  shape-margin: 14px;
+}
+.nv-habits-tile-pearl::before,
+.nv-habits-tile-pearl::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  pointer-events: none;
+}
+.nv-habits-tile-pearl::before {
+  inset: -18px;
+}
+.nv-habits-tile-pearl::after {
+  inset: -44px;
+  border-color: rgb(255 255 255 / 0.06);
+}
+/* From lg the tile is as tall as the tip beside it: the pearl rests in the middle of the pond, a small
+   preview of the orb that opens, with the copy above and the launchers below. */
+@media (min-width: 64rem) {
+  .nv-habits-tile-copy {
+    display: contents;
+  }
+  .nv-habits-tile-copy > p {
+    padding-bottom: 28px;
+  }
+  .nv-habits-tile-pearl {
+    order: 1;
+    float: none;
+    align-self: center;
+    margin: auto 0;
+    shape-outside: none;
+  }
+  .nv-habits-tile-launch {
+    order: 2;
+    margin-top: 0;
+    padding-top: 40px;
+  }
+}
+
+/* ---- Visit checklist ---- */
+/* The whole row toggles: the label's overlay covers it; the box, source link and rest button sit above. */
+.nv-habits-check-label::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  transition: background-color 180ms var(--curve-standard);
+}
+.nv-habits-check-label:active::before {
+  background-color: rgb(1 76 94 / 0.05);
+  transition-duration: 90ms;
+}
+.nv-habits-box {
+  transition:
+    background-color 180ms var(--curve-standard),
+    border-color 180ms var(--curve-standard),
+    transform 180ms var(--curve-standard);
+}
+.nv-habits-check:has(.nv-habits-check-label:active) .nv-habits-box,
+.nv-habits-check input:active + .nv-habits-box {
+  transform: scale(0.9);
+  transition-duration: 90ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nv-habits-check:has(.nv-habits-check-label:active) .nv-habits-box,
+  .nv-habits-check input:active + .nv-habits-box {
+    transform: none;
+  }
+}
+.nv-habits-box path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 120ms var(--curve-exit);
+}
+.nv-habits-check input:checked + .nv-habits-box path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 280ms var(--curve-calm) 60ms;
+}
+.nv-habits-check:has(input:checked) .nv-habits-check-label {
+  color: var(--ink-2);
+}
+/* Progress: one segment per item, filling from the left. */
+.nv-habits-seg > span {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 320ms var(--curve-calm);
+}
+.nv-habits-seg[data-on] > span {
+  transform: none;
+}

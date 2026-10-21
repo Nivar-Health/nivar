@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
  * Programme illustrations: one calm line glyph per check-up, drawn on a 112 grid at 1:1 (size-28).
  * Line strokes are 2px (ticks 1.5px, needle 2.5px, the gauge's meter band 7px). Every shape's base
  * style is its final pose, so the glyphs read correctly without JavaScript and under reduced motion.
- * The pg-* classes are the motion hooks animated by landing.css section 4: once on reveal (the <li>
- * gets data-nv-revealed) and once on hover or focus of the card link (.group). Server component, no hooks.
+ * The pg-* classes are the motion hooks: landing.css section 5 plays them once on reveal (the glyph tile
+ * gets data-nv-revealed), check-ups.css once more on hover or focus of the card. Server component, no hooks.
  */
 
 export type GlyphKind = "heart" | "drop" | "rings" | "gauge";

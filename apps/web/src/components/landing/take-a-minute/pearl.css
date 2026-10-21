@@ -1,0 +1,16 @@
+/* The Take a minute pearl (pearl.tsx). The glow and the inner shade scale with the size (spec §5.3:
+   34px pearl, 14px glow, inset 0 -4px 8px). In a layer, so Tailwind classes passed in can override. */
+@layer components {
+  .nv-minute-pearl {
+    --nv-pearl: 34px;
+    display: inline-block;
+    flex: none;
+    width: var(--nv-pearl);
+    height: var(--nv-pearl);
+    border-radius: 9999px;
+    background: radial-gradient(circle at 38% 30%, #ffffff, #eaf6f9 16%, #8ed3e0 50%, #2a8fa5 78%, #013a48);
+    box-shadow:
+      0 0 calc(var(--nv-pearl) * 0.41) rgb(142 211 224 / 0.55),
+      inset 0 calc(var(--nv-pearl) * -0.118) calc(var(--nv-pearl) * 0.235) rgb(1 43 54 / 0.4);
+  }
+}

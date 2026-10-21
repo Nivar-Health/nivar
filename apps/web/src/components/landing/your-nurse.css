@@ -1,0 +1,105 @@
+/* Your nurse (your-nurse.tsx). In a layer, so Tailwind classes on the same elements still win. */
+@layer components {
+  /* What stands behind every visit: hairline rows; from sm the term sits in its own column. */
+  .nv-nurse-cred {
+    display: grid;
+    gap: 0.125rem;
+    padding-block: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .nv-nurse-cred:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .nv-nurse-term {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .nv-nurse-term svg {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.0625rem;
+    color: var(--primary);
+  }
+  .nv-nurse-desc {
+    font-size: 0.9375rem;
+    line-height: 1.42;
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+  @media (min-width: 40rem) {
+    .nv-nurse-cred {
+      grid-template-columns: 13rem minmax(0, 1fr);
+      column-gap: 1.5rem;
+      padding-block: 1.5rem;
+    }
+    .nv-nurse-desc {
+      font-size: 1.0625rem;
+      line-height: 1.6;
+    }
+  }
+
+  /* In the nurse's bag: one tool per tile. */
+  .nv-nurse-tool {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    height: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: #fff;
+  }
+  /* Names stay on one line in the three-column grid (220px tiles). */
+  .nv-nurse-tool-name {
+    letter-spacing: -0.01em;
+  }
+  .nv-nurse-tool-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+  }
+  .nv-nurse-tool-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /* "Also for:" tags. Not interactive, so no border, shadow or pressed state. */
+  .nv-nurse-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2rem;
+    padding: 0.3125rem 0.75rem 0.3125rem 0.625rem;
+    border-radius: 9999px;
+    background: var(--aqua);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--ink-2);
+  }
+  .nv-nurse-tag svg {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    color: var(--primary);
+  }
+  @media (min-width: 40rem) {
+    .nv-nurse-tag {
+      gap: 0.5rem;
+      min-height: 2.25rem;
+      padding-inline: 0.75rem 0.875rem;
+    }
+  }
+}

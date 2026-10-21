@@ -1,7 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/lib/auth";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
 import { generalSans, notoDevanagari, notoKannada } from "./fonts";
@@ -24,18 +21,14 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
+/** The document shell only. The session, tooltips and toasts live in app/(product)/layout.tsx, so the public site never loads them. */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en-IN"
       className={cn(generalSans.variable, notoKannada.variable, notoDevanagari.variable, "h-full antialiased")}
     >
-      <body className="flex min-h-full flex-col">
-        <AuthProvider>
-          <TooltipProvider delay={300}>{children}</TooltipProvider>
-        </AuthProvider>
-        <Toaster theme="light" position="top-center" closeButton richColors={false} />
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,354 @@
+/* Site nav (site-nav.tsx): the floating pill, its scroll-spy bar, and the menu sheet on phones and tablets.
+   In a layer, so Tailwind classes on the same elements (buttonClass, focus-ring) still win. */
+@layer components {
+  /* ---- The bar ---- */
+  /* Side gutters, safe-area aware. The sheet shares them so its head lines up with the bar. */
+  .nv-nav,
+  .nv-nav-sheet {
+    --nv-nav-gl: max(0.75rem, env(safe-area-inset-left));
+    --nv-nav-gr: max(0.75rem, env(safe-area-inset-right));
+  }
+  @media (min-width: 40rem) {
+    .nv-nav,
+    .nv-nav-sheet {
+      --nv-nav-gl: max(1.25rem, env(safe-area-inset-left));
+      --nv-nav-gr: max(1.25rem, env(safe-area-inset-right));
+    }
+  }
+  .nv-nav {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 50;
+    padding: calc(0.75rem + env(safe-area-inset-top)) var(--nv-nav-gr) 0 var(--nv-nav-gl);
+    /* Only the pill takes taps; the strip around it lets them through to the page. */
+    pointer-events: none;
+  }
+  @media (min-width: 40rem) {
+    .nv-nav {
+      padding-top: calc(1rem + env(safe-area-inset-top));
+    }
+  }
+
+  /* Touch screens get a near-opaque white and no blur: a backdrop blur costs every scrolled frame on
+     mid-range Android. A fine pointer gets the frosted glass. */
+  .nv-nav-bar {
+    position: relative;
+    isolation: isolate;
+    pointer-events: auto;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.94);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.7),
+      0 8px 24px -20px rgb(1 43 54 / 0.3);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-nav-bar {
+      background: rgb(255 255 255 / 0.6);
+      -webkit-backdrop-filter: blur(24px);
+      backdrop-filter: blur(24px);
+    }
+  }
+  /* Once the page scrolls: whiter, a hairline, a deeper shadow. Layers that fade, so only opacity animates. */
+  .nv-nav-bar::before,
+  .nv-nav-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms var(--curve-calm);
+  }
+  .nv-nav-bar::before {
+    background: rgb(255 255 255 / 0.75);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .nv-nav-bar::after {
+    box-shadow: 0 12px 32px -18px rgb(1 43 54 / 0.35);
+  }
+  .nv-nav[data-scrolled] .nv-nav-bar::before,
+  .nv-nav[data-scrolled] .nv-nav-bar::after {
+    opacity: 1;
+  }
+
+  .nv-nav-logo {
+    transition:
+      background-color 180ms var(--curve-standard),
+      transform 180ms var(--curve-standard);
+  }
+
+  /* ---- Desktop links and the one sliding bar under the current one ---- */
+  .nv-nav-link {
+    display: flex;
+    align-items: center;
+    height: 2.75rem;
+    padding-inline: 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--foreground-2);
+    transition:
+      color 160ms var(--curve-standard),
+      background-color 180ms var(--curve-standard),
+      transform 180ms var(--curve-standard);
+  }
+  .nv-nav-link[aria-current] {
+    color: var(--foreground);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-nav-link:hover {
+      color: var(--foreground);
+      background-color: rgb(228 239 242 / 0.7);
+    }
+  }
+
+  /* 100px wide, scaled to the label: it slides and stretches with transform alone. */
+  .nv-nav-ind {
+    position: absolute;
+    bottom: 8px;
+    left: 0;
+    width: 100px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--jade);
+    transform-origin: left center;
+    transform: translateX(var(--x, 0px)) scaleX(var(--s, 0));
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 240ms var(--curve-standard),
+      opacity 160ms var(--curve-standard);
+  }
+  .nv-nav-ind[data-on] {
+    opacity: 1;
+  }
+  .nv-nav-ind[data-jump] {
+    transition: opacity 160ms var(--curve-standard);
+  }
+
+  /* ---- Menu button ---- */
+  .nv-nav-menu {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    color: var(--foreground);
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  .nv-nav-menu svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-nav-menu:hover {
+      background-color: var(--aqua);
+    }
+  }
+
+  /* ---- The sheet ---- */
+  .nv-nav-dim {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgb(1 43 54 / 0.34);
+    transition: opacity 320ms var(--curve-calm);
+  }
+  .nv-nav-dim[data-starting-style],
+  .nv-nav-dim[data-ending-style] {
+    opacity: 0;
+  }
+  .nv-nav-dim[data-ending-style] {
+    transition-duration: 220ms;
+    transition-timing-function: var(--curve-exit);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-nav-dim {
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+  }
+
+  .nv-nav-sheet {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--background);
+    color: var(--foreground);
+    outline: none;
+    transition: transform 420ms var(--curve-calm);
+  }
+  .nv-nav-sheet[data-starting-style],
+  .nv-nav-sheet[data-ending-style] {
+    transform: translateX(100%);
+  }
+  .nv-nav-sheet[data-ending-style] {
+    transition-duration: 260ms;
+    transition-timing-function: var(--curve-exit);
+  }
+  @media (min-width: 40rem) {
+    .nv-nav-sheet {
+      max-width: 24rem;
+      box-shadow: -32px 0 64px -40px rgb(1 43 54 / 0.5);
+    }
+  }
+
+  /* The head mirrors the bar, so Close lands exactly where the menu button was. It stays put while a
+     short screen scrolls the sheet. */
+  .nv-nav-sheet-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex: none;
+    padding: calc(0.75rem + env(safe-area-inset-top)) var(--nv-nav-gr) 0.25rem var(--nv-nav-gl);
+    background: var(--background);
+  }
+  @media (min-width: 40rem) {
+    .nv-nav-sheet-head {
+      padding-top: calc(1rem + env(safe-area-inset-top));
+    }
+  }
+
+  /* Labels line up with the logo above them. */
+  .nv-nav-rows {
+    margin: 0;
+    padding: 0.25rem max(1rem, env(safe-area-inset-right)) 0.5rem max(1rem, env(safe-area-inset-left));
+    list-style: none;
+  }
+  @media (min-width: 40rem) {
+    .nv-nav-rows {
+      padding-inline: max(1.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-right));
+    }
+  }
+  .nv-nav-rows > li + li::before {
+    content: "";
+    display: block;
+    height: 1px;
+    margin-inline: 1rem;
+    background: var(--border);
+  }
+  .nv-nav-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 3.5rem;
+    padding-inline: 1rem;
+    border-radius: 1rem;
+    font-size: 1.1875rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    color: var(--foreground);
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  /* The current section: a 6px jade dot hanging just left of its label. */
+  .nv-nav-row[aria-current]::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0.1875rem;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 9999px;
+    background: var(--jade);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-nav-row:hover {
+      background-color: var(--aqua);
+    }
+  }
+
+  /* The actions sit in an aqua dock at the bottom, in thumb reach. */
+  .nv-nav-dock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: auto var(--nv-nav-gr) 0.75rem var(--nv-nav-gl);
+    padding: 1rem;
+    border-radius: 1.75rem;
+    background: var(--aqua);
+  }
+
+  /* Pressed (mobile addendum M2): a tint and a slight press, 90ms in and 180ms out. */
+  .nv-nav-logo:active,
+  .nv-nav-link:active,
+  .nv-nav-menu:active,
+  .nv-nav-row:active {
+    background-color: var(--aqua);
+    transform: scale(0.98);
+    transition-duration: 90ms;
+  }
+  .nv-nav-menu:active {
+    transform: scale(0.97);
+  }
+
+  /* Forced colours drop the jade backgrounds: the current-section bar and dot become Highlight. */
+  @media (forced-colors: active) {
+    .nv-nav-ind,
+    .nv-nav-row[aria-current]::before {
+      forced-color-adjust: none;
+      background: Highlight;
+    }
+  }
+
+  /* Opening: the panel slides in, then its rows settle a beat later. */
+  @keyframes nv-nav-in {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+  }
+  .nv-nav-sheet[data-open] .nv-nav-stagger {
+    animation: nv-nav-in 480ms var(--curve-calm) backwards;
+    animation-delay: calc(90ms + var(--i, 0) * 30ms);
+  }
+}
+
+/* The logo, the full "Request a callback" and the menu button share one line. When the bar can't fit
+   the wordmark (a phone under 360px, or text the visitor spaced wider), the wordmark gives way, never
+   the action: it wraps onto a second line, below the 44px logo link that clips it, leaving the mark.
+   Unlayered, so the row gap beats the logo's own gap utility. */
+.nv-nav-logo [role="img"] {
+  flex-wrap: wrap;
+  row-gap: 1.5rem;
+  align-self: flex-start;
+  min-width: 0;
+}
+
+/* A section the menu just moved focus to: no ring, as after a native anchor jump. */
+[data-nv-nav-target]:focus {
+  outline: none;
+}
+
+/* Reduced motion: the bar jumps between links, presses only tint, and the sheet simply appears. */
+@media (prefers-reduced-motion: reduce) {
+  .nv-nav-logo:active,
+  .nv-nav-link:active,
+  .nv-nav-menu:active,
+  .nv-nav-row:active {
+    transform: none;
+  }
+}
+html[data-motion="paused"] .nv-nav-ind {
+  transition: none;
+}
+html[data-motion="paused"] :is(.nv-nav-logo, .nv-nav-link, .nv-nav-menu, .nv-nav-row):active {
+  transform: none;
+}

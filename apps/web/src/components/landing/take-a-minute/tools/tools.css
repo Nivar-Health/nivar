@@ -1,0 +1,635 @@
+/* Take a minute tools (tools/*.tsx): what goes inside the shell's Layout slots. The shell owns the
+   stage, the orb, the ring and the spacing between slots; these rules style only the tools' own
+   content. Pond sheet, pine tokens (landing.css [data-landing]). Transform and opacity only. */
+@layer components {
+  /* ---- Orb text layer: fixed size, never scales with the orb ---- */
+  /* The type keeps its size; the box stays inside the resting orb (.62 D) when the orb is small. */
+  .nv-tool-orb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: min(132px, calc(var(--nv-d) * 0.54));
+    color: var(--pond);
+    text-align: center;
+    pointer-events: none;
+  }
+  .nv-tool-word {
+    display: block;
+    font-size: 17px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .nv-tool-num {
+    display: block;
+    font-size: 64px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .nv-tool-word + .nv-tool-num {
+    margin-top: 2px;
+  }
+  .nv-tool-num + .nv-tool-word {
+    margin-top: 4px;
+  }
+  .nv-tool-proverb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    max-width: 118px;
+  }
+  .nv-tool-proverb-text {
+    font-size: 19px;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+  .nv-tool-proverb-gloss {
+    font-size: 13px;
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--jade);
+    text-wrap: balance;
+  }
+  /* On a small orb the result's numeral steps down and its widest line, "beats a minute.", wraps,
+     rather than reach the orb's rim. */
+  .nv-tool-result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: calc(var(--nv-d) * 0.5);
+  }
+  .nv-tool-result .nv-tool-word {
+    font-size: 15px;
+  }
+  .nv-tool-result .nv-tool-num {
+    margin-block: 2px;
+    font-size: min(60px, calc(var(--nv-d) * 0.25));
+  }
+
+  /* ---- Line drawings (seated-figure.tsx, wrist.tsx) ---- */
+  .nv-tool-figure {
+    display: block;
+    width: min(96px, calc(var(--nv-d) * 0.5));
+    height: min(96px, calc(var(--nv-d) * 0.5));
+    overflow: visible;
+    color: var(--jade);
+  }
+  .nv-tool-line {
+    fill: none;
+    stroke: var(--pond);
+    stroke-opacity: 0.45;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .nv-tool-line-soft {
+    stroke-opacity: 0.28;
+  }
+  .nv-tool-part-base {
+    transition: opacity 320ms var(--curve-calm);
+  }
+  .nv-tool-part-lit {
+    fill: none;
+    stroke: var(--jade);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    transition: opacity 320ms var(--curve-calm);
+  }
+  .nv-tool-part-disc {
+    fill: var(--jade);
+    fill-opacity: 0.12;
+    opacity: 0;
+    transform: scale(0.55);
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      opacity 320ms var(--curve-calm),
+      transform 480ms var(--curve-calm);
+  }
+  [data-lit] > .nv-tool-part-lit,
+  [data-lit] > .nv-tool-part-disc,
+  .nv-tool-wrist-spot {
+    opacity: 1;
+    transform: none;
+  }
+  [data-lit] > .nv-tool-part-base {
+    opacity: 0;
+  }
+  .nv-tool-wrist-fingers {
+    fill: none;
+    stroke-width: 2.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ---- Readout ---- */
+  .nv-tool-readout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .nv-tool-clock {
+    font-size: 1.375rem;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--on-pine);
+  }
+  .nv-tool-sub {
+    max-width: 34ch;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--on-pine-2);
+    text-wrap: balance;
+  }
+  .nv-tool-sub-wide {
+    max-width: 44ch;
+    text-wrap: pretty;
+  }
+  .nv-tool-lead + .nv-tool-sub {
+    margin-top: 6px;
+  }
+  .nv-tool-lead {
+    max-width: 30ch;
+    font-size: 1.0625rem;
+    line-height: 1.4;
+    font-weight: 600;
+    color: var(--on-pine);
+    text-wrap: balance;
+  }
+  .nv-tool-welcome {
+    margin-bottom: 4px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--mint-glow);
+  }
+  /* Tap along's count, labelled, under the time left. */
+  .nv-tool-count {
+    margin-top: 8px;
+    font-size: 1.0625rem;
+    line-height: 1.4;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--on-pine);
+  }
+
+  /* ---- Prompt ---- */
+  /* Two lines reserved in either size, so swapping lines never moves the controls. */
+  .nv-tool-prompt {
+    max-width: 34ch;
+    min-height: 3rem;
+    margin-inline: auto;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--on-pine-2);
+    text-wrap: balance;
+  }
+  .nv-tool-prompt-strong {
+    max-width: 30ch;
+    font-size: 1.0625rem;
+    line-height: 1.4;
+    color: var(--on-pine);
+  }
+  .nv-tool-swap {
+    display: inline-block;
+    animation: nv-tool-in 560ms var(--curve-calm) backwards;
+  }
+  .nv-tool-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 40ch;
+    margin-inline: auto;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--on-pine-2);
+    text-wrap: pretty;
+  }
+  .nv-tool-hint {
+    max-width: 36ch;
+    margin-inline: auto;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--on-pine-3);
+    text-wrap: balance;
+  }
+
+  /* ---- Controls ---- */
+  .nv-tool-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+  /* Start/Pause, Stop and Done wear the shell's nv-minute-primary and nv-minute-quiet; these only
+     add what the tools need on top. */
+  .nv-tool-primary {
+    max-width: 100%;
+    line-height: 1.25;
+  }
+  /* Holds Pause's place while the Tap along pad waits; it fades in with the first tap. */
+  .nv-tool-held {
+    visibility: hidden;
+    opacity: 0;
+  }
+  .nv-tool-quiet,
+  .nv-tool-textlink {
+    border-radius: 9999px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nv-tool-textlink {
+    min-height: 44px;
+    max-width: 34ch;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--on-pine-2);
+    text-decoration: underline;
+    text-decoration-color: rgb(255 255 255 / 0.3);
+    text-underline-offset: 4px;
+    text-wrap: balance;
+    cursor: pointer;
+    transition:
+      color 160ms var(--curve-standard),
+      scale 180ms var(--curve-standard);
+  }
+  .nv-tool-textlink:active {
+    color: var(--on-pine);
+    scale: 0.97;
+    transition-duration: 90ms;
+  }
+  .nv-tool-controls :is(button, input):focus-visible {
+    outline: 2px solid var(--ring-on-dark);
+    outline-offset: 3px;
+  }
+  /* Focus scrolled into view clears the shell's sticky top bar (67–72px), never hides under it. */
+  .nv-tool-controls :is(button, input),
+  .nv-tool-link,
+  .nv-tool-tel {
+    scroll-margin-block: 5.5rem 1rem;
+  }
+
+  .nv-tool-chips,
+  .nv-tool-modes {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .nv-tool-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .nv-tool-modes {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .nv-tool-legend {
+    display: block;
+    margin: 0 auto 10px;
+    padding: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--on-pine);
+  }
+  /* A radio label wearing the shell's nv-minute-chip (colours, press and hover come from there). */
+  .nv-tool-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 76px;
+    height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* The radio covers the whole chip, border included, so the 44px chip is the target. */
+  .nv-tool-chip input {
+    position: absolute;
+    inset: -1px;
+    margin: 0;
+    border-radius: inherit;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .nv-tool-chip:has(input:focus-visible) {
+    outline: 2px solid var(--ring-on-dark);
+    outline-offset: 2px;
+  }
+
+  /* Rest's optional ticks: real checkboxes; each lights its part of the drawing. */
+  .nv-tool-ticks {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px 20px;
+    width: min(100%, 22rem);
+    margin: 0 0 4px;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+  }
+  .nv-tool-tick {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 44px;
+    padding: 10px 6px;
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    color: var(--on-pine-2);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 160ms var(--curve-standard),
+      background-color 160ms var(--curve-standard),
+      transform 180ms var(--curve-standard);
+  }
+  .nv-tool-tick input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+  }
+  .nv-tool-tick-box {
+    position: relative;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin-top: -1px;
+    border-radius: 7px;
+    border: 1.5px solid rgb(255 255 255 / 0.36);
+    transition:
+      background-color 160ms var(--curve-standard),
+      border-color 160ms var(--curve-standard);
+  }
+  .nv-tool-tick-box::after {
+    content: "";
+    position: absolute;
+    left: 6.5px;
+    top: 2.5px;
+    width: 6px;
+    height: 11px;
+    border: solid var(--pond);
+    border-width: 0 2.25px 2.25px 0;
+    opacity: 0;
+    transform: rotate(45deg) scale(0.6);
+    transition:
+      opacity 160ms var(--curve-standard),
+      transform 240ms var(--curve-calm);
+  }
+  .nv-tool-tick:has(input:checked) {
+    color: var(--on-pine);
+  }
+  .nv-tool-tick:has(input:checked) .nv-tool-tick-box {
+    border-color: var(--mint-glow);
+    background: var(--mint-glow);
+  }
+  .nv-tool-tick:has(input:checked) .nv-tool-tick-box::after {
+    opacity: 1;
+    transform: rotate(45deg);
+  }
+  .nv-tool-tick:has(input:focus-visible) {
+    outline: 2px solid var(--ring-on-dark);
+    outline-offset: 0;
+  }
+  .nv-tool-tick:active {
+    background: rgb(255 255 255 / 0.06);
+    transform: scale(0.98);
+    transition-duration: 90ms;
+  }
+
+  /* Pulse, Just count: the number of beats. 16px+ text, so iOS never zooms on focus. */
+  .nv-tool-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  .nv-tool-input {
+    width: 8.25rem;
+    height: 64px;
+    border-radius: 18px;
+    border: 1px solid rgb(255 255 255 / 0.24);
+    background: rgb(255 255 255 / 0.07);
+    color: var(--on-pine);
+    caret-color: var(--mint-glow);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    transition: border-color 160ms var(--curve-standard);
+  }
+  .nv-tool-input:focus {
+    border-color: var(--mint-glow);
+  }
+  .nv-tool-input[aria-invalid="true"] {
+    border-color: var(--amber-on-dark);
+  }
+  /* 12px above See result, as in the controls: closer, a short landscape screen reads the button
+     as docked over the message and fades it. */
+  .nv-tool-error {
+    max-width: 34ch;
+    min-height: 1.45em;
+    margin: 8px 0 12px;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--amber-on-dark);
+    text-wrap: balance;
+  }
+
+  /* ---- Fine print and the emergency line ---- */
+  .nv-tool-fine + .nv-tool-fine {
+    margin-top: 4px;
+  }
+  .nv-tool-fine {
+    text-wrap: pretty;
+  }
+  .nv-tool-link {
+    border-radius: 4px;
+    color: var(--on-pine-2);
+    text-decoration: underline;
+    text-decoration-color: rgb(255 255 255 / 0.3);
+    text-underline-offset: 3px;
+  }
+  .nv-tool-link:focus-visible,
+  .nv-tool-tel:focus-visible {
+    outline: 2px solid var(--ring-on-dark);
+    outline-offset: 2px;
+  }
+  .nv-tool-sos {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 46ch;
+    margin-inline: auto;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: rgb(255 255 255 / 0.06);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--on-pine-2);
+    text-align: left;
+    text-wrap: pretty;
+  }
+  .nv-tool-sos-icon {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin-top: 2px;
+    color: var(--mint-glow);
+  }
+  .nv-tool-sos .nv-tool-tel {
+    position: relative;
+    border-radius: 4px;
+    font-weight: 600;
+    color: var(--on-pine);
+    text-decoration: underline;
+    text-decoration-color: rgb(255 255 255 / 0.4);
+    text-underline-offset: 2px;
+    white-space: nowrap;
+  }
+  /* A 44px tall target without moving the text. */
+  .nv-tool-tel::before {
+    content: "";
+    position: absolute;
+    inset: -12px -6px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .nv-tool-textlink:hover,
+    .nv-minute-sheet .nv-tool-link:hover,
+    .nv-tool-sos .nv-tool-tel:hover {
+      color: var(--on-pine);
+      text-decoration-color: currentColor;
+    }
+    .nv-tool-tick:hover {
+      background: rgb(255 255 255 / 0.04);
+    }
+  }
+
+  @media (max-width: 639.98px) {
+    .nv-tool-orb {
+      max-width: min(116px, calc(var(--nv-d) * 0.54));
+    }
+    .nv-tool-num {
+      font-size: 56px;
+    }
+    .nv-tool-result .nv-tool-num {
+      font-size: min(52px, calc(var(--nv-d) * 0.25));
+    }
+  }
+
+  @media (min-width: 640px) {
+    .nv-tool-lead {
+      max-width: min(100%, 32rem);
+    }
+    .nv-tool-sub {
+      max-width: min(100%, 27rem);
+    }
+    .nv-tool-sub-wide {
+      max-width: min(100%, 30rem);
+    }
+    .nv-tool-textlink {
+      max-width: min(100%, 30rem);
+    }
+    .nv-tool-sos {
+      max-width: min(100%, 34rem);
+    }
+    .nv-tool-ticks {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: min(100%, 34rem);
+    }
+  }
+  /* With a mouse the ticks can sit closer, so Start stays on a 900px-tall screen. */
+  @media (min-width: 640px) and (pointer: fine) {
+    .nv-tool-tick {
+      min-height: 36px;
+      padding-block: 7px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nv-tool-swap {
+      animation: none;
+    }
+    .nv-minute-sheet :is(.nv-tool-primary, .nv-tool-quiet, .nv-tool-textlink, .nv-tool-chip):active {
+      scale: none;
+    }
+    .nv-tool-tick:active {
+      transform: none;
+    }
+    .nv-tool-part-base,
+    .nv-tool-part-lit,
+    .nv-tool-part-disc {
+      transition-property: opacity;
+    }
+    .nv-tool-part-disc {
+      transform: none;
+    }
+  }
+  html[data-motion="paused"] .nv-tool-swap {
+    animation: none;
+  }
+
+  /* Forced colours: the shell paints the orb CanvasText and its text layer Canvas, with
+     forced-color-adjust none, so everything drawn on the orb uses Canvas. */
+  @media (forced-colors: active) {
+    .nv-tool-orb,
+    .nv-tool-proverb-gloss,
+    .nv-tool-figure {
+      color: Canvas;
+    }
+    .nv-tool-line,
+    .nv-tool-part-lit,
+    .nv-tool-wrist-fingers {
+      stroke: Canvas;
+    }
+    .nv-tool-line {
+      stroke-opacity: 1;
+    }
+    .nv-tool-part-disc {
+      fill: Canvas;
+      fill-opacity: 0.3;
+    }
+    .nv-tool-input,
+    .nv-tool-tick-box,
+    .nv-tool-sos {
+      border: 1px solid CanvasText;
+    }
+    /* No text backplate on the chosen chip, or its HighlightText label would vanish behind it. */
+    .nv-tool-chip:has(input:checked) {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .nv-tool-tick:has(input:checked) .nv-tool-tick-box {
+      background: Highlight;
+      color: HighlightText;
+    }
+  }
+}
+
+@keyframes nv-tool-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

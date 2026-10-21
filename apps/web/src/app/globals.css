@@ -407,12 +407,25 @@
   }
 }
 
+/* General Sans 700 sits outside next/font (app/fonts.ts), so no page preloads it: the landing never
+   sets bold, while the product app's bold text still gets the real face. The family name must match
+   the one next/font emits for `generalSans` in app/fonts.ts. */
+@font-face {
+  font-family: generalSans;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/GeneralSans-700.woff2") format("woff2");
+}
+
 /* Indic text: General Sans stays first so every language shares one baseline; Noto supplies
-   the Kannada / Devanagari glyphs. Unlayered on purpose so it beats tracking utilities. */
-:lang(kn) {
+   the Kannada / Devanagari glyphs. Unlayered on purpose so it beats tracking utilities. Noto applies
+   only once <html data-indic-fonts> is set, just before Indic text is seen (reveal.tsx), so a first
+   load never fetches it; until then the system's own Indic fonts draw that far-off text. */
+html[data-indic-fonts] :lang(kn) {
   font-family: var(--font-general), var(--font-noto-kn), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
 }
-:lang(hi) {
+html[data-indic-fonts] :lang(hi) {
   font-family: var(--font-general), var(--font-noto-deva), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
 }
 :lang(kn),
@@ -495,7 +508,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Landing loops stop on their rest pose when <html data-motion="paused"> (reduced motion; motion.tsx). */
+/* Landing loops stop on their rest pose when <html data-motion="paused"> (reduced motion, or the
+   visitor's own pause; motion.tsx). */
 html[data-motion="paused"] .motion-loop,
 html[data-motion="paused"] .live-dot::after {
   animation: none !important;

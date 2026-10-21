@@ -1,0 +1,65 @@
+/* Hero (hero.tsx). Unlayered on purpose: the title size must beat the Tailwind text-h1 token. */
+
+/* "A registered nurse," (8.35em) always fits on its own line: the h1 token's clamp, also capped by the
+   copy column (an @container). Literal values, since unused theme variables are not emitted. Phones
+   under 399px get the spec's 36px (from 360px up; narrower phones scale down with the column). */
+.nv-hero-title {
+  font-size: clamp(2.5rem, min(1.45rem + 4.5vw, 11.6cqi), 4.75rem);
+}
+@media (width < 399px) {
+  .nv-hero-title {
+    font-size: min(2.25rem, 11.6cqi);
+  }
+}
+
+/* "See services and prices": a quiet text link with a 44px target and a pressed tint on touch. */
+.nv-hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  margin-inline: -0.625rem;
+  padding-inline: 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  text-decoration-color: color-mix(in oklab, var(--primary) 28%, transparent);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 180ms var(--curve-standard),
+    background-color 180ms var(--curve-standard),
+    text-decoration-color 180ms var(--curve-standard);
+}
+.nv-hero-link svg {
+  flex-shrink: 0;
+  transition: transform 240ms var(--curve-standard);
+}
+.nv-hero-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.nv-hero-link:active {
+  background-color: rgb(1 76 94 / 0.08);
+  transform: scale(0.98);
+  transition-duration: 90ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nv-hero-link:active {
+    transform: none;
+  }
+}
+html[data-motion="paused"] .nv-hero-link:active {
+  transform: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .nv-hero-link:hover {
+    text-decoration-color: currentColor;
+  }
+  .nv-hero-link:hover svg {
+    transform: translateY(2px);
+  }
+}
