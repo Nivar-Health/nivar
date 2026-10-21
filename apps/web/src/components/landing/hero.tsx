@@ -1,7 +1,17 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowDown, BadgeCheck, BriefcaseMedical, IndianRupee, PackageCheck, Video, type LucideIcon } from "lucide-react";
+import {
+  ArrowDown,
+  BadgeCheck,
+  BriefcaseMedical,
+  Gauge,
+  IndianRupee,
+  PackageCheck,
+  Video,
+  type LucideIcon,
+} from "lucide-react";
 import { SITE } from "@/lib/site-facts";
+import { cn } from "@/lib/utils";
 import { Container } from "./primitives";
 import { ContactCtas } from "./whatsapp";
 import "./hero.css";
@@ -97,46 +107,180 @@ export function Hero() {
 }
 
 /**
- * Phones: a 3:2 photo above the copy, with the caption on it. From sm: the arch, with the caption
- * under it and, on large screens, one sample update card on the wall.
+ * Phones: a 3:2 photo above the copy, with the reading the nurse is taking and the caption on it.
+ * From sm: the arch inside slow heartbeat ripples, with sample cards that float beside it: the
+ * doctor always, the blood pressure reading where the arch is wide enough (not in the narrow md
+ * column), the nurse's update on large screens. Cards sit on the wall, the lap and the floor, never
+ * on a face. All of it is decoration, so it stays out of the accessibility tree.
  */
 function HeroPhoto() {
   return (
     <figure className="@container relative mx-auto w-full max-sm:order-first sm:max-w-[420px] lg:max-w-[480px]">
-      {/* Morning light behind the photo. Static: it never loops. */}
-      <div
-        aria-hidden
-        className="absolute -top-16 -right-14 -z-10 size-56 rounded-full bg-[radial-gradient(closest-side,rgb(255_236_204/0.9),rgb(142_211_224/0.35)_55%,transparent)] sm:size-64 lg:-top-20 lg:-right-20 lg:size-80"
-      />
-
-      <div className="hero-settle relative aspect-[3/2] max-h-[38svh] w-full overflow-hidden rounded-[1.75rem] bg-aqua shadow-[0_24px_48px_-30px_rgb(1_43_54/0.55)] ring-4 ring-white sm:aspect-[4/5] sm:max-h-none sm:rounded-t-[50cqw] sm:rounded-b-[2.5rem] sm:shadow-[0_48px_90px_-40px_rgb(1_43_54/0.5)] sm:ring-[10px]">
-        <Image
-          src="/img/nurse-bp-home.jpg"
-          alt="A Nivar nurse in teal scrubs kneels beside an older woman on her sofa and fits a blood pressure cuff on her arm"
-          fill
-          loading="eager"
-          fetchPriority="high"
-          sizes="(min-width: 1024px) 480px, (min-width: 640px) 420px, 100vw"
-          className="object-cover object-[50%_38%] sm:object-[50%_30%]"
+      <div className="relative">
+        {/* Morning light behind the photo. Static: it never loops. */}
+        <div
+          aria-hidden
+          className="absolute -top-16 -right-14 -z-10 size-56 rounded-full bg-[radial-gradient(closest-side,rgb(255_236_204/0.9),rgb(142_211_224/0.35)_55%,transparent)] sm:size-64 lg:-top-20 lg:-right-20 lg:size-80"
         />
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-pond/30 to-transparent" />
-      </div>
-
-      <div aria-hidden className="hero-pop absolute top-[8%] -right-[4%] z-10 hidden lg:block xl:-right-[10%]" style={delay(500)}>
-        <div className="flex items-center gap-3 rounded-2xl bg-white py-3 pr-5 pl-3 shadow-[0_18px_40px_-32px_rgb(1_43_54/0.45)] ring-1 ring-ink/5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-            <BriefcaseMedical className="size-[1.125rem]" strokeWidth={2} />
-          </span>
-          <span className="leading-snug">
-            <span className="block text-[0.9375rem] font-semibold text-ink">Your nurse is on the way</span>
-            <span className="block text-caption text-ink-3">Sample update</span>
-          </span>
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 hidden items-center justify-center sm:flex">
+          {RIPPLES.map(({ start, rest }) => (
+            <span
+              key={start}
+              className="nv-hero-ripple motion-loop absolute aspect-square w-[118%] rounded-full border border-primary/25 bg-primary/[0.03]"
+              style={{ "--d": start, "--rest": rest } as CSSProperties}
+            />
+          ))}
         </div>
+
+        <div className="hero-settle relative aspect-[3/2] max-h-[38svh] w-full overflow-hidden rounded-[1.75rem] bg-aqua shadow-[0_24px_48px_-30px_rgb(1_43_54/0.55)] ring-4 ring-white sm:aspect-[4/5] sm:max-h-none sm:rounded-t-[50cqw] sm:rounded-b-[2.5rem] sm:shadow-[0_48px_90px_-40px_rgb(1_43_54/0.5)] sm:ring-[10px]">
+          <Image
+            src="/img/nurse-bp-home.jpg"
+            alt="A Nivar nurse in teal scrubs kneels beside an older woman on her sofa and fits a blood pressure cuff on her arm"
+            fill
+            loading="eager"
+            fetchPriority="high"
+            sizes="(min-width: 1024px) 480px, (min-width: 640px) 420px, 100vw"
+            className="object-cover object-[50%_38%] sm:object-[50%_30%]"
+          />
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-pond/30 to-transparent" />
+        </div>
+
+        {/* Phones: the reading being taken, on the floor of the photo, clear of both faces. */}
+        <div aria-hidden className="hero-pop absolute bottom-3 left-3 z-10 sm:hidden" style={delay(450)}>
+          <div className="flex h-8 items-center gap-1.5 rounded-full bg-white/95 pr-1 pl-2 text-[0.8125rem] leading-none text-ink shadow-[0_10px_24px_-14px_rgb(1_43_54/0.6)]">
+            <Gauge className="size-4 shrink-0 text-rose" strokeWidth={2.25} />
+            <span className="font-semibold whitespace-nowrap tabular-nums">
+              118/76<span className="font-medium text-ink-2 @max-[19rem]:hidden"> mmHg</span>
+            </span>
+            <span className="rounded-full bg-aqua px-2 py-1.5 font-semibold text-primary">Normal</span>
+          </div>
+        </div>
+
+        <FloatCard position="top-[8%] -right-[2%] hidden lg:block xl:-right-[10%]" enter={500} float="8s" floatDelay="-1s">
+          <StatusCard icon={BriefcaseMedical} title="Your nurse is on the way" sub="Sample update" />
+        </FloatCard>
+        <FloatCard
+          position="top-[54%] -right-[8%] hidden w-[220px] sm:block md:max-lg:hidden lg:-right-[2%] xl:-right-[12%]"
+          className="px-4 py-3"
+          enter={750}
+          float="7.5s"
+          floatDelay="-3s"
+        >
+          <BpCard />
+        </FloatCard>
+        <FloatCard
+          position="bottom-[5%] -left-8 hidden sm:block md:-left-4 lg:-left-10"
+          enter={1000}
+          float="9s"
+          floatDelay="-5s"
+        >
+          <StatusCard icon={Video} title="Your Nivar doctor" sub="On video when you need one" online />
+        </FloatCard>
       </div>
 
-      <figcaption className="absolute right-3 bottom-3 rounded-full bg-white/85 px-2.5 py-0.5 text-caption text-ink-2 sm:static sm:mt-6 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-center sm:text-ink-3">
-        Photo is illustrative.
+      <figcaption className="absolute right-3 bottom-3 rounded-full bg-white/85 px-2.5 py-0.5 text-caption text-ink-2 sm:static sm:mt-6 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-center">
+        <span className="sm:hidden">
+          Illustrative<span className="sr-only"> photo and reading</span>
+        </span>
+        <span className="max-sm:hidden md:max-lg:hidden">Photo and readings are illustrative.</span>
+        <span className="hidden md:max-lg:inline">Photo is illustrative.</span>
       </figcaption>
     </figure>
+  );
+}
+
+/* Three rings, a third of a cycle apart. With motion off they rest as three still circles. */
+const RIPPLES = [
+  { start: "0s", rest: 0.96 },
+  { start: "1.8s", rest: 1.08 },
+  { start: "3.6s", rest: 1.2 },
+];
+
+const CARD = "rounded-2xl bg-white/95 shadow-[0_20px_40px_-24px_rgb(1_43_54/0.45)] ring-1 ring-ink/5";
+
+/** Placement and entrance on the outside; the slow float on the card itself. */
+function FloatCard({
+  position,
+  className,
+  enter,
+  float,
+  floatDelay,
+  children,
+}: {
+  position: string;
+  className?: string;
+  enter: number;
+  float: string;
+  floatDelay: string;
+  children: ReactNode;
+}) {
+  return (
+    <div aria-hidden className={cn("hero-pop absolute z-10", position)} style={delay(enter)}>
+      <div className={cn("nv-hero-float motion-loop", CARD, className)} style={{ "--t": float, "--fd": floatDelay } as CSSProperties}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function StatusCard({ icon: Icon, title, sub, online = false }: { icon: LucideIcon; title: string; sub: string; online?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 py-3 pr-5 pl-3">
+      <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+        <Icon className="size-[1.125rem]" strokeWidth={2} />
+        {online && (
+          <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-white">
+            <span className="size-2.5 rounded-full bg-signal" />
+          </span>
+        )}
+      </span>
+      <span className="leading-snug">
+        <span className="block text-[0.9375rem] font-semibold whitespace-nowrap text-ink">{title}</span>
+        <span className="block text-caption whitespace-nowrap text-ink-3">{sub}</span>
+      </span>
+    </div>
+  );
+}
+
+/** The reading in the photo, as the nurse's monitor would show it. Sample values. */
+function BpCard() {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2 text-[0.8125rem]">
+        <span className="flex items-center gap-1.5 font-semibold text-ink">
+          <Gauge className="size-4 text-rose" strokeWidth={2.25} />
+          Blood pressure
+        </span>
+        <span className="text-xs text-ink-3">Just now</span>
+      </div>
+      <div className="mt-2 flex items-baseline justify-between gap-2">
+        <span className="flex items-baseline gap-1">
+          <span className="text-xl font-semibold tracking-tight text-ink tabular-nums">118/76</span>
+          <span className="text-xs font-medium text-ink-3">mmHg</span>
+        </span>
+        <span className="rounded-full bg-aqua px-2 py-0.5 text-xs font-semibold text-primary">Normal</span>
+      </div>
+      <BpScale />
+    </>
+  );
+}
+
+/*
+ * Where the reading falls, on a systolic scale from 90 to 160 mmHg: normal below 120, elevated to
+ * 139, high from 140 (the bands the clinical console uses). 118 sits at 40%. The bands draw in,
+ * then the marker slides to the reading (hero.css), once.
+ */
+function BpScale() {
+  return (
+    <span className="relative mt-3 block h-3.5">
+      <span className="nv-hero-bp-bands absolute inset-x-0 top-1/2 flex h-1.5 -translate-y-1/2 gap-0.5 overflow-hidden rounded-full">
+        <span className="basis-[43%] bg-signal" />
+        <span className="basis-[28%] bg-saffron/45" />
+        <span className="flex-1 bg-rose/55" />
+      </span>
+      <span className="nv-hero-bp-slide absolute inset-0">
+        <span className="absolute top-0 left-[40%] size-3.5 -translate-x-1/2 rounded-full bg-white shadow-[0_2px_6px_rgb(1_43_54/0.35)] ring-2 ring-primary" />
+      </span>
+    </span>
   );
 }

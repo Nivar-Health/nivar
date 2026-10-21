@@ -63,3 +63,64 @@ html[data-motion="paused"] .nv-hero-link:active {
     transform: translateY(2px);
   }
 }
+
+/* Sample cards around the photo (hero.tsx). Each loop carries .motion-loop, so reduced motion and
+   the visitor's own pause stop it on the rest pose written here (globals.css). Transform and
+   opacity only. */
+.nv-hero-float {
+  animation: nv-hero-float var(--t, 8s) var(--curve-breath) var(--fd, 0s) infinite;
+}
+@keyframes nv-hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Heartbeat ripples behind the arch: each ring swells and fades; at rest they hold still at
+   their own size. */
+.nv-hero-ripple {
+  opacity: 0.32;
+  transform: scale(var(--rest, 1.06));
+  animation: nv-hero-ripple 5.4s var(--curve-calm) var(--d, 0s) infinite backwards;
+}
+@keyframes nv-hero-ripple {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  20% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.32);
+  }
+}
+
+/* The blood pressure scale (BpScale): the bands draw in from the left, then the marker slides to
+   the reading. One-shots after the card's own entrance (--d, from the card wrapper); their base
+   style is the final pose. */
+.nv-hero-bp-bands {
+  transform-origin: left center;
+  animation: nv-hero-bp-bands 700ms var(--curve-calm) calc(var(--d, 0ms) + 350ms) backwards;
+}
+/* Tailwind's -translate-y-1/2 centres the bar through the separate translate property, so the
+   keyframes only scale. */
+@keyframes nv-hero-bp-bands {
+  from {
+    transform: scaleX(0);
+  }
+}
+.nv-hero-bp-slide {
+  animation: nv-hero-bp-slide 1100ms var(--curve-calm) calc(var(--d, 0ms) + 650ms) backwards;
+}
+@keyframes nv-hero-bp-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-40%);
+  }
+}
