@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
+import type { JSX, ReactNode } from "react";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
-import { ButtonLink, CALLBACK_HREF, buttonClass, type ButtonSize } from "./primitives";
+import { CALLBACK_HREF, buttonClass, inr, type ButtonSize } from "./primitives";
 
 export const WHATSAPP_MESSAGE = "Hi Nivar, I'd like to book a home visit.";
 
@@ -38,10 +38,23 @@ export function WhatsAppLink({
   );
 }
 
+/** Who a visit is for: the callback form's "For" pills (callback-form.tsx WHO_FOR). */
+export type WhoFor = "Myself" | "A parent" | "A child" | "Someone else";
+
+/**
+ * Prefill for the callback form. Its click listener reads these from any `a[data-need], a[data-for]`:
+ * `data-for` picks the "For" pill, `data-need` fills an empty note and `data-need-label` names the
+ * "Asking about" chip. Undefined values leave the attribute out.
+ */
+function prefill(need?: string, needLabel?: string, forWho?: WhoFor) {
+  return { "data-need": need, "data-need-label": needLabel, "data-for": forWho };
+}
+
 /**
  * The page's pair of calls to action: "WhatsApp us" (WhatsApp green) and "Request a callback".
  * While no WhatsApp number is set, only the callback button shows, in the accent colour.
  * `tone="dark"` swaps the secondary button for the light pill used on teal panels.
+ * `need`, `needLabel` and `forWho` prefill the callback form (data-need, data-need-label, data-for).
  */
 export function ContactCtas({
   message,
@@ -49,14 +62,21 @@ export function ContactCtas({
   tone = "light",
   className,
   buttonClassName,
+  need,
+  needLabel,
+  forWho,
 }: {
   message?: string;
   size?: ButtonSize;
   tone?: "light" | "dark";
   className?: string;
   buttonClassName?: string;
+  need?: string;
+  needLabel?: string;
+  forWho?: WhoFor;
 }) {
   const href = whatsappHref(message);
+  const callback = href ? (tone === "dark" ? "inverse" : "secondary") : "accent";
   return (
     <div className={cn("flex flex-col gap-3 min-[420px]:flex-row min-[420px]:flex-wrap", className)}>
       {href && (
@@ -65,49 +85,99 @@ export function ContactCtas({
           WhatsApp us
         </WhatsAppLink>
       )}
-      <ButtonLink
-        href={CALLBACK_HREF}
-        variant={href ? (tone === "dark" ? "inverse" : "secondary") : "accent"}
-        size={size}
-        className={buttonClassName}
-      >
+      {/* A plain in-page anchor (spec §2.2): next/link skips the scroll when the URL already ends in #callback. */}
+      <a href={CALLBACK_HREF} className={buttonClass(callback, buttonClassName, size)} {...prefill(need, needLabel, forWho)}>
         Request a callback
-      </ButtonLink>
+      </a>
     </div>
   );
 }
 
 /**
- * Per-service button: WhatsApp with the service named in the message, or "Enquire" (the callback
- * form). `label` names the service for screen readers, since every card's button reads the same.
+ * One service's call to action (spec §3.2):
+ * - WhatsApp set: [Ask on WhatsApp], sr " about {name}"; the message asks the price (from null) or
+ *   books ("I'd like to book {ask} at home.").
+ * - No WhatsApp, from null: [Get the price], sr " for {name}", need "Please tell me the price for {ask} at home."
+ * - No WhatsApp, priced: [Request this visit], sr ": {name}", need "I'd like to book {ask} at home ({priceLabel})."
+ * Without WhatsApp it is a plain `<a href="#callback">` that prefills the form, so it works without JS.
+ * `needLabel` defaults to `name`; `priceLabel` to "from ₹{from}". `label`, `need` and `needLabel` apply
+ * to the callback variant only (a custom `label` replaces the visible text and the sr suffix).
  */
-export function EnquireButton({ service, label, className }: { service: string; label: string; className?: string }) {
-  const href = whatsappHref(`Hi Nivar, I'd like to book ${service} at home.`);
-  const look =
-    "inline-flex h-11 items-center gap-2 rounded-full pr-4 pl-3.5 text-[0.9375rem] font-semibold transition-colors duration-200 focus-ring";
-  if (href) {
+export function CareCta({
+  name,
+  ask,
+  from,
+  priceLabel,
+  forWho,
+  tone = "light",
+  size = "md",
+  fullWidth = false,
+  need,
+  needLabel,
+  label,
+  className,
+}: {
+  name: string;
+  ask: string;
+  from: number | null;
+  priceLabel?: string;
+  forWho?: WhoFor;
+  tone?: "light" | "dark";
+  size?: "md" | "lg";
+  fullWidth?: boolean;
+  need?: string;
+  needLabel?: string;
+  label?: string;
+  className?: string;
+}): JSX.Element {
+  const width = fullWidth && "w-full";
+  const wa = whatsappHref(
+    from === null ? `Hi Nivar, what's the price for ${ask} at home?` : `Hi Nivar, I'd like to book ${ask} at home.`,
+  );
+  if (wa) {
     return (
-      <WhatsAppLink href={href} className={cn(look, "bg-whatsapp text-whatsapp-ink hover:bg-whatsapp-hover", className)}>
-        <WhatsAppIcon className="size-4.5" />
-        WhatsApp<span className="sr-only"> us about {label}</span>
+      <WhatsAppLink href={wa} className={buttonClass("whatsapp", cn(width, className), size)}>
+        <WhatsAppIcon className="size-4.5!" />
+        Ask on WhatsApp<span className="sr-only"> about {name}</span>
       </WhatsAppLink>
     );
   }
+  const priced = from !== null;
+  const composed = priced
+    ? `I'd like to book ${ask} at home (${priceLabel ?? `from ${inr(from)}`}).`
+    : `Please tell me the price for ${ask} at home.`;
   return (
-    <ButtonLink href={CALLBACK_HREF} variant="secondary" className={cn("h-11 px-4", className)}>
-      Enquire<span className="sr-only"> about {label}</span>
-    </ButtonLink>
+    <a
+      href={CALLBACK_HREF}
+      className={buttonClass(tone === "dark" ? "inverse" : "secondary", cn(width, className), size)}
+      {...prefill(need ?? composed, needLabel ?? name, forWho)}
+    >
+      {label ?? (
+        <>
+          {priced ? "Request this visit" : "Get the price"}
+          <span className="sr-only">{priced ? `: ${name}` : ` for ${name}`}</span>
+        </>
+      )}
+    </a>
   );
 }
 
-/** Floating "WhatsApp us" on every public page: a 56px circle on phones, a labelled pill from sm. */
-export function WhatsAppFab() {
+/**
+ * "WhatsApp us": a 56px circle on phones, a labelled pill from sm. On its own it is fixed to the
+ * corner; `docked` drops the fixed positioning for the corner cluster (take-a-minute/cluster.tsx).
+ * Renders nothing while no WhatsApp number is set.
+ */
+export function WhatsAppFab({ docked = false, className }: { docked?: boolean; className?: string } = {}) {
   const href = whatsappHref();
   if (!href) return null;
   return (
     <WhatsAppLink
       href={href}
-      className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 inline-flex h-14 items-center gap-2.5 rounded-full bg-whatsapp px-4 text-base font-semibold text-whatsapp-ink shadow-[0_16px_32px_-12px_rgb(7_59_40/0.55)] ring-1 ring-whatsapp-ink/10 transition-[background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-whatsapp-hover focus-ring sm:right-6 sm:bottom-6 sm:pr-5"
+      className={cn(
+        "inline-flex h-14 items-center gap-2.5 rounded-full bg-whatsapp px-4 text-base font-semibold text-whatsapp-ink shadow-[0_16px_32px_-12px_rgb(7_59_40/0.55)] ring-1 ring-whatsapp-ink/10 transition-[background-color,translate,scale] duration-180 ease-standard select-none hover:-translate-y-0.5 hover:bg-whatsapp-hover focus-ring active:scale-[0.97] active:bg-whatsapp-hover active:duration-90 motion-reduce:active:scale-100 sm:pr-5",
+        !docked && "fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 sm:right-6 sm:bottom-6",
+        className,
+      )}
     >
       <WhatsAppIcon className="size-6" />
       <span className="sr-only sm:not-sr-only">WhatsApp us</span>

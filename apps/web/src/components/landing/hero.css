@@ -1,0 +1,126 @@
+/* Hero (hero.tsx). Unlayered on purpose: the title size must beat the Tailwind text-h1 token. */
+
+/* "A registered nurse," (8.35em) always fits on its own line: the h1 token's clamp, also capped by the
+   copy column (an @container). Literal values, since unused theme variables are not emitted. Phones
+   under 399px get the spec's 36px (from 360px up; narrower phones scale down with the column). */
+.nv-hero-title {
+  font-size: clamp(2.5rem, min(1.45rem + 4.5vw, 11.6cqi), 4.75rem);
+}
+@media (width < 399px) {
+  .nv-hero-title {
+    font-size: min(2.25rem, 11.6cqi);
+  }
+}
+
+/* "See services and prices": a quiet text link with a 44px target and a pressed tint on touch. */
+.nv-hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  margin-inline: -0.625rem;
+  padding-inline: 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  text-decoration-color: color-mix(in oklab, var(--primary) 28%, transparent);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 180ms var(--curve-standard),
+    background-color 180ms var(--curve-standard),
+    text-decoration-color 180ms var(--curve-standard);
+}
+.nv-hero-link svg {
+  flex-shrink: 0;
+  transition: transform 240ms var(--curve-standard);
+}
+.nv-hero-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.nv-hero-link:active {
+  background-color: rgb(1 76 94 / 0.08);
+  transform: scale(0.98);
+  transition-duration: 90ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nv-hero-link:active {
+    transform: none;
+  }
+}
+html[data-motion="paused"] .nv-hero-link:active {
+  transform: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .nv-hero-link:hover {
+    text-decoration-color: currentColor;
+  }
+  .nv-hero-link:hover svg {
+    transform: translateY(2px);
+  }
+}
+
+/* Sample cards around the photo (hero.tsx). Each loop carries .motion-loop, so reduced motion and
+   the visitor's own pause stop it on the rest pose written here (globals.css). Transform and
+   opacity only. */
+.nv-hero-float {
+  animation: nv-hero-float var(--t, 8s) var(--curve-breath) var(--fd, 0s) infinite;
+}
+@keyframes nv-hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Heartbeat ripples behind the arch: each ring swells and fades; at rest they hold still at
+   their own size. */
+.nv-hero-ripple {
+  opacity: 0.32;
+  transform: scale(var(--rest, 1.06));
+  animation: nv-hero-ripple 5.4s var(--curve-calm) var(--d, 0s) infinite backwards;
+}
+@keyframes nv-hero-ripple {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  20% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.32);
+  }
+}
+
+/* The blood pressure scale (BpScale): the bands draw in from the left, then the marker slides to
+   the reading. One-shots after the card's own entrance (--d, from the card wrapper); their base
+   style is the final pose. */
+.nv-hero-bp-bands {
+  transform-origin: left center;
+  animation: nv-hero-bp-bands 700ms var(--curve-calm) calc(var(--d, 0ms) + 350ms) backwards;
+}
+/* Tailwind's -translate-y-1/2 centres the bar through the separate translate property, so the
+   keyframes only scale. */
+@keyframes nv-hero-bp-bands {
+  from {
+    transform: scaleX(0);
+  }
+}
+.nv-hero-bp-slide {
+  animation: nv-hero-bp-slide 1100ms var(--curve-calm) calc(var(--d, 0ms) + 650ms) backwards;
+}
+@keyframes nv-hero-bp-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-40%);
+  }
+}

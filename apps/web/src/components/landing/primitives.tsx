@@ -1,5 +1,4 @@
-import Link from "next/link";
-import type { ComponentProps, CSSProperties, HTMLAttributes, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------------- */
@@ -9,8 +8,11 @@ import { cn } from "@/lib/utils";
 export type ButtonVariant = "primary" | "accent" | "whatsapp" | "secondary" | "ghost" | "inverse";
 export type ButtonSize = "sm" | "md" | "lg";
 
+/* Press (mobile addendum M2): scale .97 plus each variant's tint, 90ms in and 180ms out; tint only under
+   reduced motion. Tailwind 4's scale and translate utilities set the `scale` and `translate` properties,
+   so those are the ones transitioned. */
 const BUTTON_BASE =
-  "relative inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap select-none transition-[background-color,border-color,color,transform] duration-160 ease-standard active:scale-[0.98] focus-ring disabled:pointer-events-none disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60 [&_svg]:size-4 [&_svg]:shrink-0";
+  "relative inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap select-none transition-[background-color,border-color,color,translate,scale] duration-180 ease-standard active:scale-[0.97] active:duration-90 motion-reduce:active:scale-100 focus-ring disabled:pointer-events-none disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60 [&_svg]:size-4 [&_svg]:shrink-0";
 
 const BUTTON_SIZE: Record<ButtonSize, string> = {
   /** 40px visual, 44px hit area. Nav only. */
@@ -24,15 +26,15 @@ const BUTTON_VARIANT: Record<ButtonVariant, string> = {
     "bg-primary text-primary-foreground shadow-[0_10px_24px_-12px_rgb(1_76_94/0.7)] hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:bg-primary-active",
   /** Amber, dark text (6.02:1). The main call to action only, so it stands out. */
   accent:
-    "bg-marigold text-ink shadow-[0_10px_24px_-12px_rgb(176_104_10/0.7)] hover:-translate-y-px hover:bg-marigold-hover active:translate-y-0",
+    "bg-marigold text-ink shadow-[0_10px_24px_-12px_rgb(176_104_10/0.7)] hover:-translate-y-px hover:bg-marigold-hover active:translate-y-0 active:bg-marigold-hover",
   /** WhatsApp green with dark text (6.36:1); white on this green fails contrast. */
   whatsapp:
-    "bg-whatsapp text-whatsapp-ink shadow-[0_10px_24px_-12px_rgb(7_94_60/0.6)] hover:-translate-y-px hover:bg-whatsapp-hover active:translate-y-0",
+    "bg-whatsapp text-whatsapp-ink shadow-[0_10px_24px_-12px_rgb(7_94_60/0.6)] hover:-translate-y-px hover:bg-whatsapp-hover active:translate-y-0 active:bg-whatsapp-hover",
   secondary:
-    "border border-border-strong bg-card text-foreground shadow-xs hover:-translate-y-px hover:border-input hover:bg-card active:translate-y-0",
-  ghost: "text-foreground hover:bg-muted",
+    "border border-border-strong bg-card text-foreground shadow-xs hover:-translate-y-px hover:border-input hover:bg-card active:translate-y-0 active:bg-aqua",
+  ghost: "text-foreground hover:bg-muted active:bg-muted",
   /** Light pill for deep pine panels. */
-  inverse: "bg-on-pine text-ink hover:bg-white",
+  inverse: "bg-on-pine text-ink hover:bg-white active:bg-aqua",
 };
 
 /** Trailing arrow that nudges 2px on hover. Add to a button or link that ends with an icon. */
@@ -43,17 +45,11 @@ export function buttonClass(variant: ButtonVariant = "primary", className?: stri
   return cn(BUTTON_BASE, BUTTON_SIZE[size], BUTTON_VARIANT[variant], className);
 }
 
-/** The callback form lives on the home page; this reaches it from every page. */
-export const CALLBACK_HREF = "/#callback";
-
-export function ButtonLink({
-  variant = "primary",
-  size = "md",
-  className,
-  ...props
-}: ComponentProps<typeof Link> & { variant?: ButtonVariant; size?: ButtonSize }) {
-  return <Link className={buttonClass(variant, className, size)} {...props} />;
-}
+/**
+ * The callback form. A same-page hash, so a plain <a> keeps the query (?utm_source=…), scrolls natively
+ * and still jumps when the URL already ends in #callback. Everything that uses it renders on / only.
+ */
+export const CALLBACK_HREF = "#callback";
 
 /* ------------------------------------------------------------------------- */
 /* Scroll reveal (server-safe helper; the observer lives in reveal.tsx)      */
@@ -86,7 +82,7 @@ const SECTION_TONE: Record<SectionTone, string> = {
   sky: "bg-sky-tint",
 };
 
-/** Section rhythm: 80px mobile, 112px desktop. `deep` scopes the pine tokens on a pond gradient. */
+/** Section rhythm: 64px on phones, 80px from sm, 112px from lg. `deep` scopes the pine tokens on a pond gradient. */
 export function Section({
   id,
   tone = "default",
@@ -113,7 +109,7 @@ export function Section({
       id={id}
       aria-labelledby={titleId}
       className={cn(
-        "scroll-mt-24 py-20 lg:py-28",
+        "scroll-mt-24 py-16 sm:py-20 lg:py-28",
         SECTION_TONE[t],
         divider === "top" && "border-t border-border",
         divider === "bottom" && "border-b border-border",

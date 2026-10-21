@@ -1,0 +1,396 @@
+/* The corner cluster (cluster.tsx, corner.tsx), spec §5.3: a fixed column, the pearl button above
+   the docked WhatsApp button, inside the safe area. The button is only ever its circle. Its label
+   lies under the circle, to its left, and is shown by its clip-path alone: nothing is laid out
+   again, so the page never shifts and the pearl never moves under the eye (and the orb always knows
+   where to land). In a layer, so the WhatsApp button's own Tailwind classes keep winning. */
+@layer components {
+  .nv-minute-cluster {
+    position: fixed;
+    right: max(1rem, calc(env(safe-area-inset-right) + 1rem));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: none;
+  }
+  @media (min-width: 40rem) {
+    .nv-minute-cluster {
+      right: max(1.5rem, calc(env(safe-area-inset-right) + 1rem));
+      bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Enter 360ms (opacity, y 8 → 0, scale .9 → 1); leave 200ms. */
+  .nv-minute-cluster > * {
+    pointer-events: auto;
+    transition:
+      opacity 360ms var(--curve-calm),
+      translate 360ms var(--curve-calm),
+      scale 360ms var(--curve-calm),
+      visibility 0s;
+  }
+  .nv-minute-cluster[data-hidden] > *,
+  .nv-minute-cluster > [data-hidden] {
+    visibility: hidden;
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.9;
+    pointer-events: none;
+    transition:
+      opacity 200ms var(--curve-exit),
+      translate 200ms var(--curve-exit),
+      scale 200ms var(--curve-exit),
+      visibility 0s linear 200ms;
+  }
+  /* While Take a minute is open the button only fades (under the pond), so its pearl keeps its
+     true position for the orb's flight back. */
+  .nv-minute-cluster > [data-open] {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 200ms var(--curve-exit),
+      visibility 0s linear 200ms;
+  }
+  .nv-minute-wa {
+    display: flex;
+  }
+  .nv-minute-wa:empty {
+    display: none;
+  }
+
+  /* A 56px circle around the 34px pearl: the jade disc (::before) and its shadow. The label lies under
+     it. While the label is open the disc fades, so the label reads as one pill with the pearl at its
+     end, as the spec draws it. */
+  .nv-minute-corner {
+    --nv-corner: 56px;
+    /* Which label is open (set by the states below), and keyboard focus. */
+    --nv-name: 0;
+    --nv-note: 0;
+    --nv-ring: 0;
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    width: var(--nv-corner);
+    height: var(--nv-corner);
+    border-radius: 9999px;
+    color: #ffffff;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* 64–85rem: the page's gutter is narrower than the button, so it shrinks to 48px and sits closer to
+     the edge (centred over a WhatsApp button, when there is one). */
+  @media (min-width: 64rem) and (max-width: 85rem) {
+    .nv-minute-cluster {
+      right: max(0.75rem, calc(env(safe-area-inset-right) + 0.75rem));
+      bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .nv-minute-corner {
+      --nv-corner: 48px;
+    }
+    .nv-minute-cluster:has(> .nv-minute-wa:not(:empty)) > .nv-minute-corner {
+      margin-right: 4px;
+    }
+  }
+  .nv-minute-cluster > .nv-minute-corner:active {
+    scale: 0.96;
+    transition-duration: 360ms, 360ms, 90ms, 0s;
+  }
+  /* The jade disc (9.56:1 for white). */
+  .nv-minute-corner::before {
+    --nv-shut: calc(1 - var(--nv-name) - var(--nv-note));
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: var(--jade);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      0 16px 32px -12px rgb(1 43 54 / 0.55);
+    opacity: var(--nv-shut);
+    transition: opacity calc(160ms - var(--nv-shut) * 40ms) var(--curve-standard) calc((1 - var(--nv-shut)) * 140ms);
+  }
+  .nv-minute-corner .nv-minute-pearl {
+    position: relative;
+    z-index: 2;
+  }
+  /* Keyboard focus: the label's ::before and ::after draw a white ring next to the button and a jade
+     one outside it, around whatever shows, so it reads on light and dark sections alike. The
+     transparent outline is what forced colours paint. */
+  .nv-minute-corner:focus-visible {
+    --nv-ring: 1;
+    outline: 2px solid transparent;
+    outline-offset: 4px;
+  }
+
+  /* Open: the peek and the failure note at every width; hover and keyboard focus from 40rem. */
+  .nv-minute-corner[data-peek]:not([data-failed]) {
+    --nv-name: 1;
+  }
+  .nv-minute-corner[data-failed] {
+    --nv-note: 1;
+  }
+  @media (min-width: 40rem) {
+    .nv-minute-corner:focus-visible:not([data-failed]) {
+      --nv-name: 1;
+    }
+  }
+  @media (min-width: 40rem) and (hover: hover) and (pointer: fine) {
+    .nv-minute-corner:hover:not([data-open], [data-failed]) {
+      --nv-name: 1;
+    }
+  }
+
+  /* The labels, revealed from under the disc by their clip (the words fade in as it opens), never by
+     layout: two of them, so the failure note never resizes one. While the name peeks, taps go through
+     it to the page; a label takes them only when hover, keyboard focus or the failure opened it. */
+  .nv-minute-corner-label {
+    --nv-open: var(--nv-name);
+    --nv-mine: calc(1 - var(--nv-note));
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 0;
+    height: 100%;
+    pointer-events: none;
+  }
+  .nv-minute-corner-label[data-note] {
+    --nv-open: var(--nv-note);
+    --nv-mine: var(--nv-note);
+  }
+  .nv-minute-corner-pill {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-inline: calc(var(--nv-corner) / 2 - 8px) calc(var(--nv-corner) / 2 + 28px);
+    border-radius: 9999px;
+    background: var(--jade);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+    clip-path: inset(0 0 0 calc((100% - var(--nv-corner)) * (1 - var(--nv-open))) round calc(var(--nv-corner) / 2));
+    transition: clip-path 280ms var(--curve-calm) calc((1 - var(--nv-open)) * 60ms);
+  }
+  .nv-minute-corner-pill > span {
+    opacity: var(--nv-open);
+    translate: calc((1 - var(--nv-open)) * 8px) 0;
+    transition:
+      opacity calc(120ms + var(--nv-open) * 120ms) var(--curve-calm) calc(var(--nv-open) * 60ms),
+      translate 280ms var(--curve-calm);
+  }
+  /* The open label's drop shadow. It takes over from the disc's once the label is almost out, and
+     leaves before it draws back: an outer shadow is not drawn inside its own box, so it must never
+     show where the label is not. */
+  .nv-minute-corner-shade {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    box-shadow: 0 16px 32px -12px rgb(1 43 54 / 0.55);
+    opacity: var(--nv-open);
+    transition: opacity calc(100ms + var(--nv-open) * 60ms) var(--curve-standard) calc(var(--nv-open) * 140ms);
+  }
+  .nv-minute-corner-label::before,
+  .nv-minute-corner-label::after {
+    content: "";
+    position: absolute;
+    border-radius: 9999px;
+    opacity: calc(var(--nv-ring) * var(--nv-mine));
+    transition: clip-path 280ms var(--curve-calm) calc((1 - var(--nv-open)) * 60ms);
+  }
+  .nv-minute-corner-label::before {
+    inset: -6px;
+    background: var(--jade);
+    clip-path: inset(
+      0 0 0 calc((100% - var(--nv-corner) - 12px) * (1 - var(--nv-open))) round calc(var(--nv-corner) / 2 + 6px)
+    );
+  }
+  .nv-minute-corner-label::after {
+    inset: -4px;
+    background: #ffffff;
+    clip-path: inset(
+      0 0 0 calc((100% - var(--nv-corner) - 8px) * (1 - var(--nv-open))) round calc(var(--nv-corner) / 2 + 4px)
+    );
+  }
+  .nv-minute-corner[data-failed] > [data-note] > .nv-minute-corner-pill {
+    pointer-events: auto;
+  }
+  @media (min-width: 40rem) {
+    .nv-minute-corner:focus-visible:not([data-failed]) > .nv-minute-corner-label:not([data-note]) > .nv-minute-corner-pill {
+      pointer-events: auto;
+    }
+  }
+  @media (min-width: 40rem) and (hover: hover) and (pointer: fine) {
+    .nv-minute-corner:hover:not([data-open], [data-failed]) > .nv-minute-corner-label:not([data-note]) > .nv-minute-corner-pill {
+      pointer-events: auto;
+    }
+  }
+
+  /* The ripple, a mint ring around the pearl. */
+  .nv-minute-corner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1.5px rgb(142 211 224 / 0.9);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .nv-minute-corner[data-intro] .nv-minute-pearl {
+    animation: nv-minute-corner-breath 3.2s var(--curve-breath) 0.2s;
+  }
+  .nv-minute-corner[data-intro]::after {
+    animation: nv-minute-corner-ripple 1.2s var(--curve-calm) 0.2s;
+  }
+  /* Tapped before the experience has loaded: the pearl inhales and waits, and the opening carries
+     on from that pose. */
+  .nv-minute-corner[data-loading] .nv-minute-pearl {
+    animation: nv-minute-corner-inhale 1.5s var(--curve-calm) forwards;
+  }
+  .nv-minute-corner[data-settle] .nv-minute-pearl {
+    animation: nv-minute-corner-settle 320ms var(--curve-calm);
+  }
+
+  /* A finished session: a 10px mint dot for 4 seconds. */
+  .nv-minute-corner-dot {
+    position: absolute;
+    right: 1px;
+    top: 1px;
+    z-index: 3;
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    background: var(--mint-glow);
+    box-shadow: 0 0 0 2px #ffffff;
+    opacity: 0;
+    scale: 0.4;
+    pointer-events: none;
+    transition:
+      opacity 240ms var(--curve-standard),
+      scale 320ms var(--curve-calm);
+  }
+  .nv-minute-corner[data-done] .nv-minute-corner-dot {
+    opacity: 1;
+    scale: 1;
+  }
+
+  @keyframes nv-minute-corner-breath {
+    0%,
+    100% {
+      scale: 1;
+    }
+    50% {
+      scale: 1.16;
+    }
+  }
+  @keyframes nv-minute-corner-ripple {
+    from {
+      opacity: 0.35;
+      scale: 1;
+    }
+    to {
+      opacity: 0;
+      scale: 1.6;
+    }
+  }
+  @keyframes nv-minute-corner-inhale {
+    0% {
+      scale: 1;
+    }
+    40% {
+      scale: 1.12;
+    }
+    70% {
+      scale: 1.07;
+    }
+    100% {
+      scale: 1.12;
+    }
+  }
+  @keyframes nv-minute-corner-settle {
+    from {
+      scale: 1.08;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* No breath, ripple or inhale; the cluster comes and goes by opacity alone. */
+    .nv-minute-corner .nv-minute-pearl,
+    .nv-minute-corner::after {
+      animation: none !important;
+    }
+    .nv-minute-cluster > *,
+    .nv-minute-cluster[data-hidden] > *,
+    .nv-minute-cluster > [data-hidden] {
+      translate: none;
+      scale: none;
+    }
+    .nv-minute-cluster > * {
+      transition:
+        opacity 200ms linear,
+        visibility 0s !important;
+    }
+    .nv-minute-cluster[data-hidden] > *,
+    .nv-minute-cluster > :is([data-hidden], [data-open]) {
+      transition:
+        opacity 200ms linear,
+        visibility 0s linear 200ms !important;
+    }
+  }
+  /* Animations paused (the footer switch, or the OS asking for less motion): no breath or ripple, the
+     label shows and hides without sweeping, and the cluster comes and goes by opacity alone. */
+  html[data-motion="paused"] .nv-minute-corner[data-intro] .nv-minute-pearl,
+  html[data-motion="paused"] .nv-minute-corner[data-intro]::after {
+    animation: none;
+  }
+  html[data-motion="paused"] .nv-minute-corner::before,
+  html[data-motion="paused"] .nv-minute-corner-pill,
+  html[data-motion="paused"] .nv-minute-corner-pill > span,
+  html[data-motion="paused"] .nv-minute-corner-shade,
+  html[data-motion="paused"] .nv-minute-corner-label::before,
+  html[data-motion="paused"] .nv-minute-corner-label::after {
+    transition: none;
+  }
+  html[data-motion="paused"] .nv-minute-corner-pill > span {
+    translate: none;
+  }
+  html[data-motion="paused"] .nv-minute-cluster > * {
+    translate: none;
+    scale: none;
+  }
+
+  /* Forced colours: the disc and the label keep an edge, the pearl keeps its light, and the focus
+     ring is an outline (the ring layers would only paint Canvas): the circle's, or the whole open
+     label's, which the circle's would cut across. */
+  @media (forced-colors: active) {
+    .nv-minute-corner::before {
+      border: 2px solid ButtonText;
+    }
+    .nv-minute-corner .nv-minute-pearl {
+      forced-color-adjust: none;
+    }
+    .nv-minute-corner:focus-visible {
+      outline-width: calc(2px * (1 - var(--nv-name) - var(--nv-note)));
+    }
+    .nv-minute-corner-label {
+      border-radius: 9999px;
+      outline: calc(2px * var(--nv-open) * var(--nv-ring) * var(--nv-mine)) solid ButtonText;
+      outline-offset: 2px;
+    }
+    .nv-minute-corner-label::before,
+    .nv-minute-corner-label::after {
+      display: none;
+    }
+    .nv-minute-corner-pill {
+      border: 2px solid ButtonText;
+      transition: none;
+    }
+  }
+}

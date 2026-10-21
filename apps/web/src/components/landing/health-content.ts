@@ -4,7 +4,10 @@
  * more conservative wording is used. Scope stays in the visible text. Re-check yearly.
  * Do not place these next to Nivar outcome claims or booking CTAs.
  */
-export type HealthSource = { label: string; url: string };
+import { MINUTE_SOURCES, type HealthSource } from "./health-sources";
+
+export { MINUTE_SOURCES };
+export type { HealthSource };
 
 export type HealthFact = {
   id: string;
@@ -17,7 +20,7 @@ export type HealthFact = {
   sources: HealthSource[];
   /** YYYY-MM the source was last checked. */
   checked: string;
-  /** Shown in "Health, in numbers" (keep exactly four featured). */
+  /** Shown in the Small habits facts row (keep exactly four featured). */
   featured: boolean;
 };
 
@@ -63,7 +66,7 @@ const S = {
     label: "US CDC, About Atrial Fibrillation, 2024",
     url: "https://www.cdc.gov/heart-disease/about/atrial-fibrillation.html",
   },
-  nhsAf: { label: "NHS, Atrial fibrillation, 2025", url: "https://www.nhs.uk/conditions/atrial-fibrillation/" },
+  nhsAf: MINUTE_SOURCES.nhsAf,
   saltSurvey: {
     label: "ICMR-NCDIR National NCD Monitoring Survey 2017–18, Scientific Reports, 2023",
     url: "https://doi.org/10.1038/s41598-023-42694-x",
@@ -77,10 +80,7 @@ const S = {
     label: "Ministry of Health & Family Welfare, NP-NCD screening campaign, February 2025 (via All India Radio)",
     url: "https://www.newsonair.gov.in/centre-launches-special-ncd-screening-campaign-for-100-coverage-of-30-age-group/",
   },
-  cdcMeasureBp: {
-    label: "US CDC, Measuring Your Blood Pressure, 2026",
-    url: "https://www.cdc.gov/high-blood-pressure/measure/index.html",
-  },
+  cdcMeasureBp: MINUTE_SOURCES.cdcMeasureBp,
   aha2025: {
     label: "AHA/ACC High Blood Pressure Guideline, 2025",
     url: "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know",
@@ -101,15 +101,12 @@ const S = {
     label: "NHS, Low blood sugar (hypoglycaemia)",
     url: "https://www.nhs.uk/conditions/low-blood-sugar-hypoglycaemia/",
   },
-  medlinePulse: { label: "MedlinePlus, Pulse, 2025", url: "https://medlineplus.gov/ency/article/003399.htm" },
+  medlinePulse: MINUTE_SOURCES.medlinePulse,
   fdaOximeter: {
     label: "US FDA, Pulse Oximeter Basics, 2025",
     url: "https://www.fda.gov/consumers/consumer-updates/pulse-oximeter-basics",
   },
-  nhsBreathing: {
-    label: "NHS, Breathing exercises for stress, 2026",
-    url: "https://www.nhs.uk/mental-health/self-help/guides-tools-and-activities/breathing-exercises-for-stress/",
-  },
+  nhsBreathing: MINUTE_SOURCES.nhsBreathing,
   whoQuit: {
     label: "WHO, Health benefits of smoking cessation, 2020",
     url: "https://www.who.int/news-room/questions-and-answers/item/tobacco-health-benefits-of-smoking-cessation",
@@ -327,13 +324,29 @@ export const VISIT_CHECKLIST: ChecklistItem[] = [
   },
 ];
 
+/**
+ * "All sources" on the page: the featured facts, the tips, the checklist and Take a minute, each URL
+ * once (the first label seen wins), in that order.
+ */
+export const ALL_SOURCES: readonly HealthSource[] = (() => {
+  const seen = new Map<string, HealthSource>();
+  const add = (s: HealthSource) => {
+    if (!seen.has(s.url)) seen.set(s.url, s);
+  };
+  HEALTH_FACTS.filter((f) => f.featured).forEach((f) => f.sources.forEach(add));
+  HEALTH_TIPS.forEach((t) => t.sources.forEach(add));
+  VISIT_CHECKLIST.forEach(({ source: { label, url } }) => url && add({ label, url }));
+  Object.values(MINUTE_SOURCES).forEach(add);
+  return [...seen.values()];
+})();
+
 export const HEALTH_DISCLAIMER =
   "General health information for adults, not medical advice or a diagnosis. Targets differ in pregnancy and for children. Talk to a qualified doctor about your own readings, medicines and treatment, and don't stop or change a medicine without them.";
 
 export const SOURCES_NOTE =
   "Figures come from published studies and public health bodies, not from Nivar patients or Nivar results.";
 
-/** Emergency safety net shown near the BP and pulse tips. Render 112 and 108 as tel: links. */
+/** Emergency safety net, shown once in the Small habits section. Render 112 and 108 as tel: links. */
 export const EMERGENCY_NOTE = {
   lead: "Chest pain, sudden breathlessness, weakness or numbness on one side, trouble speaking, or a fast or irregular heartbeat with dizziness or fainting?",
   tail: "Nivar is not an emergency service.",

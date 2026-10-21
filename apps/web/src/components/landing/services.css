@@ -1,0 +1,712 @@
+/* Services (services.tsx) and the care illustrations (care-glyphs.tsx): spec §4.2.
+   In a layer, so Tailwind utilities on the same elements win. One-shots use fill-mode `backwards`, so
+   every base style is the final pose: nothing moves under reduced motion or html[data-motion="paused"]. */
+@layer components {
+  /* ---- Prescription strip: under the lede on phones (full-width button), beside the heading on lg ---- */
+  .nv-care-rx {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "icon title"
+      "body body"
+      "cta cta";
+    gap: 0 14px;
+    align-items: center;
+    padding: 16px 16px 18px;
+    border-radius: 24px;
+    background:
+      radial-gradient(360px 200px at 100% 0%, rgb(142 211 224 / 0.16), transparent 70%),
+      linear-gradient(150deg, var(--jade) 0%, var(--pond-2) 100%);
+    box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
+  }
+  .nv-care-rx-icon {
+    grid-area: icon;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    background: rgb(255 255 255 / 0.1);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+    color: var(--mint-glow);
+  }
+  .nv-care-rx-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+  .nv-care-rx-title {
+    grid-area: title;
+  }
+  .nv-care-rx-body {
+    grid-area: body;
+    margin-top: 6px;
+  }
+  .nv-care-rx-cta {
+    grid-area: cta;
+    width: 100%;
+    margin-top: 14px;
+  }
+  /* sm to lg: one horizontal strip, the button on the right. */
+  @media (min-width: 40rem) {
+    .nv-care-rx {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        "icon title cta"
+        "icon body cta";
+      column-gap: 18px;
+      padding: 24px;
+    }
+    .nv-care-rx-icon {
+      align-self: start;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+    }
+    .nv-care-rx-body {
+      margin-top: 4px;
+    }
+    .nv-care-rx-cta {
+      width: auto;
+      margin-top: 0;
+    }
+  }
+  /* lg: beside the heading, five columns wide; the button sits under the text. */
+  @media (min-width: 64rem) {
+    .nv-care-rx {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas:
+        "icon title"
+        ". body"
+        ". cta";
+      padding: 28px;
+    }
+    .nv-care-rx-icon {
+      align-self: center;
+    }
+    .nv-care-rx-body {
+      margin-top: 6px;
+    }
+    .nv-care-rx-cta {
+      justify-self: start;
+      margin-top: 18px;
+    }
+  }
+
+  /* ---- What one price covers: 44px chips that swipe on phones, a ruled row from sm (SnapRow grid) ---- */
+  .nv-care-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 16px 0 6px;
+    border-radius: 9999px;
+    background: var(--aqua);
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .nv-care-chip-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    background: var(--white);
+    color: var(--jade);
+  }
+  .nv-care-chip-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  @media (min-width: 40rem) {
+    .nv-care-chip {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      height: 100%;
+      min-height: 68px;
+      padding: 14px 20px;
+      border-radius: 0;
+      background: none;
+      white-space: normal;
+      text-wrap: pretty;
+    }
+    .nv-care-chip-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--aqua);
+    }
+    /* Two by two: the rules belong to the cells, so they arrive with them in SnapRow's first reveal.
+       The first column starts on the content edge, like the text above it. */
+    .nv-care-promise li:nth-child(odd) > .nv-care-chip {
+      padding-inline-start: 0;
+    }
+    .nv-care-promise li:nth-child(even) > .nv-care-chip {
+      border-inline-start: 1px solid var(--border);
+    }
+    .nv-care-promise li:nth-child(n + 3) > .nv-care-chip {
+      border-top: 1px solid var(--border);
+    }
+  }
+  /* lg: one ruled row; columns follow their text, so only the longest promise may wrap. */
+  @media (min-width: 64rem) {
+    .nv-care-chip {
+      padding: 16px 24px;
+    }
+    .nv-care-promise li:nth-child(odd) > .nv-care-chip {
+      padding-inline-start: 24px;
+    }
+    .nv-care-promise li:first-child > .nv-care-chip {
+      padding-inline-start: 0;
+    }
+    .nv-care-promise li:nth-child(n + 3) > .nv-care-chip {
+      border-top: 0;
+    }
+    .nv-care-promise li + li > .nv-care-chip {
+      border-inline-start: 1px solid var(--border);
+    }
+  }
+
+  /* ---- Tier labels ---- */
+  .nv-care-tier {
+    color: var(--ink);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  /* ---- Nursing cards: vertical media rows on phones (never a carousel), cards from md ---- */
+  .nv-care-grid {
+    display: grid;
+    gap: 12px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .nv-care-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-areas:
+      "media head"
+      "note note"
+      "foot foot";
+    column-gap: 14px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--card);
+    box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
+    scroll-margin-top: 7rem;
+  }
+  .nv-care-media {
+    grid-area: media;
+    position: relative;
+    display: grid;
+    grid-template: 100% / 100%;
+    place-items: center;
+    width: 96px;
+    height: 96px;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--nv-care-tint, var(--aqua));
+  }
+  .nv-care-photo {
+    object-position: var(--nv-care-thumb, 50% 50%);
+  }
+  .nv-care-text {
+    display: contents;
+  }
+  .nv-care-head {
+    grid-area: head;
+    align-self: center;
+    min-width: 0;
+  }
+  .nv-care-note {
+    grid-area: note;
+    margin-top: 10px;
+  }
+  /* Price left, call to action right; when the button can't fit beside the price it wraps to its own
+     full-width line (the price takes the free space first: 999 to 1). The hairline above it starts at md. */
+  .nv-care-foot {
+    grid-area: foot;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+    margin-top: 12px;
+  }
+  .nv-care-price {
+    flex: 999 1 auto;
+    min-width: 0;
+  }
+  .nv-care-cta {
+    flex: 1 0 auto;
+  }
+  @media (max-width: 47.98rem) {
+    /* The thumbnail crops the 4:3 drawing to its centre square; some scenes sit closer. */
+    .nv-care-media > .nv-care-glyph {
+      width: calc(100% * var(--nv-care-zoom, 1));
+      height: calc(100% * var(--nv-care-zoom, 1));
+    }
+    .nv-care-glyph[data-glyph="wound-care"] {
+      --nv-care-zoom: 1.12;
+    }
+    .nv-care-glyph[data-glyph="blood-tests"] {
+      --nv-care-zoom: 1.1;
+    }
+  }
+  @media (min-width: 48rem) {
+    .nv-care-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .nv-care-item:nth-child(2n) {
+      --i: 1;
+    }
+    .nv-care-item > .nv-care-card {
+      height: 100%;
+    }
+    .nv-care-card {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 8px 20px;
+    }
+    .nv-care-media {
+      width: auto;
+      height: auto;
+      aspect-ratio: 4 / 3;
+      border-radius: 18px;
+    }
+    .nv-care-photo {
+      object-position: var(--nv-care-pos, 50% 50%);
+    }
+    .nv-care-text {
+      display: flex;
+      flex: 1 0 auto;
+      flex-direction: column;
+      padding: 18px 12px 20px;
+    }
+    .nv-care-note {
+      margin-top: 10px;
+    }
+    .nv-care-foot {
+      margin: 0 12px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+  }
+  @media (min-width: 64rem) {
+    .nv-care-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 24px;
+    }
+    /* The cards share a row here, so they arrive left to right (landing.css reads --i). */
+    .nv-care-item:nth-child(4n + 2) {
+      --i: 1;
+    }
+    .nv-care-item:nth-child(4n + 3) {
+      --i: 2;
+    }
+    .nv-care-item:nth-child(4n + 4) {
+      --i: 3;
+    }
+  }
+
+  /* Arriving from a link to #service-<id>: a 2px jade ring that holds while the page scrolls, then
+     fades over 1.2s. Under reduced motion it simply stays while the card is the target. */
+  .nv-care-card::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow: 0 0 0 2px var(--jade);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .nv-care-card:target::before {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-motion="paused"]) .nv-care-card:target::before {
+      opacity: 0;
+      animation: nv-care-target 2000ms linear;
+    }
+  }
+
+  /* Hover, fine pointers only: the border firms up and a lift shadow fades in (the shadow itself never
+     animates). A photo eases in by 4%; an illustration plays its scene once (below). */
+  @media (hover: hover) and (pointer: fine) {
+    .nv-care-card {
+      transition: border-color 240ms var(--curve-standard);
+    }
+    .nv-care-card::after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      box-shadow:
+        0 2px 4px rgb(1 43 54 / 0.04),
+        0 30px 50px -30px rgb(1 43 54 / 0.36);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 240ms var(--curve-standard);
+    }
+    .nv-care-card:hover {
+      border-color: var(--border-strong);
+    }
+    .nv-care-card:hover::after {
+      opacity: 1;
+    }
+  }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .nv-care-photo {
+      transition: transform 700ms var(--curve-calm);
+    }
+    .nv-care-card:hover .nv-care-photo {
+      transform: scale(1.04);
+    }
+  }
+
+  /* ---- Also at home: small cards in a swipe row on phones (SnapRow), one ruled panel from md where
+     the columns line up (subgrid through the row's list items) ---- */
+  .nv-care-row {
+    min-width: 0;
+    scroll-margin-top: 7rem;
+  }
+  .nv-care-row-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--aqua);
+    color: var(--jade);
+  }
+  .nv-care-row-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .nv-care-row-text {
+    min-width: 0;
+  }
+  @media (max-width: 47.98rem) {
+    /* Name and price beside the icon, the line under them, the action at the foot (aligned across cards). */
+    .nv-care-row {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr);
+      grid-template-rows: auto auto 1fr auto;
+      grid-template-areas:
+        "icon name"
+        "icon price"
+        "text text"
+        "cta cta";
+      column-gap: 12px;
+      height: 100%;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
+    }
+    .nv-care-row-icon {
+      grid-area: icon;
+    }
+    .nv-care-row-text,
+    .nv-care-row-foot {
+      display: contents;
+    }
+    .nv-care-row-text > h4 {
+      grid-area: name;
+      align-self: end;
+    }
+    .nv-care-row-text > p {
+      grid-area: text;
+      margin-top: 10px;
+    }
+    .nv-care-row .nv-care-price {
+      grid-area: price;
+      margin-top: 2px;
+    }
+    .nv-care-row .nv-care-cta {
+      grid-area: cta;
+      margin-top: 14px;
+    }
+    .nv-care-row .nv-care-cta:not(.nv-care-link) {
+      width: 100%;
+    }
+    .nv-care-row .nv-care-link {
+      justify-self: start;
+      margin-inline: -10px 0;
+    }
+  }
+  @media (min-width: 48rem) {
+    /* The first and last tracks are auto so they absorb the rows' own padding (subgrid). */
+    .nv-care-also .nv-snap-track {
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      gap: 0 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
+    }
+    .nv-care-also .nv-snap-item {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+    }
+    .nv-care-also .nv-snap-item + .nv-snap-item {
+      border-top: 1px solid var(--border);
+    }
+    .nv-care-row {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      align-items: center;
+      padding: 18px 24px;
+    }
+    .nv-care-row-foot {
+      display: contents;
+    }
+    .nv-care-row .nv-care-price {
+      justify-self: end;
+    }
+    .nv-care-row .nv-care-cta {
+      justify-self: end;
+    }
+  }
+
+  /* "Compare check-ups": an in-page link, so a quiet underlined text link with a 44px target. */
+  .nv-care-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-inline: auto -10px;
+    padding-inline: 10px;
+    border-radius: 9999px;
+    color: var(--primary);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration-line: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+    text-decoration-color: color-mix(in oklab, var(--primary) 28%, transparent);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background-color 180ms var(--curve-standard),
+      scale 180ms var(--curve-standard),
+      text-decoration-color 180ms var(--curve-standard);
+  }
+  .nv-care-link svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+  .nv-care-link:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .nv-care-link:active {
+    background: var(--aqua);
+    scale: 0.97;
+    transition-duration: 90ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nv-care-link:active {
+      scale: none;
+    }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-care-link:hover {
+      text-decoration-color: currentColor;
+    }
+  }
+
+  /* ---- Care illustrations ---- */
+  .nv-care-glyph {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  /* 2px on screen at every size, from the 96px phone thumbnail to the 330px tablet mat. */
+  .nv-care-glyph :is(path, rect, circle, ellipse) {
+    vector-effect: non-scaling-stroke;
+  }
+  .nv-care-glyph :is(.nv-care-vial, .nv-care-vial-h, .nv-care-level, .nv-care-level-h) {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+  }
+  .nv-care-glyph :is(.nv-care-fill, .nv-care-fill-h, .nv-care-drop, .nv-care-drop-h) {
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+  .nv-care-glyph
+    :is(.nv-care-ripple, .nv-care-ripple-h, .nv-care-press, .nv-care-press-h, .nv-care-dressing, .nv-care-dressing-h, .nv-care-pressed) {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+  }
+  /* Only visible while they play. */
+  .nv-care-glyph :is(.nv-care-ripple, .nv-care-ripple-h, .nv-care-press, .nv-care-press-h, .nv-care-flow, .nv-care-flow-h) {
+    opacity: 0;
+  }
+  .nv-care-glyph :is(.nv-care-flow, .nv-care-flow-h) {
+    stroke-dasharray: 3 9;
+  }
+  /* The 96px thumbnail drops the hairline details (label lines, finger lines, ridges). */
+  @media (max-width: 47.98rem) {
+    .nv-care-glyph .nv-care-fine {
+      display: none;
+    }
+  }
+}
+
+@keyframes nv-care-target {
+  0%, 40% { opacity: 1; animation-timing-function: var(--curve-calm); }
+  100% { opacity: 0; }
+}
+@keyframes nv-care-y {
+  from { transform: translateY(var(--nv-y, -32px)); }
+  to { transform: none; }
+}
+@keyframes nv-care-sy {
+  from { transform: scaleY(var(--nv-sy, 0)); }
+  to { transform: none; }
+}
+/* The hanging drop lets go, falls into the pool and the next one forms in its place. */
+@keyframes nv-care-drip {
+  0% { transform: none; opacity: 1; animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1); }
+  14% { transform: scale(1.04, 1.12); animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.5); }
+  40% { transform: translateY(14px) scale(0.92, 1.08); opacity: 1; }
+  44% { transform: translateY(15px) scale(0.7, 0.45); opacity: 0; }
+  45% { transform: scale(0); opacity: 0; }
+  56% { transform: scale(0); opacity: 1; animation-timing-function: var(--curve-calm); }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes nv-care-ripple {
+  0% { transform: scale(0.4); opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes nv-care-flow {
+  0% { stroke-dashoffset: 0; opacity: 0; }
+  18%, 72% { opacity: 0.9; }
+  100% { stroke-dashoffset: -48; opacity: 0; }
+}
+/* The cap lifts a touch and seats itself. */
+@keyframes nv-care-seat {
+  0%, 100% { transform: none; }
+  35% { transform: translateY(var(--nv-y, -6px)); }
+}
+@keyframes nv-care-land {
+  from { transform: translate(-8px, -18px) rotate(-8deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes nv-care-pressed {
+  0%, 100% { transform: none; }
+  38% { transform: scale(0.955, 0.9); }
+}
+@keyframes nv-care-ring {
+  0% { transform: scale(0.86); opacity: 0; }
+  22% { opacity: 0.6; }
+  100% { transform: scale(1.22); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Once, when the card scrolls in (RevealObserver sets data-nv-revealed on the card's list item),
+     offset by the card's own stagger (--i) so the scenes play left to right with the cards. */
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-plunger {
+    --nv-y: -32px;
+    animation: nv-care-y 1500ms var(--curve-breath) backwards;
+    animation-delay: calc(300ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-fill {
+    --nv-sy: 0.06;
+    animation: nv-care-sy 1500ms var(--curve-breath) backwards;
+    animation-delay: calc(300ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-vial {
+    --nv-sy: 1.48;
+    animation: nv-care-sy 1500ms var(--curve-breath) backwards;
+    animation-delay: calc(300ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-drop {
+    animation: nv-care-drip 2000ms linear backwards;
+    animation-delay: calc(400ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-ripple {
+    animation: nv-care-ripple 700ms var(--curve-calm) backwards;
+    animation-delay: calc(1240ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-flow {
+    animation: nv-care-flow 1600ms linear backwards;
+    animation-delay: calc(1000ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-dressing {
+    animation: nv-care-land 800ms var(--curve-calm) backwards;
+    animation-delay: calc(250ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-pressed {
+    animation: nv-care-pressed 560ms var(--curve-standard) backwards;
+    animation-delay: calc(1000ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-press {
+    animation: nv-care-ring 900ms var(--curve-calm) backwards;
+    animation-delay: calc(1060ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-level {
+    --nv-sy: 0;
+    animation: nv-care-sy 1300ms var(--curve-calm) backwards;
+    animation-delay: calc(250ms + var(--i, 0) * 90ms);
+  }
+  html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-cap {
+    --nv-y: -7px;
+    animation: nv-care-seat 640ms var(--curve-standard) backwards;
+    animation-delay: calc(1250ms + var(--i, 0) * 90ms);
+  }
+}
+
+/* Once more on hover, or when a control inside the card has keyboard focus. Fine pointers only. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-plunger-h {
+    --nv-y: -12px;
+    animation: nv-care-y 900ms var(--curve-breath);
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-fill-h {
+    --nv-sy: 0.65;
+    animation: nv-care-sy 900ms var(--curve-breath);
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-vial-h {
+    --nv-sy: 1.18;
+    animation: nv-care-sy 900ms var(--curve-breath);
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-drop-h {
+    animation: nv-care-drip 1500ms linear;
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-ripple-h {
+    animation: nv-care-ripple 600ms var(--curve-calm) 620ms backwards;
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-flow-h {
+    animation: nv-care-flow 1200ms linear 300ms backwards;
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-dressing-h {
+    animation: nv-care-pressed 520ms var(--curve-standard);
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-press-h {
+    animation: nv-care-ring 800ms var(--curve-calm) 80ms backwards;
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-level-h {
+    --nv-sy: 0.8;
+    animation: nv-care-sy 900ms var(--curve-calm);
+  }
+  html:not([data-motion="paused"]) .nv-care-card:is(:hover, :has(:focus-visible)) .nv-care-cap-h {
+    --nv-y: -5px;
+    animation: nv-care-seat 560ms var(--curve-standard) 640ms backwards;
+  }
+}

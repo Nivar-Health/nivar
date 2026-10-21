@@ -1,0 +1,228 @@
+/* FAQ, Callback and Footer (faq.tsx, faq-section.tsx, callback-form.tsx, closing.tsx).
+   Press states follow the mobile addendum (M2): a tint plus a slight scale, 90 ms in and 180 ms out,
+   tint only under reduced motion. Hover stays behind (hover:hover) and (pointer:fine). Lifts fade a
+   pseudo-element; no box-shadow is ever animated. In a layer, so Tailwind classes can still override. */
+
+@layer components {
+  /* ---- FAQ: one white card per question, a native <details name="faq"> ---- */
+  .nv-faq-item {
+    position: relative;
+    isolation: isolate;
+    border-radius: 1rem;
+    background-color: #ffffff;
+    box-shadow:
+      0 0 0 1px rgb(1 58 72 / 0.06),
+      0 1px 2px rgb(1 43 54 / 0.05);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  .nv-faq-item::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: 0 18px 40px -28px rgb(1 43 54 / 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms var(--curve-standard);
+  }
+  .nv-faq-item[open]::after {
+    opacity: 1;
+  }
+  .nv-faq-item:has(> summary:active) {
+    background-color: #f4f9fa;
+    transform: scale(0.985);
+    transition-duration: 90ms;
+  }
+  .nv-faq-item > summary {
+    color: var(--ink);
+    transition: color 160ms var(--curve-standard);
+  }
+  .nv-faq-item > summary::-webkit-details-marker {
+    display: none;
+  }
+  .nv-faq-item[open] > summary {
+    color: var(--primary);
+  }
+  .nv-faq-chev {
+    transition: rotate 240ms var(--curve-standard);
+  }
+  .nv-faq-item[open] .nv-faq-chev {
+    rotate: 180deg;
+  }
+  /* Opening and closing. Where the browser can interpolate the answer's box to `auto` (Chromium),
+     it grows and fades in, and shrinks away again; elsewhere it opens at once and the answer fades
+     and lifts in. */
+  @supports (interpolate-size: allow-keywords) and selector(::details-content) {
+    .nv-faq-item {
+      interpolate-size: allow-keywords;
+    }
+    .nv-faq-item::details-content {
+      block-size: 0;
+      overflow: clip;
+      opacity: 0;
+      transition:
+        block-size 320ms var(--curve-standard),
+        opacity 260ms var(--curve-standard),
+        content-visibility 320ms allow-discrete;
+    }
+    .nv-faq-item[open]::details-content {
+      block-size: auto;
+      opacity: 1;
+    }
+  }
+  @supports not ((interpolate-size: allow-keywords) and selector(::details-content)) {
+    .nv-faq-item[open] > .nv-faq-a {
+      animation: nv-faq-in 280ms var(--curve-calm) backwards;
+    }
+  }
+
+  /* ---- Callback: "Asking about" chip and the Take a minute tile in the success state ---- */
+  .nv-cb-chip {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nv-cb-clear,
+  .nv-cb-minute {
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  .nv-cb-clear:active {
+    background-color: rgb(1 76 94 / 0.12);
+    transform: scale(0.94);
+    transition-duration: 90ms;
+  }
+  /* Base colours live here, not in utilities, so the states below can override them in this layer. */
+  .nv-cb-minute {
+    position: relative;
+    isolation: isolate;
+    background-color: var(--aqua);
+  }
+  /* Its lift (fine pointer hover) is a pseudo-element that fades. */
+  .nv-cb-minute::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: 0 16px 32px -20px rgb(1 43 54 / 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms var(--curve-standard);
+  }
+  .nv-cb-minute .nv-minute-pearl {
+    transition: transform 600ms var(--curve-calm);
+  }
+  .nv-cb-minute:active {
+    background-color: var(--aqua-2);
+    transform: scale(0.97);
+    transition-duration: 90ms;
+  }
+
+  /* ---- Footer: "Stay healthy · ಆರೋಗ್ಯವಾಗಿರಿ · स्वस्थ रहिए". Each phrase carries its dot out in the gap
+     before it, and the row clips its left edge, so a phrase that wraps to a new line (360px) never
+     leaves a dot dangling at a line end or leading the next one. ---- */
+  .nv-foot-hello {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 1.5rem;
+    row-gap: 0.125rem;
+    clip-path: inset(-1rem -1rem -1rem 0);
+  }
+  .nv-foot-hello > span {
+    position: relative;
+  }
+  .nv-foot-hello > span::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -0.875rem;
+    width: 0.25rem;
+    height: 0.25rem;
+    margin-top: -0.125rem;
+    border-radius: 9999px;
+    background-color: rgb(255 255 255 / 0.3);
+  }
+
+  /* ---- Footer: in-page links (and the Take a minute button) on the pond band ---- */
+  .nv-foot-link {
+    color: var(--on-pine-2);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard),
+      transform 180ms var(--curve-standard);
+  }
+  .nv-foot-link:active {
+    background-color: rgb(255 255 255 / 0.1);
+    color: #ffffff;
+    transform: scale(0.98);
+    transition-duration: 90ms;
+  }
+  .nv-foot-link .nv-minute-pearl {
+    transition: transform 400ms var(--curve-calm);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .nv-cb-clear:hover {
+      background-color: rgb(255 255 255 / 0.7);
+    }
+    .nv-cb-minute:hover {
+      box-shadow: inset 0 0 0 1px rgb(1 76 94 / 0.22);
+    }
+    .nv-cb-minute:hover::after {
+      opacity: 1;
+    }
+    .nv-cb-minute:hover .nv-minute-pearl {
+      transform: scale(1.12);
+    }
+    .nv-foot-link:hover {
+      color: #ffffff;
+    }
+    .nv-foot-link:hover .nv-minute-pearl {
+      transform: scale(1.18);
+    }
+  }
+
+  /* Reduced motion: presses keep their tint but never scale, and answers open at once (the global
+     reduced-motion rule never reaches ::details-content). */
+  @media (prefers-reduced-motion: reduce) {
+    .nv-faq-item::details-content {
+      transition: none;
+    }
+    .nv-faq-item:has(> summary:active),
+    .nv-cb-clear:active,
+    .nv-cb-minute:active,
+    .nv-foot-link:active {
+      transform: none;
+    }
+  }
+  /* Apart from the chevron: browsers without ::details-content drop the whole rule it is in. */
+  html[data-motion="paused"] .nv-faq-item::details-content {
+    transition: none;
+  }
+  html[data-motion="paused"] .nv-faq-chev {
+    transition: none;
+  }
+  html[data-motion="paused"] .nv-faq-item[open] > .nv-faq-a {
+    animation: none;
+  }
+  html[data-motion="paused"] .nv-faq-item:has(> summary:active),
+  html[data-motion="paused"] .nv-cb-clear:active,
+  html[data-motion="paused"] .nv-cb-minute:active,
+  html[data-motion="paused"] .nv-foot-link:active {
+    transform: none;
+  }
+}
+
+@keyframes nv-faq-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { EcgMonitor } from "@/components/live/ecg-monitor";
 import { StethMonitor } from "@/components/live/steth-monitor";
 import { cn } from "@/lib/utils";
@@ -26,8 +26,24 @@ const PAUSED_LABEL = (
  * The doctor's view, built from the same monitor components the real console uses (smart ECG and
  * digital stethoscope) and fed by the local device simulators, so both traces are genuinely live.
  * They stream only while on screen, and hold still under prefers-reduced-motion.
+ *
+ * `compact` (phones): the ECG and the vitals only, with the vitals in two tighter columns. The root is
+ * a column that fills its box, so a parent can reserve the exact space before this chunk loads; the
+ * vitals take up any slack. `onReady` fires once, on mount.
  */
-export function LiveDashboard({ className }: { className?: string }) {
+export function LiveDashboard({
+  className,
+  compact = false,
+  ecgHeight = 200,
+  stethHeight = 170,
+  onReady,
+}: {
+  className?: string;
+  compact?: boolean;
+  ecgHeight?: number;
+  stethHeight?: number;
+  onReady?: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref);
   const motionPaused = useMotionPaused();
@@ -36,25 +52,28 @@ export function LiveDashboard({ className }: { className?: string }) {
   const feed = useEcgFeed(76);
   const stethFeed = useStethFeed(76);
 
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
+
   return (
     <div
       ref={ref}
+      data-live-dashboard={compact ? "compact" : "full"}
       className={cn(
-        // inset-shadow-2xs + inset-shadow-white/6: the spec's 1px top highlight (white at 6%) without a colour literal.
-        "rounded-[1.75rem] border border-border bg-card p-4 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.5)] inset-shadow-2xs inset-shadow-white/6 sm:p-5",
+        // inset-shadow-2xs + inset-shadow-white/6: a 1px top highlight (white at 6%) without a colour literal.
+        "flex flex-col rounded-[1.5rem] border border-border bg-card p-3 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.5)] inset-shadow-2xs inset-shadow-white/6 sm:p-4 lg:p-5",
         className,
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-4">
+      <div className={cn("flex items-center justify-between gap-3 px-1", compact ? "pb-2.5" : "pb-4")}>
         <div className="min-w-0">
-          <p className="text-[0.9375rem] font-medium text-foreground">Rahul Mehta, 58</p>
-          <p className="text-caption text-muted-foreground">Heart Check, HSR Layout</p>
+          <p className="truncate text-[0.9375rem] font-medium text-foreground">Rahul Mehta, 58</p>
+          {!compact && <p className="truncate text-caption text-muted-foreground">Heart Check, HSR Layout</p>}
         </div>
-        <Pill tone="inverse" size="md" className="h-9">
+        <Pill tone="inverse" size="md" className={compact ? "h-8" : "h-9"}>
           <LiveDot pulse className="size-1.5" />
-          <span>
-            Doctor<span className="hidden sm:inline"> reviewing</span>
-          </span>
+          <span>Doctor{!compact && " reviewing"}</span>
         </Pill>
       </div>
 
@@ -64,38 +83,81 @@ export function LiveDashboard({ className }: { className?: string }) {
         status={paired ? "streaming" : "connecting"}
         paused={motionPaused}
         pausedLabel={PAUSED_LABEL}
-        height={200}
-        className="rounded-2xl"
+        height={ecgHeight}
+        className="shrink-0 rounded-2xl"
       />
 
       {/* Heart and lung sounds: the doctor listens as the nurse moves the digital stethoscope. */}
-      <StethMonitor
-        feed={running ? stethFeed : null}
-        heartRate={76}
-        status={paired ? "streaming" : "connecting"}
-        paused={motionPaused}
-        pausedLabel={PAUSED_LABEL}
-        height={170}
-        className="mt-3 rounded-2xl"
-      />
+      {!compact && (
+        <StethMonitor
+          feed={running ? stethFeed : null}
+          heartRate={76}
+          status={paired ? "streaming" : "connecting"}
+          paused={motionPaused}
+          pausedLabel={PAUSED_LABEL}
+          height={stethHeight}
+          className="mt-3 shrink-0 rounded-2xl"
+        />
+      )}
 
-      <dl className="mt-4 grid gap-px overflow-hidden rounded-2xl bg-border min-[420px]:grid-cols-2">
+      <dl className={cn("grid flex-1 grid-cols-2 gap-px overflow-hidden rounded-2xl bg-border", compact ? "mt-2.5" : "mt-4")}>
         {VITALS.map((v) => (
-          <div key={v.label} className="flex flex-col gap-3 bg-card p-4">
-            <dt className="flex items-center justify-between gap-2 text-caption text-muted-foreground">
-              <span>{v.label}</span>
-              {v.flag === "Normal" ? (
-                <Pill tone="inverse">Normal</Pill>
-              ) : (
-                <Pill className="bg-amber-on-dark/14 text-amber-on-dark ring-1 ring-amber-on-dark/35">Elevated</Pill>
-              )}
+          <div
+            key={v.label}
+            className={cn(
+              "flex flex-col justify-center bg-card",
+              compact ? "gap-1 px-3 py-2" : "gap-3 px-4 py-3",
+            )}
+          >
+            <dt className="flex items-center justify-between gap-2 text-caption leading-[1.3] text-muted-foreground">
+              <span className="truncate">{v.label}</span>
+              {!compact && <Flag flag={v.flag} />}
             </dt>
-            <dd className="text-[1.5rem] leading-none font-medium tracking-[-0.02em] text-foreground tabular-nums">
-              {v.value} <span className="text-xs font-normal tracking-normal text-muted-foreground">{v.unit}</span>
+            <dd className="flex items-baseline gap-1 tabular-nums">
+              {/* Size first: tailwind-merge drops a line-height that precedes a font size. */}
+              <span
+                className={cn(
+                  compact ? "text-[1.25rem]" : "text-[1.5rem]",
+                  "leading-none font-medium tracking-[-0.02em] text-foreground",
+                )}
+              >
+                {v.value}
+              </span>
+              <span className="text-[0.8125rem] leading-none text-muted-foreground">{v.unit}</span>
             </dd>
+            {compact && (
+              <dd className="flex">
+                <Flag flag={v.flag} compact />
+              </dd>
+            )}
           </div>
         ))}
       </dl>
     </div>
+  );
+}
+
+/** A reading's flag: the "Normal" or "Elevated" pill, or on phones a dot and the word. */
+function Flag({ flag, compact = false }: { flag: "Normal" | "Elevated"; compact?: boolean }) {
+  const elevated = flag === "Elevated";
+  if (compact) {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 text-caption leading-[1.3] font-medium",
+          elevated ? "text-amber-on-dark" : "text-foreground-2",
+        )}
+      >
+        <span aria-hidden className={cn("size-1.5 rounded-full", elevated ? "bg-amber-on-dark" : "bg-trace")} />
+        {flag}
+      </span>
+    );
+  }
+  return elevated ? (
+    <Pill className="bg-amber-on-dark/14 text-[0.8125rem] text-amber-on-dark ring-1 ring-amber-on-dark/35">Elevated</Pill>
+  ) : (
+    <Pill tone="inverse" className="text-[0.8125rem]">
+      Normal
+    </Pill>
   );
 }

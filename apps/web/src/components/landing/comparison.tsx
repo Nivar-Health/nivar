@@ -1,127 +1,174 @@
-import { Car, Check, IndianRupee, Undo2, Video, X, type LucideIcon } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo";
 import { SITE } from "@/lib/site-facts";
-import { cn } from "@/lib/utils";
 import { Container, Section, SectionTitle, revealProps } from "./primitives";
+import "./comparison.css";
 
-const COLUMNS = ["Nivar", "Hospital OPD", "Local compounder"] as const;
+type Col = "nivar" | "opd" | "compounder";
+type MarkKind = "yes" | "partly" | "no";
+type Cell = { mark: MarkKind; text: string; go?: boolean };
 
-/** [Nivar, Hospital OPD, Local compounder] for each row. */
-const ROWS: { label: string; has: [boolean, boolean, boolean] }[] = [
-  { label: "Care at your home", has: [true, false, false] },
-  { label: "No travel or waiting in queues", has: [true, false, false] },
-  { label: "Injections, drips and dressings", has: [true, true, true] },
-  { label: "BP, ECG and stethoscope checks", has: [true, true, false] },
-  { label: "Doctor involved", has: [true, true, false] },
-  { label: "Verified, registered staff", has: [true, true, false] },
-  { label: "Price told upfront", has: [true, false, false] },
-  { label: "Digital record of every visit", has: [true, false, false] },
+const COLUMNS: readonly { id: Col; name: string }[] = [
+  { id: "nivar", name: "Nivar at home" },
+  { id: "opd", name: "Hospital OPD" },
+  { id: "compounder", name: "Local compounder" },
 ];
 
-/** What one price covers (the old "Premium care. No premium price." block, folded in here). */
-const INCLUDED: { icon: LucideIcon; text: string }[] = [
-  { icon: Car, text: "No travel charge" },
-  { icon: IndianRupee, text: "No surge pricing" },
-  { icon: Video, text: "No hidden consultation fee" },
-  { icon: Undo2, text: SITE.cancellation },
+const SAY: Record<MarkKind, string> = { yes: "Yes.", partly: "Partly.", no: "No." };
+
+/** [Nivar at home, Hospital OPD, Local compounder] for each row (spec §3.5): typical experiences, kept honest. */
+const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
+  {
+    label: "Care at home, at a booked time",
+    cells: [
+      { mark: "yes", text: `At home, in a slot we confirm, ${SITE.hours.short}` },
+      { mark: "no", text: "You travel, then queue" },
+      { mark: "partly", text: "Often at home, when they're free" },
+    ],
+  },
+  {
+    label: "A registered nurse gives the care",
+    cells: [
+      { mark: "yes", text: "Registered with the Karnataka State Nursing Council" },
+      { mark: "yes", text: "Hospital nursing staff" },
+      { mark: "partly", text: "Training and registration vary" },
+    ],
+  },
+  {
+    label: "A doctor involved",
+    cells: [
+      { mark: "yes", text: "Calls before your visit; on video when needed" },
+      { mark: "yes", text: "In person" },
+      { mark: "no", text: "Not usually" },
+    ],
+  },
+  {
+    label: "BP, sugar and ECG checks",
+    cells: [
+      { mark: "yes", text: "At home, including a smart ECG" },
+      { mark: "yes", text: "At the hospital, often at separate counters" },
+      { mark: "no", text: "Not usually" },
+    ],
+  },
+  {
+    label: "Sealed, single-use kit",
+    cells: [
+      { mark: "yes", text: "Every visit" },
+      { mark: "yes", text: "Hospital standard" },
+      { mark: "partly", text: "Varies" },
+    ],
+  },
+  {
+    label: "Price told before you commit",
+    cells: [
+      { mark: "yes", text: "No travel charge, no surge pricing" },
+      { mark: "partly", text: "Consultation fee is fixed; tests add to the bill" },
+      { mark: "partly", text: "Agreed on the spot" },
+    ],
+  },
+  {
+    label: "A record of the visit",
+    cells: [
+      { mark: "yes", text: `Visit report ${SITE.report.channel}` },
+      { mark: "yes", text: "Prescription and lab reports" },
+      { mark: "no", text: "Usually none" },
+    ],
+  },
+  {
+    label: "Specialists, scans and emergencies",
+    cells: [
+      { mark: "no", text: "Not an emergency service. Call 112 (or 108)" },
+      { mark: "yes", text: "On site", go: true },
+      { mark: "no", text: "No" },
+    ],
+  },
 ];
 
-/** "Why families choose Nivar": a real table (row and column headers), Nivar's column tinted. */
+/**
+ * "Why families choose Nivar": one real table (sr-only caption, column and row headers) on a white sheet,
+ * with Nivar's column raised on a jade spine. Every cell is a mark plus a short phrase.
+ * Below lg it shows Nivar and one comparator at a time, picked by a radio switch that works through CSS
+ * :has() alone; browsers without :has() get all four columns, scrolling inside the sheet.
+ */
 export function Comparison() {
   return (
-    <Section id="compare" titleId="compare-title">
+    <Section id="compare" tone="aqua" titleId="compare-title">
       <Container>
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
-          <div className="lg:col-span-4">
-            <SectionTitle
-              id="compare-title"
-              title="Why families choose Nivar."
-              lede="One price, told upfront, covers the nurse's visit, the kit and the doctor's time. No surge pricing, no hidden consultation fee."
-            />
-            <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              {INCLUDED.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3.5 text-[0.9375rem] font-medium text-ink">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-aqua text-primary">
-                    <Icon aria-hidden className="size-[1.125rem]" strokeWidth={2} />
-                  </span>
-                  {text}
-                </li>
-              ))}
-            </ul>
-          </div>
+        <SectionTitle
+          id="compare-title"
+          title="Why families choose Nivar."
+          lede="How a Nivar visit compares with the two usual options. We've kept it honest, including where a hospital is the better choice."
+        />
 
-          <div {...revealProps(1)} className="lg:col-span-8">
-            <div className="overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-border shadow-[0_24px_48px_-36px_rgb(1_43_54/0.5)]">
-              <table className="w-full table-fixed border-collapse text-left">
-                <caption className="sr-only">How Nivar compares with a hospital OPD and a local compounder</caption>
-                <colgroup>
-                  <col className="w-[34%] sm:w-[46%]" />
-                  <col className="bg-aqua" />
-                  <col />
-                  <col />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-border">
-                    <td className="px-4 py-4 sm:px-6" />
-                    {COLUMNS.map((c, i) => (
-                      <th
-                        key={c}
-                        scope="col"
-                        className={cn(
-                          // Phones: 11px and hyphenation, so "compounder" fits its 64px column.
-                          "px-1 py-4 text-center align-bottom text-[0.6875rem] leading-tight font-semibold text-balance hyphens-auto sm:px-3 sm:text-small",
-                          i === 0 ? "text-primary" : "text-ink-2",
-                        )}
-                      >
-                        {i === 0 ? (
-                          <span className="inline-flex flex-col items-center gap-1.5">
-                            <LogoMark className="size-6" />
-                            {c}
-                          </span>
-                        ) : (
-                          c
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {ROWS.map((r) => (
-                    <tr key={r.label}>
-                      <th scope="row" className="py-3.5 pr-2 pl-4 text-small font-medium text-pretty text-ink sm:px-6 sm:text-body">
-                        {r.label}
-                      </th>
-                      {r.has.map((yes, i) => (
-                        <td key={COLUMNS[i]} className="px-1 py-3.5 text-center sm:px-3">
-                          <Mark yes={yes} strong={i === 0} />
-                        </td>
+        <div className="nv-cmp mt-5 lg:mt-14">
+          <fieldset className="nv-cmp-switch">
+            <legend className="nv-cmp-legend">Compare Nivar with</legend>
+            <div className="nv-cmp-seg">
+              {COLUMNS.slice(1).map((c, i) => (
+                <label key={c.id} className="nv-cmp-pill">
+                  <input type="radio" name="nv-cmp-with" value={c.id} defaultChecked={i === 0} className="sr-only" />
+                  {c.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div {...revealProps(0)} className="nv-cmp-sheet">
+            <div className="nv-cmp-scroll">
+              <div className="nv-cmp-grid">
+                <div aria-hidden className="nv-cmp-spine" />
+                <table className="nv-cmp-table">
+                  <caption className="sr-only">
+                    How a Nivar nurse at home compares with a hospital OPD and a local compounder
+                  </caption>
+                  <thead>
+                    <tr>
+                      <td />
+                      {COLUMNS.map((c) => (
+                        <th key={c.id} scope="col" data-col={c.id}>
+                          {c.id === "nivar" && <LogoMark variant="light" className="nv-cmp-logo" />}
+                          {c.name}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {ROWS.map((r) => (
+                      <tr key={r.label}>
+                        <th scope="row">{r.label}</th>
+                        {r.cells.map((cell, i) => (
+                          <td key={COLUMNS[i].id} data-col={COLUMNS[i].id} data-go={cell.go ? "" : undefined}>
+                            <Mark kind={cell.mark} />
+                            <span className="sr-only">{SAY[cell.mark]} </span>
+                            {cell.go && (
+                              <span className="nv-cmp-go">
+                                Go here<span className="sr-only">.</span>
+                              </span>
+                            )}
+                            <span className="nv-cmp-say">{cell.text}</span>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+
+          <p className="mt-3 text-caption text-ink-3 lg:mt-7">Typical experiences, not a rating of any hospital or person.</p>
         </div>
       </Container>
     </Section>
   );
 }
 
-function Mark({ yes, strong }: { yes: boolean; strong: boolean }) {
+/** ● yes, ◐ partly, ○ no (with a dash). Decorative: each cell's sr-only "Yes." / "Partly." / "No." says it. */
+function Mark({ kind }: { kind: MarkKind }) {
   return (
-    <span
-      className={cn(
-        "inline-flex size-7 items-center justify-center rounded-full",
-        yes ? (strong ? "bg-primary text-white" : "bg-aqua-2 text-primary") : "bg-danger-bg text-danger",
-      )}
-    >
-      {yes ? (
-        <Check aria-hidden className="size-4" strokeWidth={3} />
-      ) : (
-        <X aria-hidden className="size-3.5" strokeWidth={3} />
-      )}
-      <span className="sr-only">{yes ? "Yes" : "No"}</span>
+    <span aria-hidden className="nv-cmp-mark" data-mark={kind}>
+      {kind === "yes" && <Check strokeWidth={3} />}
+      {kind === "no" && <Minus strokeWidth={3} />}
     </span>
   );
 }
