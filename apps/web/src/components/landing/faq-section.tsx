@@ -1,27 +1,39 @@
+import Image from "next/image";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
 import { FaqAccordion, type FaqItem } from "./faq";
 import { buttonClass, Container, inr, revealProps, Section, SectionTitle } from "./primitives";
-import "./closing.css";
 
 /** "In an emergency, call 112 (or 108 for an ambulance) straight away." built from SITE. */
 const EMERGENCY_NOW = `${SITE.emergency.short.replace(/\.$/, "")} straight away.`;
 
-/** "Still unsure? [Ask us to call you]": a plain in-page link, so it works without JS. */
-function StillUnsure({ className }: { className?: string }) {
+/**
+ * The close: the person who calls back, and a plain in-page link to the form, so it works without JS.
+ * The photo is decorative (alt=""): the sentence beside it says who calls. `row` puts the sentence and
+ * the button side by side from sm, where the card spans the column under the questions.
+ */
+function StillUnsure({ className, row = false }: { className?: string; row?: boolean }) {
   return (
-    <p className={cn("flex flex-wrap items-center gap-x-4 gap-y-3 text-body text-foreground-2", className)}>
-      Still unsure?
-      <a
-        href="#callback"
-        className={buttonClass(
-          "secondary",
-          "duration-180 active:bg-aqua active:duration-90 motion-safe:active:scale-[0.97] motion-reduce:active:scale-100",
-        )}
-      >
-        Ask us to call you
-      </a>
-    </p>
+    <div
+      className={cn(
+        "items-center gap-4 rounded-2xl bg-card p-4 shadow-[0_0_0_1px_rgb(1_58_72/0.06)]",
+        row && "sm:gap-5 sm:px-6 sm:py-5",
+        className,
+      )}
+    >
+      <span className="relative size-18 shrink-0 overflow-hidden rounded-full bg-aqua-2">
+        <Image src="/img/care-coordinator-1x1.jpg" alt="" fill sizes="72px" className="object-cover" />
+      </span>
+      <div className={cn("min-w-0", row && "sm:flex sm:flex-1 sm:items-center sm:gap-6")}>
+        <p className={cn("text-small text-balance text-ink-2 sm:text-body", row && "sm:flex-1")}>
+          <span className="font-semibold text-ink">Still unsure?</span> A care coordinator can talk it through on a
+          call.
+        </p>
+        <a href="#callback" className={buttonClass("secondary", cn("mt-3", row && "sm:mt-0"))}>
+          Ask us to call you
+        </a>
+      </div>
+    </div>
   );
 }
 
@@ -42,6 +54,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
   const prices = checkupPrices(fromPrice, completePrice);
   const items: FaqItem[] = [
     {
+      id: "faq-services",
       q: "What can a Nivar nurse do at home?",
       a: (
         <p>
@@ -52,6 +65,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-prescription",
       q: "Do I need a prescription?",
       a: (
         <p>
@@ -63,6 +77,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-team",
       q: "Who are the nurses and doctors?",
       a: (
         <p>
@@ -73,6 +88,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-cost",
       q: "How much does it cost?",
       a: (
         <p>
@@ -84,6 +100,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-area",
       q: "Where and when do you visit?",
       a: (
         <p>
@@ -93,6 +110,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-report",
       q: "When do I get my report?",
       a: (
         <p>
@@ -103,6 +121,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-abnormal",
       q: "What happens if a reading is abnormal?",
       a: (
         <p>
@@ -113,6 +132,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-data",
       q: "Who can see my health data?",
       a: (
         <p>
@@ -123,10 +143,12 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
+      id: "faq-pay",
       q: "How do I pay?",
       a: <p>{SITE.payment.faq}</p>,
     },
     {
+      id: "faq-cancel",
       q: "Can I cancel or reschedule?",
       a: (
         <p>
@@ -143,8 +165,8 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
     <Section id="faq" tone="aqua" titleId="faq-title">
       <Container>
         {/* 5/7: the title column lines up with the Callback card's title column below. From lg the title
-            and "Still unsure?" stay in view beside the questions; below lg the close line follows them. */}
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-x-12">
+            and the close card stay in view beside the questions; below lg the close card follows them. */}
+        <div className="grid gap-7 sm:gap-10 lg:grid-cols-12 lg:gap-x-12">
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
               <SectionTitle
@@ -157,7 +179,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
           </div>
           <div {...revealProps(1)} className="lg:col-span-7">
             <FaqAccordion items={items} />
-            <StillUnsure className="mt-8 lg:hidden" />
+            <StillUnsure row className="mt-5 flex lg:hidden" />
           </div>
         </div>
       </Container>

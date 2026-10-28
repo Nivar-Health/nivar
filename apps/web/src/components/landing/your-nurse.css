@@ -1,15 +1,8 @@
 /* Your nurse (your-nurse.tsx). In a layer, so Tailwind classes on the same elements still win. */
 @layer components {
-  /* What stands behind every visit: hairline rows; from sm the term sits in its own column. */
-  .nv-nurse-cred {
-    display: grid;
-    gap: 0.125rem;
-    padding-block: 0.75rem;
-    border-top: 1px solid var(--border);
-  }
-  .nv-nurse-cred:last-child {
-    border-bottom: 1px solid var(--border);
-  }
+  /* ---- What stands behind every visit: hairline rows (ul.nv-disc-group). On phones the first three are
+     drop-downs (disclosure.css) and the plan is the same row, open; from 640px each row is a heading in its
+     own column with the text beside it. ---- */
   .nv-nurse-term {
     display: flex;
     align-items: flex-start;
@@ -29,33 +22,81 @@
     color: var(--primary);
   }
   .nv-nurse-desc {
-    font-size: 0.9375rem;
-    line-height: 1.42;
     color: var(--ink-2);
     text-wrap: pretty;
   }
-  @media (min-width: 40rem) {
-    .nv-nurse-cred {
-      grid-template-columns: 13rem minmax(0, 1fr);
-      column-gap: 1.5rem;
+  /* One line from 375px. Where a proof line wraps (360px and below) no word is left alone on its second
+     line. Not balance: around the doctor's nowrap span Chromium balances to "MBBS or / higher, …". */
+  .nv-nurse-creds .nv-disc-meta {
+    text-wrap: pretty;
+  }
+  @media (width < 40rem) {
+    /* The open row lines up with a closed one: 22px icon, 12px gap, the text under the title. */
+    .nv-nurse-open {
+      padding: 0.75rem 0 1.125rem;
+    }
+    .nv-nurse-open .nv-nurse-term {
+      gap: 0.75rem;
+      line-height: 1.3;
+    }
+    .nv-nurse-open .nv-nurse-term svg {
+      width: 1.375rem;
+      height: 1.375rem;
+      margin-top: 0;
+    }
+    .nv-nurse-open .nv-nurse-desc {
+      margin-top: 0.375rem;
+      padding-inline-start: 2.125rem;
+      font-size: 0.9375rem;
+      line-height: 1.55;
+    }
+  }
+  @media (width >= 40rem) {
+    .nv-nurse-creds > li {
       padding-block: 1.5rem;
     }
-    .nv-nurse-desc {
+    .nv-nurse-open {
+      display: grid;
+      grid-template-columns: 13rem minmax(0, 1fr);
+      column-gap: 1.5rem;
+    }
+    .nv-nurse-creds .nv-disc-body,
+    .nv-nurse-open .nv-nurse-desc {
+      padding: 0;
       font-size: 1.0625rem;
       line-height: 1.6;
     }
+    /* The disclosure's head and body side by side, as the open rows, but only while its head shows: under
+       disclosure.css's guard (Chromium), or once syncPhoneDisclosures() has opened the row (elsewhere). A
+       row opened by hand before hydration in another engine keeps its text full width under its summary.
+       Rules of their own: an engine that doesn't know ::details-content drops only these, and the heading
+       then sits over its text. 0,3,1 and 0,4,1 beat the 0,2,1 display:block of disclosure.css. */
+    @supports (interpolate-size: allow-keywords) and selector(::details-content) {
+      .nv-nurse-creds .nv-disc.nv-disc--phone::details-content {
+        display: grid;
+        grid-template-columns: 13rem minmax(0, 1fr);
+        column-gap: 1.5rem;
+      }
+    }
+    .nv-nurse-creds .nv-disc.nv-disc--phone[data-nv-forced]::details-content {
+      display: grid;
+      grid-template-columns: 13rem minmax(0, 1fr);
+      column-gap: 1.5rem;
+    }
   }
 
-  /* In the nurse's bag: one tool per tile. */
+  /* ---- In the nurse's bag: all six in a static two-column list on phones (a plain icon hangs beside each
+     name, so "Digital stethoscope" keeps one line at 390), one tile per tool from sm ---- */
+  .nv-nurse-bag {
+    margin-bottom: 0;
+    padding: 0;
+    list-style: none;
+  }
   .nv-nurse-tool {
     display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    height: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 1rem;
-    background: #fff;
+    align-items: flex-start;
+    gap: 0.4375rem;
+    min-width: 0;
   }
   /* Names stay on one line in the three-column grid (220px tiles). */
   .nv-nurse-tool-name {
@@ -66,28 +107,62 @@
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
-  }
-  .nv-nurse-tool-icon svg {
-    width: 1.25rem;
+    width: 1rem;
     height: 1.25rem;
   }
+  .nv-nurse-tool-icon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+  @media (width < 40rem) {
+    .nv-nurse-tool-caption {
+      line-height: 1.4;
+    }
+  }
+  @media (width >= 40rem) {
+    .nv-nurse-tool {
+      align-items: center;
+      gap: 0.625rem;
+      height: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      background: #fff;
+    }
+    .nv-nurse-tool-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+    }
+    .nv-nurse-tool-icon svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
 
-  /* "Also for:" tags. Not interactive, so no border, shadow or pressed state. */
-  .nv-nurse-tag {
-    display: inline-flex;
+  /* ---- "Also for:": plain words with icons, flowing from the label. Not interactive, so nothing that
+     looks like a chip ---- */
+  .nv-nurse-also {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.375rem;
-    min-height: 2rem;
-    padding: 0.3125rem 0.75rem 0.3125rem 0.625rem;
-    border-radius: 9999px;
-    background: var(--aqua);
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1.3;
+    gap: 0.25rem 0.75rem;
+    margin-bottom: 0;
+  }
+  .nv-nurse-also-term {
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+  .nv-nurse-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
     color: var(--ink-2);
+    font-size: 0.9375rem;
+    line-height: 1.45;
   }
   .nv-nurse-tag svg {
     flex: none;
@@ -95,11 +170,27 @@
     height: 1rem;
     color: var(--primary);
   }
-  @media (min-width: 40rem) {
-    .nv-nurse-tag {
-      gap: 0.5rem;
-      min-height: 2.25rem;
-      padding-inline: 0.75rem 0.875rem;
+  @media (width >= 40rem) {
+    .nv-nurse-also {
+      gap: 0.5rem 1.5rem;
     }
+  }
+}
+
+/* "Cared for like family." on phones: the three phrases as one static lockup, no rotation, no Pause
+   (health-words.tsx also stops its timer there). Outside the layer on purpose: landing.css's .hw-cell,
+   .hw-item and .hw-toggle rules are unlayered and would beat any layered override. These are 0,3,0 and
+   0,2,0, so they win over its 0,2,0 state rules and its 0,1,0 .hw-toggle in either load order. */
+@media (width < 40rem) {
+  .nv-nurse-words .hw-cell .hw-item {
+    grid-area: auto;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: none;
+    line-height: 1.4;
+  }
+  .nv-nurse-words .hw-toggle {
+    display: none;
   }
 }

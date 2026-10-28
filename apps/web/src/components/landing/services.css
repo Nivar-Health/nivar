@@ -1,8 +1,11 @@
-/* Services (services.tsx) and the care illustrations (care-glyphs.tsx): spec §4.2.
+/* Services (services.tsx) and the care illustrations (care-glyphs.tsx): spec §4.2, mobile spec U4.
+   Phones (< 40rem): 2×2 photo tiles, the shield note, a static promise list, the prescription row and ruled
+   "Also at home" rows; nothing swipes. 40–48rem: 96px media rows. From 48rem: cards and the ruled panel.
    In a layer, so Tailwind utilities on the same elements win. One-shots use fill-mode `backwards`, so
-   every base style is the final pose: nothing moves under reduced motion or html[data-motion="paused"]. */
+   every base style is the final pose: nothing moves under reduced motion or html[data-motion="paused"].
+   Presses: a tint plus a slight settle, 90ms in and 180ms out; the tint alone under reduced motion or a pause. */
 @layer components {
-  /* ---- Prescription strip: under the lede on phones (full-width button), beside the heading on lg ---- */
+  /* ---- Prescription strip, from 640px: under the lede, beside the heading on lg ---- */
   .nv-care-rx {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -47,7 +50,7 @@
     margin-top: 14px;
   }
   /* sm to lg: one horizontal strip, the button on the right. */
-  @media (min-width: 40rem) {
+  @media (width >= 40rem) {
     .nv-care-rx {
       grid-template-columns: auto minmax(0, 1fr) auto;
       grid-template-areas:
@@ -71,7 +74,7 @@
     }
   }
   /* lg: beside the heading, five columns wide; the button sits under the text. */
-  @media (min-width: 64rem) {
+  @media (width >= 64rem) {
     .nv-care-rx {
       grid-template-columns: auto minmax(0, 1fr);
       grid-template-areas:
@@ -92,55 +95,152 @@
     }
   }
 
-  /* ---- What one price covers: 44px chips that swipe on phones, a ruled row from sm (SnapRow grid) ---- */
-  .nv-care-chip {
-    display: inline-flex;
+  /* ---- Phones: the prescription row. A 56px ruled row like the credential rows, the whole row the link ---- */
+  .nv-care-rxwrap {
+    border-block: 1px solid var(--border);
+  }
+  .nv-care-rxrow {
+    display: flex;
     align-items: center;
-    gap: 10px;
-    height: 44px;
-    padding: 0 16px 0 6px;
-    border-radius: 9999px;
+    gap: 12px;
+    min-block-size: 3.5rem;
+    margin-inline: -8px;
+    padding: 12px 8px;
+    border-radius: 12px;
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 180ms var(--curve-standard);
+  }
+  .nv-care-rxrow-icon {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    color: var(--jade);
+  }
+  .nv-care-rxrow-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .nv-care-rxrow-title,
+  .nv-care-rxrow-meta {
+    display: block;
+  }
+  .nv-care-rxrow-title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+  .nv-care-rxrow-meta {
+    margin-top: 2px;
+    color: var(--ink-3);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+  .nv-care-rxrow-chev {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--jade);
+  }
+  .nv-care-rxrow > :is(.nv-care-rxrow-icon, .nv-care-rxrow-text) {
+    transform-origin: left center;
+    transition: scale 180ms var(--curve-standard);
+  }
+  .nv-care-rxrow:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .nv-care-rxrow:active {
+    background-color: var(--aqua);
+    transition-duration: 90ms;
+  }
+  .nv-care-rxrow:active > :is(.nv-care-rxrow-icon, .nv-care-rxrow-text) {
+    scale: 0.98;
+    transition-duration: 90ms;
+  }
+
+  /* ---- Phones: the shield note. One aqua card; the icon sits in the first line, so the words keep the width ---- */
+  .nv-care-shield {
+    padding: 14px 16px;
+    border-radius: 16px;
     background: var(--aqua);
     color: var(--ink);
     font-size: 0.9375rem;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .nv-care-shield-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-inline-end: 6px;
+    vertical-align: -3px;
+    color: var(--jade);
+  }
+
+  /* ---- What one price covers: a static 2×2 list on phones, a ruled row from sm ---- */
+  .nv-care-promise {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .nv-care-chip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--ink);
+    font-size: 0.9375rem;
     font-weight: 500;
-    line-height: 1.3;
-    white-space: nowrap;
+    line-height: 1.4;
+    text-wrap: pretty;
   }
   .nv-care-chip-icon {
     display: grid;
     flex: none;
     place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 9999px;
-    background: var(--white);
     color: var(--jade);
   }
   .nv-care-chip-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
-  @media (min-width: 40rem) {
+  @media (width < 40rem) {
+    .nv-care-promise {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+  }
+  /* Below 360px two columns leave about 100px of words beside each icon: one column reads better and is shorter. */
+  @media (width < 22.5rem) {
+    .nv-care-promise {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+  }
+  @media (width >= 40rem) {
     .nv-care-chip {
-      display: flex;
+      align-items: center;
       gap: 12px;
       width: 100%;
       height: 100%;
       min-height: 68px;
       padding: 14px 20px;
-      border-radius: 0;
-      background: none;
-      white-space: normal;
-      text-wrap: pretty;
+      line-height: 1.3;
     }
     .nv-care-chip-icon {
       width: 36px;
       height: 36px;
+      border-radius: 9999px;
       background: var(--aqua);
     }
-    /* Two by two: the rules belong to the cells, so they arrive with them in SnapRow's first reveal.
-       The first column starts on the content edge, like the text above it. */
+    .nv-care-chip-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+    /* Two by two. The first column starts on the content edge, like the text above it. */
     .nv-care-promise li:nth-child(odd) > .nv-care-chip {
       padding-inline-start: 0;
     }
@@ -152,7 +252,7 @@
     }
   }
   /* lg: one ruled row; columns follow their text, so only the longest promise may wrap. */
-  @media (min-width: 64rem) {
+  @media (width >= 64rem) {
     .nv-care-chip {
       padding: 16px 24px;
     }
@@ -170,7 +270,7 @@
     }
   }
 
-  /* ---- Tier labels ---- */
+  /* ---- Tier labels: a 19px block label on phones, today's 17px from sm ---- */
   .nv-care-tier {
     color: var(--ink);
     font-size: 1.0625rem;
@@ -178,8 +278,14 @@
     letter-spacing: -0.01em;
     line-height: 1.3;
   }
+  @media (width < 40rem) {
+    .nv-care-tier {
+      font-size: 1.1875rem;
+      letter-spacing: -0.012em;
+    }
+  }
 
-  /* ---- Nursing cards: vertical media rows on phones (never a carousel), cards from md ---- */
+  /* ---- Nursing at home ---- */
   .nv-care-grid {
     display: grid;
     gap: 12px;
@@ -189,56 +295,36 @@
   }
   .nv-care-card {
     position: relative;
-    display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    grid-template-areas:
-      "media head"
-      "note note"
-      "foot foot";
-    column-gap: 14px;
-    padding: 14px;
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    background: var(--card);
-    box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
-    scroll-margin-top: 7rem;
   }
   .nv-care-media {
-    grid-area: media;
     position: relative;
     display: grid;
     grid-template: 100% / 100%;
     place-items: center;
-    width: 96px;
-    height: 96px;
     overflow: hidden;
-    border-radius: 16px;
     background: var(--nv-care-tint, var(--aqua));
   }
   .nv-care-photo {
     object-position: var(--nv-care-thumb, 50% 50%);
   }
-  .nv-care-text {
-    display: contents;
+  .nv-care-name {
+    color: var(--ink);
+    font-size: 1.1875rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    line-height: 1.3;
+    text-wrap: balance;
   }
   .nv-care-head {
-    grid-area: head;
-    align-self: center;
     min-width: 0;
-  }
-  .nv-care-note {
-    grid-area: note;
-    margin-top: 10px;
   }
   /* Price left, call to action right; when the button can't fit beside the price it wraps to its own
      full-width line (the price takes the free space first: 999 to 1). The hairline above it starts at md. */
   .nv-care-foot {
-    grid-area: foot;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px 12px;
-    margin-top: 12px;
   }
   .nv-care-price {
     flex: 999 1 auto;
@@ -247,8 +333,151 @@
   .nv-care-cta {
     flex: 1 0 auto;
   }
-  @media (max-width: 47.98rem) {
-    /* The thumbnail crops the 4:3 drawing to its centre square; some scenes sit closer. */
+
+  /* Phones: photo tiles, two by two (134/154/169/181px at 320/360/390/414). The action line is a stretched
+     link: its ::after covers the tile, so the whole tile is one target, and the photo's alt stays outside it. */
+  @media (width < 40rem) {
+    .nv-care-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px 12px;
+    }
+    .nv-care-item > .nv-care-card {
+      height: 100%;
+    }
+    .nv-care-card {
+      display: flex;
+      flex-direction: column;
+      isolation: isolate;
+      transition: scale 180ms var(--curve-standard);
+    }
+    .nv-care-media {
+      aspect-ratio: 1;
+      border-radius: 18px;
+    }
+    .nv-care-photo {
+      object-position: 50% 50%;
+    }
+    .nv-care-name {
+      margin-top: 10px;
+      font-size: 1.0625rem;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+    .nv-care-tileline {
+      margin-top: 4px;
+      color: var(--ink-2);
+      font-size: 0.9375rem;
+      line-height: 1.4;
+      text-wrap: pretty;
+    }
+    /* The action lines of one row line up, whatever the titles wrap to. */
+    .nv-care-act {
+      margin-top: auto;
+      padding-top: 4px;
+    }
+    .nv-care-act-price {
+      color: var(--ink);
+      font-size: 1.0625rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .nv-care-go {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      min-height: 32px;
+      color: var(--jade);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      line-height: 1.3;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* WhatsApp: a little air between the glyph and "Ask"; the chevron keeps its 2px. */
+    .nv-care-go > svg:not(.lucide) {
+      margin-inline-end: 4px;
+    }
+    .nv-care-go::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      z-index: 1;
+      border-radius: 22px;
+    }
+    .nv-care-go:focus-visible {
+      outline: none;
+    }
+    .nv-care-go:focus-visible::after {
+      outline: 2px solid var(--ring);
+      outline-offset: 0;
+    }
+    /* Pressed: an aqua wash behind the tile, and the tile settles a touch. */
+    .nv-care-card::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      z-index: -1;
+      border-radius: 22px;
+      background: var(--aqua);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms var(--curve-standard);
+    }
+  }
+  /* Their own rules, so a browser without :has() keeps the others. */
+  @media (width < 40rem) {
+    .nv-care-card:has(.nv-care-go:active) {
+      scale: 0.98;
+      transition-duration: 90ms;
+    }
+  }
+  @media (width < 40rem) {
+    .nv-care-card:has(.nv-care-go:active)::after {
+      opacity: 1;
+      transition-duration: 90ms;
+    }
+  }
+
+  /* 640–767: vertical media rows (never a carousel), the 96px picture beside the name. */
+  @media (40rem <= width < 48rem) {
+    .nv-care-card {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      grid-template-areas:
+        "media head"
+        "note note"
+        "foot foot";
+      column-gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
+    }
+    .nv-care-media {
+      grid-area: media;
+      width: 96px;
+      height: 96px;
+      border-radius: 16px;
+    }
+    .nv-care-text {
+      display: contents;
+    }
+    .nv-care-head {
+      grid-area: head;
+      align-self: center;
+    }
+    .nv-care-note {
+      grid-area: note;
+      margin-top: 10px;
+    }
+    .nv-care-foot {
+      grid-area: foot;
+      margin-top: 12px;
+    }
+  }
+  /* Phone tiles and thumbnails are squares: the 4:3 drawing crops to its centre; some scenes sit closer. */
+  @media (width < 48rem) {
     .nv-care-media > .nv-care-glyph {
       width: calc(100% * var(--nv-care-zoom, 1));
       height: calc(100% * var(--nv-care-zoom, 1));
@@ -260,7 +489,7 @@
       --nv-care-zoom: 1.1;
     }
   }
-  @media (min-width: 48rem) {
+  @media (width >= 48rem) {
     .nv-care-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 20px;
@@ -276,10 +505,12 @@
       display: flex;
       flex-direction: column;
       padding: 8px 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
     }
     .nv-care-media {
-      width: auto;
-      height: auto;
       aspect-ratio: 4 / 3;
       border-radius: 18px;
     }
@@ -292,6 +523,10 @@
       flex-direction: column;
       padding: 18px 12px 20px;
     }
+    /* A column flexbox: the head spans the card, so title, line, note and price share one left edge (desktop-01). */
+    .nv-care-head {
+      align-self: stretch;
+    }
     .nv-care-note {
       margin-top: 10px;
     }
@@ -301,12 +536,12 @@
       border-top: 1px solid var(--border);
     }
   }
-  @media (min-width: 64rem) {
+  @media (width >= 64rem) {
     .nv-care-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 24px;
     }
-    /* The cards share a row here, so they arrive left to right (landing.css reads --i). */
+    /* The cards share a row here, so their illustrations play left to right (landing.css reads --i). */
     .nv-care-item:nth-child(4n + 2) {
       --i: 1;
     }
@@ -318,8 +553,8 @@
     }
   }
 
-  /* Arriving from a link to #service-<id>: a 2px jade ring that holds while the page scrolls, then
-     fades over 1.2s. Under reduced motion it simply stays while the card is the target. */
+  /* Arriving from a link to #service-<id> (the footer's): a 2px jade ring that holds while the page scrolls,
+     then fades over 1.2s. Under reduced motion it simply stays while the card is the target. */
   .nv-care-card::before {
     content: "";
     position: absolute;
@@ -328,6 +563,12 @@
     box-shadow: 0 0 0 2px var(--jade);
     opacity: 0;
     pointer-events: none;
+  }
+  @media (width < 40rem) {
+    .nv-care-card::before {
+      inset: -6px;
+      border-radius: 22px;
+    }
   }
   .nv-care-card:target::before {
     opacity: 1;
@@ -339,9 +580,9 @@
     }
   }
 
-  /* Hover, fine pointers only: the border firms up and a lift shadow fades in (the shadow itself never
-     animates). A photo eases in by 4%; an illustration plays its scene once (below). */
-  @media (hover: hover) and (pointer: fine) {
+  /* Hover, fine pointers only. Cards (from 640): the border firms up and a lift shadow fades in (the shadow
+     itself never animates). A photo eases in by 4% at every width; an illustration plays its scene once (below). */
+  @media (hover: hover) and (pointer: fine) and (width >= 40rem) {
     .nv-care-card {
       transition: border-color 240ms var(--curve-standard);
     }
@@ -364,20 +605,34 @@
       opacity: 1;
     }
   }
+  /* Now that every card has a photo, the visitor's pause holds them still too, as it does the scenes. */
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    .nv-care-photo {
+    html:not([data-motion="paused"]) .nv-care-photo {
       transition: transform 700ms var(--curve-calm);
     }
-    .nv-care-card:hover .nv-care-photo {
+    html:not([data-motion="paused"]) .nv-care-card:hover .nv-care-photo {
       transform: scale(1.04);
     }
   }
+  @media (hover: hover) and (pointer: fine) and (width < 40rem) {
+    .nv-care-card:hover .nv-care-go {
+      text-decoration-line: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 5px;
+      text-decoration-color: color-mix(in oklab, var(--jade) 30%, transparent);
+    }
+  }
 
-  /* ---- Also at home: small cards in a swipe row on phones (SnapRow), one ruled panel from md where
-     the columns line up (subgrid through the row's list items) ---- */
+  /* ---- Also at home: ruled rows below md, each one link with a right chevron; one ruled panel from md
+     where the columns line up (subgrid through the rows) ---- */
+  .nv-care-also {
+    margin-block-end: 0;
+    padding: 0;
+    list-style: none;
+  }
   .nv-care-row {
+    position: relative;
     min-width: 0;
-    scroll-margin-top: 7rem;
   }
   .nv-care-row-icon {
     display: grid;
@@ -387,6 +642,7 @@
     border-radius: 12px;
     background: var(--aqua);
     color: var(--jade);
+    transition: background-color 180ms var(--curve-standard);
   }
   .nv-care-row-icon svg {
     width: 20px;
@@ -395,73 +651,138 @@
   .nv-care-row-text {
     min-width: 0;
   }
-  @media (max-width: 47.98rem) {
-    /* Name and price beside the icon, the line under them, the action at the foot (aligned across cards). */
+  .nv-care-row-name {
+    color: var(--ink);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.375;
+  }
+  .nv-care-row-line {
+    margin-top: 2px;
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  @media (width < 48rem) {
+    .nv-care-also {
+      border-block: 1px solid var(--border);
+    }
     .nv-care-row {
+      isolation: isolate;
+      padding-block: 13px;
+    }
+    .nv-care-row + .nv-care-row {
+      border-top: 1px solid var(--border);
+    }
+    /* Icon, name and price on the first line, the chevron after the price; the line under the name runs
+       under the price and the chevron too. Name and price share a baseline, so where a name wraps (320px)
+       the price and the chevron stay on its first line. */
+    .nv-care-row-main {
       display: grid;
-      grid-template-columns: 40px minmax(0, 1fr);
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-columns: 40px minmax(0, 1fr) auto;
       grid-template-areas:
-        "icon name"
-        "icon price"
-        "text text"
-        "cta cta";
+        "icon name price"
+        "icon line line";
       column-gap: 12px;
-      height: 100%;
-      padding: 16px;
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      background: var(--card);
-      box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
+      transform-origin: left center;
+      transition: scale 180ms var(--curve-standard);
     }
     .nv-care-row-icon {
       grid-area: icon;
     }
-    .nv-care-row-text,
-    .nv-care-row-foot {
+    .nv-care-row-text {
       display: contents;
     }
-    .nv-care-row-text > h4 {
+    .nv-care-row-name {
       grid-area: name;
-      align-self: end;
+      align-self: baseline;
+      line-height: 1.3;
+      text-wrap: balance;
     }
-    .nv-care-row-text > p {
-      grid-area: text;
-      margin-top: 10px;
+    .nv-care-row-line {
+      grid-area: line;
+      line-height: 1.4;
     }
     .nv-care-row .nv-care-price {
       grid-area: price;
-      margin-top: 2px;
+      align-self: baseline;
+      justify-self: end;
+      margin-inline-end: 24px;
     }
-    .nv-care-row .nv-care-cta {
-      grid-area: cta;
-      margin-top: 14px;
+    /* The row's link covers it. Its words (the action and the service) are read, not shown: they sit past
+       the box's edge and are clipped; the chevron is the one visible part, beside the price. */
+    .nv-care-row-go {
+      position: absolute;
+      inset: 0 -8px;
+      z-index: 1;
+      display: block;
+      overflow: hidden;
+      border-radius: 12px;
+      color: var(--jade);
+      text-indent: 200%;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
-    .nv-care-row .nv-care-cta:not(.nv-care-link) {
-      width: 100%;
+    .nv-care-row-go > svg {
+      position: absolute;
+      top: 16px;
+      right: 8px;
+      width: 16px;
+      height: 16px;
     }
-    .nv-care-row .nv-care-link {
-      justify-self: start;
-      margin-inline: -10px 0;
+    /* WhatsApp: its glyph sits before the chevron, so the row says where it goes. */
+    .nv-care-row-go > svg:not(.lucide) {
+      right: 28px;
+    }
+    .nv-care-row-go:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: -2px;
+    }
+    .nv-care-row::before {
+      content: "";
+      position: absolute;
+      inset: 3px -8px;
+      z-index: -1;
+      border-radius: 12px;
+      background: var(--aqua);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms var(--curve-standard);
     }
   }
-  @media (min-width: 48rem) {
+  @media (width < 48rem) {
+    .nv-care-row:has(> .nv-care-row-go:active)::before {
+      opacity: 1;
+      transition-duration: 90ms;
+    }
+    /* The icon's aqua tile would sink into the wash: it turns white while pressed. */
+    .nv-care-row:has(> .nv-care-row-go:active) .nv-care-row-icon {
+      background-color: #ffffff;
+      transition-duration: 90ms;
+    }
+  }
+  @media (width < 48rem) {
+    .nv-care-row:has(> .nv-care-row-go:active) > .nv-care-row-main {
+      scale: 0.98;
+      transition-duration: 90ms;
+    }
+  }
+  /* With WhatsApp set the chevron shares the price's side with the glyph. */
+  @media (width < 48rem) {
+    .nv-care-row:has(> .nv-care-row-go > svg:not(.lucide)) .nv-care-price {
+      margin-inline-end: 44px;
+    }
+  }
+  @media (width >= 48rem) {
     /* The first and last tracks are auto so they absorb the rows' own padding (subgrid). */
-    .nv-care-also .nv-snap-track {
+    .nv-care-also {
+      display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto auto;
       gap: 0 24px;
       border: 1px solid var(--border);
       border-radius: 24px;
       background: var(--card);
       box-shadow: 0 18px 40px -32px rgb(1 43 54 / 0.45);
-    }
-    .nv-care-also .nv-snap-item {
-      display: grid;
-      grid-column: 1 / -1;
-      grid-template-columns: subgrid;
-    }
-    .nv-care-also .nv-snap-item + .nv-snap-item {
-      border-top: 1px solid var(--border);
     }
     .nv-care-row {
       display: grid;
@@ -470,7 +791,10 @@
       align-items: center;
       padding: 18px 24px;
     }
-    .nv-care-row-foot {
+    .nv-care-row + .nv-care-row {
+      border-top: 1px solid var(--border);
+    }
+    .nv-care-row-main {
       display: contents;
     }
     .nv-care-row .nv-care-price {
@@ -518,15 +842,39 @@
     scale: 0.97;
     transition-duration: 90ms;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .nv-care-link:active {
-      scale: none;
-    }
-  }
   @media (hover: hover) and (pointer: fine) {
     .nv-care-link:hover {
       text-decoration-color: currentColor;
     }
+  }
+
+  /* Presses settle only while motion plays: a tint alone under reduced motion or the visitor's pause.
+     The :has() rules stand alone, so a browser without :has() keeps the others. */
+  @media (prefers-reduced-motion: reduce) {
+    .nv-care-link:active,
+    .nv-care-rxrow:active > :is(.nv-care-rxrow-icon, .nv-care-rxrow-text) {
+      scale: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nv-care-card:has(.nv-care-go:active) {
+      scale: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nv-care-row:has(> .nv-care-row-go:active) > .nv-care-row-main {
+      scale: none;
+    }
+  }
+  html[data-motion="paused"] .nv-care-link:active,
+  html[data-motion="paused"] .nv-care-rxrow:active > :is(.nv-care-rxrow-icon, .nv-care-rxrow-text) {
+    scale: none;
+  }
+  html[data-motion="paused"] .nv-care-card:has(.nv-care-go:active) {
+    scale: none;
+  }
+  html[data-motion="paused"] .nv-care-row:has(> .nv-care-row-go:active) > .nv-care-row-main {
+    scale: none;
   }
 
   /* ---- Care illustrations ---- */
@@ -535,7 +883,7 @@
     width: 100%;
     height: 100%;
   }
-  /* 2px on screen at every size, from the 96px phone thumbnail to the 330px tablet mat. */
+  /* 2px on screen at every size, from the 96px thumbnail to the 330px tablet mat. */
   .nv-care-glyph :is(path, rect, circle, ellipse) {
     vector-effect: non-scaling-stroke;
   }
@@ -559,8 +907,8 @@
   .nv-care-glyph :is(.nv-care-flow, .nv-care-flow-h) {
     stroke-dasharray: 3 9;
   }
-  /* The 96px thumbnail drops the hairline details (label lines, finger lines, ridges). */
-  @media (max-width: 47.98rem) {
+  /* The 96px thumbnail drops the hairline details (label lines, finger lines, ridges); the phone tiles keep them. */
+  @media (40rem <= width < 48rem) {
     .nv-care-glyph .nv-care-fine {
       display: none;
     }
@@ -619,8 +967,8 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Once, when the card scrolls in (RevealObserver sets data-nv-revealed on the card's list item),
-     offset by the card's own stagger (--i) so the scenes play left to right with the cards. */
+  /* Once, when the cards scroll in (RevealObserver sets data-nv-revealed on their list), offset by each
+     card's own --i so the scenes play left to right. */
   html:not([data-motion="paused"]) [data-nv-revealed] .nv-care-plunger {
     --nv-y: -32px;
     animation: nv-care-y 1500ms var(--curve-breath) backwards;

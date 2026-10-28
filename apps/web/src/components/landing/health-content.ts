@@ -40,14 +40,17 @@ export type ChecklistItem = { id: string; text: string; source: { label: string;
 const S = {
   icmrIndiab: {
     label: "ICMR-INDIAB national survey (adults 20+, 2008–2020), Lancet Diabetes & Endocrinology, 2023",
+    short: "ICMR-INDIAB, 2023",
     url: "https://doi.org/10.1016/S2213-8587(23)00119-5",
   },
   whoHypertension: {
     label: "WHO, Hypertension fact sheet, 2025",
+    short: "WHO, 2025",
     url: "https://www.who.int/news-room/fact-sheets/detail/hypertension",
   },
   whoHypertensionGlobal: {
     label: "WHO, Hypertension fact sheet, 2025 (global, adults 30–79, 2024 estimate)",
+    short: "WHO, 2025",
     url: "https://www.who.int/news-room/fact-sheets/detail/hypertension",
   },
   idfIndia: {
@@ -60,6 +63,7 @@ const S = {
   },
   ettehad: {
     label: "Ettehad et al., meta-analysis of 123 trials, The Lancet, 2016",
+    short: "The Lancet, 2016",
     url: "https://doi.org/10.1016/S0140-6736(15)01225-8",
   },
   cdcAfib: {
@@ -72,46 +76,59 @@ const S = {
     url: "https://doi.org/10.1038/s41598-023-42694-x",
   },
   whoSalt: {
-    label: "WHO, Salt reduction fact sheet, 2026",
-    url: "https://www.who.int/news-room/fact-sheets/detail/salt-reduction",
+    label: "WHO, Sodium reduction fact sheet, 2026",
+    short: "WHO, 2026",
+    url: "https://www.who.int/news-room/fact-sheets/detail/sodium-reduction",
   },
-  fssaiSalt: { label: "FSSAI Eat Right India, Reduce salt", url: "https://eatrightindia.gov.in/reduce-salt.jsp" },
+  fssaiSalt: {
+    label: "FSSAI Eat Right India, Reduce salt",
+    short: "FSSAI",
+    url: "https://eatrightindia.gov.in/reduce-salt.jsp",
+  },
   ncdScreening: {
     label: "Ministry of Health & Family Welfare, NP-NCD screening campaign, February 2025 (via All India Radio)",
     url: "https://www.newsonair.gov.in/centre-launches-special-ncd-screening-campaign-for-100-coverage-of-30-age-group/",
   },
   cdcMeasureBp: MINUTE_SOURCES.cdcMeasureBp,
+  ahaCrisis: MINUTE_SOURCES.ahaCrisis,
   aha2025: {
     label: "AHA/ACC High Blood Pressure Guideline, 2025",
+    short: "AHA/ACC, 2025",
     url: "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know",
   },
   whoActivity: {
     label: "WHO Guidelines on Physical Activity and Sedentary Behaviour, 2020",
+    short: "WHO, 2020",
     url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7719906/",
   },
   ahaLe8: {
     label: "American Heart Association, Life's Essential 8, Circulation, 2022",
+    short: "AHA, 2022",
     url: "https://doi.org/10.1161/CIR.0000000000001078",
   },
   medlineGlucose: {
     label: "MedlinePlus (US National Library of Medicine), Blood Glucose Test, 2024",
+    short: "MedlinePlus, 2024",
     url: "https://medlineplus.gov/lab-tests/blood-glucose-test/",
   },
   nhsHypo: {
-    label: "NHS, Low blood sugar (hypoglycaemia)",
+    label: "NHS, Low blood sugar (hypoglycaemia), 2023",
+    short: "NHS, 2023",
     url: "https://www.nhs.uk/conditions/low-blood-sugar-hypoglycaemia/",
   },
   medlinePulse: MINUTE_SOURCES.medlinePulse,
   fdaOximeter: {
     label: "US FDA, Pulse Oximeter Basics, 2025",
+    short: "US FDA, 2025",
     url: "https://www.fda.gov/consumers/consumer-updates/pulse-oximeter-basics",
   },
   nhsBreathing: MINUTE_SOURCES.nhsBreathing,
   whoQuit: {
     label: "WHO, Health benefits of smoking cessation, 2020",
+    short: "WHO, 2020",
     url: "https://www.who.int/news-room/questions-and-answers/item/tobacco-health-benefits-of-smoking-cessation",
   },
-  ntqls: { label: "National Tobacco Quit Line Services (MoHFW)", url: "https://ntqls.in/" },
+  ntqls: { label: "National Tobacco Quit Line Services (MoHFW)", short: "MoHFW quit line", url: "https://ntqls.in/" },
 } satisfies Record<string, HealthSource>;
 
 export const HEALTH_FACTS: HealthFact[] = [
@@ -222,8 +239,8 @@ export const HEALTH_TIPS: HealthTip[] = [
     id: "tip-know-numbers",
     category: "Heart",
     title: "Know your BP numbers",
-    text: "For adults, under 120/80 is considered normal. One high reading isn't a diagnosis: take 2 readings 1–2 minutes apart, note them, and share a pattern of high numbers with a doctor. A reading of 180/120 or higher with chest pain, breathlessness, a severe headache, weakness or trouble speaking? Call 112 or 108 now.",
-    sources: [S.aha2025, S.cdcMeasureBp, S.whoHypertension],
+    text: "For adults, under 120/80 is considered normal. One high reading isn't a diagnosis: take 2 readings 1–2 minutes apart, note them, and share a pattern of high numbers with a doctor. Higher than 180/120 with chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or difficulty speaking? Call 112 (or 108 for an ambulance) now.",
+    sources: [S.aha2025, S.cdcMeasureBp, S.whoHypertension, S.ahaCrisis],
     checked: "2026-10",
   },
   {
@@ -270,7 +287,7 @@ export const HEALTH_TIPS: HealthTip[] = [
     id: "tip-pulse",
     category: "Heart",
     title: "Check your pulse",
-    text: "Rest for a few minutes, then place two fingers on the inside of your wrist, below the base of your thumb. Count the beats for a full minute (or 30 seconds and double it). A resting adult pulse is usually 60–100. If the rhythm feels irregular, tell a doctor. If it's fast or irregular with chest pain, breathlessness or dizziness, call 112 or 108.",
+    text: "Sit and rest for at least 10 minutes, then place two fingers on the inside of your wrist, below the base of your thumb. Count the beats for a full minute (or 30 seconds and double it). A resting adult pulse is usually 60–100. If the rhythm feels irregular, tell a doctor. If it's fast or irregular with chest pain, breathlessness, dizziness or fainting, call 112 (or 108 for an ambulance).",
     sources: [S.medlinePulse, S.nhsAf],
     checked: "2026-10",
   },
@@ -304,12 +321,12 @@ export const HEALTH_TIPS: HealthTip[] = [
 export const VISIT_CHECKLIST: ChecklistItem[] = [
   {
     id: "rest",
-    text: "Rest for 5 minutes before your blood pressure is taken. Skip tea, coffee, smoking and exercise for 30 minutes before.",
+    text: "Rest for at least 5 minutes before your blood pressure is taken. Nothing to eat or drink, no smoking and no exercise for 30 minutes before.",
     source: { label: "US CDC", url: S.cdcMeasureBp.url },
   },
   {
     id: "fasting",
-    text: "Booked a fasting sugar test? Only water for at least 8 hours before. On diabetes medicines or insulin, ask your doctor how to take them that morning.",
+    text: "Booked a fasting sugar test? Only water for at least 8 hours before.",
     source: { label: "MedlinePlus", url: S.medlineGlucose.url },
   },
   {
@@ -323,6 +340,15 @@ export const VISIT_CHECKLIST: ChecklistItem[] = [
     source: { label: "Nivar visit tip" },
   },
 ];
+
+/**
+ * Always visible beside the visit checklist, never inside it (a closed checklist must not hide it). The
+ * fasting item in the checklist leaves this sentence out, so an open checklist doesn't repeat it.
+ */
+export const FASTING_WARNING = {
+  text: "Booked a fasting sugar test and on diabetes medicines or insulin? Ask your doctor how to take them that morning.",
+  source: { label: "MedlinePlus", url: S.medlineGlucose.url },
+} as const;
 
 /**
  * "All sources" on the page: the featured facts, the tips, the checklist and Take a minute, each URL
@@ -346,7 +372,10 @@ export const HEALTH_DISCLAIMER =
 export const SOURCES_NOTE =
   "Figures come from published studies and public health bodies, not from Nivar patients or Nivar results.";
 
-/** Emergency safety net, shown once in the Small habits section. Render 112 and 108 as tel: links. */
+/**
+ * Emergency safety net, shown once in the Small habits section: plain text, then "Call 112" and
+ * "Call 108 (ambulance)" as two tel: buttons (never inline links, which are too small to hit).
+ */
 export const EMERGENCY_NOTE = {
   lead: "Chest pain, sudden breathlessness, weakness or numbness on one side, trouble speaking, or a fast or irregular heartbeat with dizziness or fainting?",
   tail: "Nivar is not an emergency service.",

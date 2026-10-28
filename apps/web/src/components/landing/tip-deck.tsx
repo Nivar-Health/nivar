@@ -41,7 +41,7 @@ const TIP_ICONS: Record<TipCategory, LucideIcon> = {
   Breath: Wind,
 };
 
-/** The category's icon disc and the colour of its name. */
+/** The category's icon disc and the colour of its glyph. */
 const TIP_TONES: Record<TipCategory, { disc: string; ink: string }> = {
   Checks: { disc: "bg-sky-tint", ink: "text-sky-ink" },
   Heart: { disc: "bg-rose-tint", ink: "text-rose-ink" },
@@ -56,6 +56,7 @@ const TIP_TONES: Record<TipCategory, { disc: string; ink: string }> = {
 const SWIPE_MIN = 48;
 /** How far the tip follows the finger while it moves. */
 const FOLLOW = 0.35;
+/** How long Share shows "Copied" (K4). */
 const NOTE_MS = 2000;
 /** Pressed state (mobile addendum M2): a tint and scale .97, 90 ms in and 180 ms out; tint only when reduced. */
 const PRESS =
@@ -77,7 +78,7 @@ function motionPaused() {
   );
 }
 
-/** "{title}: {text}" and its sources, the way the card shows them. */
+/** "{title}: {text}" and its sources with their full labels. */
 function shareText(tip: HealthTip) {
   const sources = tip.sources.map((s) => `${s.label} ${s.url}`).join("; ");
   return `${tip.title}: ${tip.text}\n${tip.sources.length > 1 ? "Sources" : "Source"}: ${sources}`;
@@ -104,7 +105,10 @@ async function shareTip(tip: HealthTip): Promise<ShareNote | null> {
   }
 }
 
-/** Underlined source link that opens in a new tab. Client twin of the one in health-facts.tsx. */
+/**
+ * Underlined source link that opens in a new tab. Client twin of the one in health-facts.tsx. Inline, so
+ * its press is a tint only.
+ */
 export function ExternalLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
   return (
     <a
@@ -112,7 +116,7 @@ export function ExternalLink({ href, className, children }: { href: string; clas
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "rounded-sm underline decoration-border-strong underline-offset-[3px] hover:text-foreground hover:decoration-current focus-ring",
+        "rounded-sm underline decoration-border-strong underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
         className,
       )}
     >
@@ -122,53 +126,50 @@ export function ExternalLink({ href, className, children }: { href: string; clas
   );
 }
 
-function TipSources({ sources }: { sources: readonly HealthSource[] }) {
+/** The card's sources, with their short labels ("All sources" and the Share text keep the full ones). */
+function TipSources({
+  sources,
+  className,
+  style,
+}: {
+  sources: readonly HealthSource[];
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
-    <p className="mt-3 text-caption text-ink-3 sm:mt-5">
+    <p className={cn("text-caption text-pretty text-ink-3", className)} style={style}>
       {sources.length > 1 ? "Sources: " : "Source: "}
       {sources.map((s, i) => (
         <span key={s.url}>
           {i > 0 && "; "}
-          <ExternalLink href={s.url}>{s.label}</ExternalLink>
+          <ExternalLink href={s.url} className={s.short && "whitespace-nowrap"}>
+            {s.short ?? s.label}
+          </ExternalLink>
         </span>
       ))}
     </p>
   );
 }
 
-function TipBody({ tip, titleId }: { tip: HealthTip; titleId?: string }) {
-  return (
-    <>
-      <h3
-        id={titleId}
-        className="text-[1.375rem] leading-[1.15] font-semibold tracking-[-0.022em] text-balance text-ink sm:text-[1.75rem]"
-      >
-        {tip.title}
-      </h3>
-      <p className="mt-2 text-small/[1.5] text-pretty text-ink-2 sm:mt-3 sm:text-body">{tip.text}</p>
-      <TipSources sources={tip.sources} />
-    </>
-  );
-}
-
-/** The tip's category: an icon disc, with its name from sm. Decorative; the live region says it. */
-function TipCategoryMark({ tip, className, style }: { tip: HealthTip; className?: string; style?: CSSProperties }) {
+/** The tip's category as a small glyph disc beside its title. Decorative. */
+function TipCategoryMark({ tip }: { tip: HealthTip }) {
   const Icon = TIP_ICONS[tip.category];
   const tone = TIP_TONES[tip.category];
   return (
-    <span aria-hidden className={cn("flex items-center gap-2 text-sm font-semibold", tone.ink, className)} style={style}>
-      <span className="hidden sm:inline">{tip.category}</span>
-      <span className={cn("flex size-8 items-center justify-center rounded-full", tone.disc)}>
-        <Icon className="size-4" strokeWidth={2.25} />
-      </span>
+    <span
+      aria-hidden
+      className={cn("mt-[-0.1875rem] flex size-8 shrink-0 items-center justify-center rounded-full sm:mt-0.5", tone.disc, tone.ink)}
+    >
+      <Icon className="size-4" strokeWidth={2.25} />
     </span>
   );
 }
 
 /**
  * Tip of the day (IST calendar day), then any other tip by Previous / Next or a swipe. Never
- * auto-advances. Every tip is rendered invisibly underneath, so the card keeps the height of the
- * longest one, and the visible copy sits in a polite live region that changes only when asked.
+ * auto-advances. The card fits the tip it shows; the arrows sit in the header, above anything whose
+ * height changes, so the control being tapped never moves. A text-only polite status names each new tip
+ * and confirms a copy (the tip itself is not a live region, so modals can hide it).
  */
 export function TipDeck({
   tips,
@@ -185,6 +186,8 @@ export function TipDeck({
   const [dir, setDir] = useState<1 | -1>(1);
   const [touched, setTouched] = useState(false);
   const [note, setNote] = useState<{ text: ShareNote; at: number } | null>(null);
+  /** The polite status: set by a step or a copy only, so the note running out never re-announces the tip. */
+  const [status, setStatus] = useState("");
   const titleId = useId();
   const shareable = useSyncExternalStore(subscribeNever, canShareOrCopy, () => true);
   const layerRef = useRef<HTMLDivElement>(null);
@@ -192,6 +195,7 @@ export function TipDeck({
   const swipedAt = useRef(Number.NEGATIVE_INFINITY);
   const tip = tips[index];
   const isToday = index === initialIndex;
+  const count = tips.length;
 
   useEffect(() => {
     if (!note) return;
@@ -200,14 +204,21 @@ export function TipDeck({
   }, [note]);
 
   const go = (step: 1 | -1) => {
+    const next = (index + step + count) % count;
     setDir(step);
     setTouched(true);
-    setIndex((i) => (i + step + tips.length) % tips.length);
+    setNote(null);
+    setIndex(next);
+    setStatus(`Tip ${next + 1} of ${count}: ${tips[next].title}`);
   };
 
   const share = async (e: ReactMouseEvent<HTMLButtonElement>) => {
     const text = await shareTip(tip);
-    if (text) setNote({ text, at: e.timeStamp });
+    if (!text) return;
+    setNote({ text, at: e.timeStamp });
+    // Emptied first, so a second copy is announced again.
+    setStatus("");
+    requestAnimationFrame(() => setStatus(text));
   };
 
   // Swipe: touch and pen only (a mouse drag selects text). The card follows the finger a little.
@@ -244,7 +255,7 @@ export function TipDeck({
       follow(0, true);
     }
   };
-  // A swipe that ends on a source link must not open it.
+  // A swipe that ends on a link must not open it.
   const onClickCapture = (e: ReactMouseEvent<HTMLDivElement>) => {
     if (e.timeStamp - swipedAt.current < 400) {
       e.preventDefault();
@@ -253,92 +264,113 @@ export function TipDeck({
   };
 
   const arrowClass = buttonClass("secondary", cn(PRESS, "size-11 px-0"));
+  const animate = touched ? "tip-in" : undefined;
+  const counter = (
+    <>
+      <span className="sr-only">Tip </span>
+      {index + 1} of {count}
+    </>
+  );
 
   return (
     <article
       aria-labelledby={titleId}
       className={cn(
-        "flex flex-col overflow-hidden rounded-3xl bg-card p-5 shadow-[0_18px_40px_-32px_rgb(1_43_54/0.45)] ring-1 ring-ink/6 sm:p-8",
+        "nv-habits-tip flex flex-col rounded-3xl bg-card p-4 shadow-[0_18px_40px_-32px_rgb(1_43_54/0.45)] ring-1 ring-ink/6 sm:p-8",
         className,
       )}
     >
-      <div className="flex items-center gap-3">
-        <p className="rounded-full bg-aqua px-3 py-1 text-sm font-semibold text-primary">
-          {isToday ? "Tip of the day" : "Health tip"}
-        </p>
-        {isToday && <p className="text-sm font-medium text-ink-3">{dateLabel}</p>}
-        <TipCategoryMark
-          key={tip.id}
-          tip={tip}
-          className={cn("ml-auto", touched && "tip-in")}
-          style={{ "--dir": dir } as CSSProperties}
-        />
+      {/* Header: what this is on the left (the date drops under the chip on phones), the pager on the right.
+          Below 360 the chip, the counter and both arrows can't share a row, so the counter joins the
+          date's line; only one of the two counters is ever displayed. */}
+      <div className="flex min-h-11 items-center gap-3 max-sm:min-h-[3.125rem]">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="rounded-full bg-aqua px-3 py-1 text-sm font-semibold whitespace-nowrap text-primary">
+            {isToday ? "Tip of the day" : "Health tip"}
+          </p>
+          {isToday && <p className="text-caption/[1.35] font-medium whitespace-nowrap text-ink-3">{dateLabel}</p>}
+          <span className="hidden min-w-12 text-caption/[1.35] font-semibold whitespace-nowrap text-ink-3 tabular-nums max-[22.5rem]:block">
+            {counter}
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="min-w-12 text-center text-caption font-semibold whitespace-nowrap text-ink-3 tabular-nums max-[22.5rem]:hidden">
+            {counter}
+          </span>
+          <button type="button" aria-label="Previous tip" onClick={() => go(-1)} className={arrowClass}>
+            <ArrowLeft aria-hidden />
+          </button>
+          <button type="button" aria-label="Next tip" onClick={() => go(1)} className={arrowClass}>
+            <ArrowRight aria-hidden />
+          </button>
+        </div>
       </div>
 
       <div
-        className="mt-4 grid flex-1 touch-pan-y sm:mt-6"
+        className="mt-3 touch-pan-y sm:mt-6"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
         onClickCapture={onClickCapture}
       >
-        {tips.map((t) => (
-          <div key={t.id} aria-hidden className="invisible [grid-area:1/1]">
-            <TipBody tip={t} />
-          </div>
-        ))}
-        <div ref={layerRef} aria-live="polite" aria-atomic="true" className="nv-habits-tip-layer [grid-area:1/1]">
-          <div key={tip.id} className={touched ? "tip-in" : undefined} style={{ "--dir": dir } as CSSProperties}>
-            <span className="sr-only">
-              Tip {index + 1} of {tips.length}. {tip.category}.{" "}
-            </span>
-            <TipBody tip={tip} titleId={titleId} />
+        <div ref={layerRef} className="nv-habits-tip-layer">
+          <div key={tip.id} className={animate} style={{ "--dir": dir } as CSSProperties}>
+            <div className="flex items-start gap-3">
+              <TipCategoryMark tip={tip} />
+              <h3
+                id={titleId}
+                className="min-w-0 text-[1.375rem] leading-[1.15] font-semibold tracking-[-0.022em] text-balance text-ink sm:text-[1.75rem]"
+              >
+                {tip.title}
+              </h3>
+            </div>
+            <p className="mt-2.5 max-w-[34rem] text-small/[1.5] text-pretty text-ink-2 sm:mt-3 sm:text-body">{tip.text}</p>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3.5 sm:mt-7 sm:pt-5">
-        <div className="relative">
-          {shareable && (
-            <button
-              type="button"
-              onClick={share}
-              className={buttonClass("secondary", cn(PRESS, "px-3.5 sm:px-4"))}
-            >
-              <Share aria-hidden />
-              Share tip
-            </button>
-          )}
-          <p
-            role="status"
-            data-show={note ? "" : undefined}
-            className="nv-habits-share-note pointer-events-none absolute bottom-full left-0 mb-2 flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-white shadow-[0_10px_24px_-12px_rgb(1_43_54/0.6)]"
+      <div className="mt-3 flex items-center gap-3 sm:mt-6 sm:gap-5">
+        {/* It slides in with the tip, from the same side. */}
+        <TipSources
+          key={tip.id}
+          sources={tip.sources}
+          className={cn("min-w-0 flex-1", animate)}
+          style={{ "--dir": dir } as CSSProperties}
+        />
+        {shareable && (
+          <button
+            type="button"
+            onClick={share}
+            className={buttonClass(
+              "secondary",
+              cn(PRESS, "nv-habits-share px-3.5 sm:px-4 max-[22.5rem]:size-11 max-[22.5rem]:px-0"),
+            )}
           >
-            {note && (
+            {note?.text === "Couldn't copy" ? (
               <>
-                {note.text === "Copied" ? (
-                  <Check aria-hidden className="size-3.5" strokeWidth={2.5} />
-                ) : (
-                  <CircleAlert aria-hidden className="size-3.5" strokeWidth={2.25} />
-                )}
-                {note.text}
+                <CircleAlert aria-hidden />
+                <span className="max-[22.5rem]:sr-only">Couldn&apos;t copy</span>
+              </>
+            ) : (
+              <>
+                {/* Both labels share one cell, so the button keeps its width when it says "Copied". */}
+                <span aria-hidden className="grid [&>*]:[grid-area:1/1]">
+                  <Share className={cn(note && "invisible")} />
+                  <Check className={cn(!note && "invisible")} strokeWidth={2.5} />
+                </span>
+                <span className="grid [&>*]:[grid-area:1/1] max-[22.5rem]:sr-only">
+                  <span className={cn(note && "invisible")}>Share tip</span>
+                  <span className={cn(!note && "invisible")}>Copied</span>
+                </span>
               </>
             )}
-          </p>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <button type="button" aria-label="Previous tip" onClick={() => go(-1)} className={arrowClass}>
-            <ArrowLeft aria-hidden />
           </button>
-          <span aria-hidden className="min-w-[3.5rem] text-center text-[0.8125rem] font-semibold text-ink-3 tabular-nums">
-            {index + 1} of {tips.length}
-          </span>
-          <button type="button" aria-label="Next tip" onClick={() => go(1)} className={arrowClass}>
-            <ArrowRight aria-hidden />
-          </button>
-        </div>
+        )}
       </div>
+      <p role="status" className="sr-only">
+        {status}
+      </p>
     </article>
   );
 }

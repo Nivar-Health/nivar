@@ -18,6 +18,12 @@ export const MONITOR = {
 
 export type MonitorStatus = "connecting" | "streaming" | "stopped";
 
+/**
+ * "console" keeps the clinical monitors' 10-11px labels. "landing" (the public site's demo) sets every
+ * label to 12px, the site's floor for monitor labels on phones.
+ */
+export type LabelScale = "console" | "landing";
+
 export type CanvasSize = { width: number; height: number; dpr: number };
 
 /**
@@ -105,11 +111,22 @@ export function renderGrid(size: CanvasSize, pxPerMm: number, rgb: string, origi
  * Monitor status chip. Live: mint text with the slow live-dot ring (stops under the global motion
  * pause and reduced motion). Paused: dim, static dot, "PAUSED". Otherwise: "OFFLINE".
  */
-export function LiveBadge({ live, label = "LIVE", paused = false }: { live: boolean; label?: string; paused?: boolean }) {
+export function LiveBadge({
+  live,
+  label = "LIVE",
+  paused = false,
+  labelScale = "console",
+}: {
+  live: boolean;
+  label?: string;
+  paused?: boolean;
+  labelScale?: LabelScale;
+}) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-semibold tracking-[0.14em] transition-colors",
+        labelScale === "landing" ? "text-xs" : "text-[10px]",
         live ? "bg-[#19C37D]/15 text-[#8FE3BF]" : "bg-white/5 text-[#8F8F89]",
       )}
     >

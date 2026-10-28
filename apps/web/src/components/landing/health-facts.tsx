@@ -12,7 +12,10 @@ import {
 import { SnapRow } from "./snap-row";
 import "./health-tips.css";
 
-/** Underlined source link that opens in a new tab (server-rendered; no client JS). */
+/**
+ * Underlined source link that opens in a new tab (server-rendered; no client JS). Inline, so its press
+ * is a tint only: transforms don't apply to inline boxes.
+ */
 export function ExternalLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
   return (
     <a
@@ -20,7 +23,7 @@ export function ExternalLink({ href, className, children }: { href: string; clas
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "rounded-sm underline decoration-current/30 underline-offset-[3px] hover:text-foreground hover:decoration-current focus-ring",
+        "rounded-sm underline decoration-current/30 underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
         className,
       )}
     >
@@ -30,7 +33,7 @@ export function ExternalLink({ href, className, children }: { href: string; clas
   );
 }
 
-/** "Source: a; b" as new-tab links. */
+/** "Source: a; b" as new-tab links, with the cards' short labels ("All sources" keeps the full ones). */
 export function SourceLinks({ sources, className }: { sources: readonly HealthSource[]; className?: string }) {
   return (
     <p className={cn("text-caption text-ink-3", className)}>
@@ -38,7 +41,9 @@ export function SourceLinks({ sources, className }: { sources: readonly HealthSo
       {sources.map((s, i) => (
         <span key={s.url}>
           {i > 0 && "; "}
-          <ExternalLink href={s.url}>{s.label}</ExternalLink>
+          <ExternalLink href={s.url} className={s.short && "whitespace-nowrap"}>
+            {s.short ?? s.label}
+          </ExternalLink>
         </span>
       ))}
     </p>
@@ -114,7 +119,7 @@ export function FactsRow({ className }: { className?: string }) {
     <SnapRow
       label="Health facts"
       className={className}
-      itemClassName="basis-[85%]"
+      itemClassName="basis-[85%] sm:basis-[46%]"
       gridFrom="md"
       gridClassName="md:grid-cols-2 md:gap-4 lg:grid-cols-4 lg:gap-5"
     >

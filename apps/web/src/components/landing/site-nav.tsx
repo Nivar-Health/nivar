@@ -16,6 +16,9 @@ import {
 import { Logo } from "@/components/brand/logo";
 import { bookingEnabled } from "@/lib/features";
 import { SITE } from "@/lib/site-facts";
+import { BottomBar, modified } from "./bottom-bar";
+import { useChromeSignals } from "./chrome-signals";
+import { focusLanding, keepRouterState, replaceHash } from "./page-history";
 import { buttonClass } from "./primitives";
 import { openTakeAMinute, prefetchTakeAMinute } from "./take-a-minute/open";
 import { Pearl } from "./take-a-minute/pearl";
@@ -55,17 +58,28 @@ const LINK_FOR: Readonly<Record<string, string>> = {
 /** Input that means the visitor has taken the scroll back. */
 const TAKEOVER = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
 
-const modified = (e: MouseEvent | ReactMouseEvent) => e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
+/** A jump longer than this many screen heights arrives most of the way at once, then glides. */
+const LONG = 1.5;
 
 /**
- * The section crossing a thin band 40–45% down the screen, or null. One IntersectionObserver over
- * `main > section[id]`, collected again if main's children change. An in-page link marks its section
- * at once and holds it while the page glides past the ones between, so the bar goes straight there:
- * until the scroll ends, the visitor scrolls themselves, or 2.5s.
+ * Marks `id` and holds it while the page glides past the sections between. `onSettled` runs once, at
+ * the first of: a scrollend for which `arrived()` holds, 250ms without a scroll, or the 2.5s cap. It is
+ * skipped when the visitor takes over: they have moved on, and focus stays where they put it.
  */
-function useCurrentSection(): string | null {
+type Hold = (id: string, onSettled?: () => void, arrived?: () => boolean) => void;
+
+/**
+ * The section crossing a thin band 40–45% down the screen, or null, and `jumpTo` for the bar and the
+ * sheet. One IntersectionObserver over `main > section[id]`, collected again if main's children
+ * change. An in-page link marks its section at once and holds it while the page glides past the ones
+ * between, so the mark goes straight there.
+ */
+function useCurrentSection(): { current: string | null; jumpTo: (hash: `#${string}`) => boolean } {
   const [current, setCurrent] = useState<string | null>(null);
+  const holdRef = useRef<Hold>(() => {});
+
   useEffect(() => {
+    keepRouterState();
     const main = document.getElementById("main");
     if (!main || typeof IntersectionObserver === "undefined") return;
     let sections: HTMLElement[] = [];
@@ -105,7 +119,7 @@ function useCurrentSection(): string | null {
     mo.observe(main, { childList: true });
 
     let stopHold: (() => void) | null = null;
-    const hold = (id: string) => {
+    const hold: Hold = (id, onSettled, arrived) => {
       stopHold?.();
       held = true;
       setCurrent(id);
@@ -117,12 +131,20 @@ function useCurrentSection(): string | null {
         window.clearTimeout(idle);
         window.clearTimeout(cap);
         window.removeEventListener("scroll", settle);
-        window.removeEventListener("scrollend", end);
-        TAKEOVER.forEach((type) => window.removeEventListener(type, end, true));
+        window.removeEventListener("scrollend", onScrollEnd);
+        TAKEOVER.forEach((type) => window.removeEventListener(type, takeOver, true));
       };
-      const end = () => {
+      const takeOver = () => {
         stop();
         setCurrent(pickNow());
+      };
+      const end = () => {
+        takeOver();
+        onSettled?.();
+      };
+      // Chrome fires a scrollend just after the instant hop of a long jump, before the glide ends.
+      const onScrollEnd = () => {
+        if (arrived?.() ?? true) end();
       };
       // Without scrollend (or with nothing to scroll), let go once the page has been still a moment.
       const settle = () => {
@@ -132,11 +154,14 @@ function useCurrentSection(): string | null {
       settle();
       cap = window.setTimeout(end, 2500);
       window.addEventListener("scroll", settle, { passive: true });
-      window.addEventListener("scrollend", end);
-      TAKEOVER.forEach((type) => window.addEventListener(type, end, { capture: true, passive: true }));
+      window.addEventListener("scrollend", onScrollEnd);
+      TAKEOVER.forEach((type) => window.addEventListener(type, takeOver, { capture: true, passive: true }));
       stopHold = stop;
     };
-    // Any plain click on an in-page link: the nav's own, the logo, a card's call to action.
+    holdRef.current = hold;
+
+    // Any other plain click on an in-page link: the logo, the desktop links, a card's call to action.
+    // The bar and the sheet jump themselves (preventDefault), so they are skipped here.
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || modified(e) || !(e.target instanceof Element)) return;
       const link = e.target.closest<HTMLAnchorElement>('a[href^="#"]');
@@ -153,7 +178,45 @@ function useCurrentSection(): string | null {
       io.disconnect();
     };
   }, []);
-  return current;
+
+  /**
+   * The bar's and the sheet's jump: replaces the hash (Back still leaves the page), holds the mark,
+   * and focuses the landing's heading once the scroll settles. False when the target is missing.
+   */
+  const jumpTo = useCallback((hash: `#${string}`): boolean => {
+    const target = document.getElementById(hash.slice(1));
+    if (!target) return false;
+    const section = target.closest<HTMLElement>("main > section[id]");
+    const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+    const settled = () => focusLanding(target);
+    // Arrived: the target rests at its scroll margin, or the page can scroll no further towards it.
+    const arrived = () => {
+      const off = target.getBoundingClientRect().top - margin;
+      if (Math.abs(off) < 2) return true;
+      return off > 0
+        ? Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight
+        : scrollY <= 0;
+    };
+    if (section) holdRef.current(section.id, settled, arrived);
+    replaceHash(hash);
+    const reduce =
+      matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.motion === "paused";
+    const top = target.getBoundingClientRect().top;
+    if (!reduce && Math.abs(top) > innerHeight * LONG) {
+      // A long trip: arrive most of the way at once, then glide the last 120px, so the page never
+      // streams every section, reveal and live trace past on a mid-range phone.
+      const y = scrollY + top - margin;
+      scrollTo({ top: top > 0 ? y - 120 : y + 120, behavior: "instant" });
+      requestAnimationFrame(() => target.scrollIntoView({ block: "start", behavior: "smooth" }));
+    } else {
+      // CSS scroll-behavior glides a short trip; reduced motion and the visitor's pause jump at once.
+      target.scrollIntoView(reduce ? { block: "start", behavior: "instant" } : { block: "start" });
+    }
+    if (!section) requestAnimationFrame(settled);
+    return true;
+  }, []);
+
+  return { current, jumpTo };
 }
 
 /** The links' inline padding: the bar spans the label, not the pill. */
@@ -220,7 +283,17 @@ function DesktopLinks({ active }: { active: string | null }) {
   );
 }
 
-type Pending = { kind: "section"; hash: string } | { kind: "minute" };
+/**
+ * Mounts the chrome signals store (chrome-signals.ts), which writes the zone, hero-CTA and typing
+ * attributes on <html> that the pill, the bar and the corner follow in CSS. A leaf of its own, so a
+ * zone change re-renders nothing visible.
+ */
+function ChromeSignalsStore() {
+  useChromeSignals();
+  return null;
+}
+
+type Pending = { kind: "section"; hash: `#${string}` } | { kind: "minute" };
 
 const MENU_MARK = "nvMenu";
 
@@ -231,17 +304,24 @@ function isMenuEntry(): boolean {
 }
 
 /**
- * The fixed nav: a floating pill with in-page links (lg), Log in while booking is live, and the one
- * accent action. Below lg a menu button opens a sheet with every section, Take a minute and the
- * callback. Links are plain `#id` anchors, so they work without JS and keep any query string.
+ * The fixed chrome: a floating pill with in-page links (lg), Log in while booking is live, and the one
+ * accent action; below lg a menu button opens a sheet with every section, Take a minute and the
+ * callback; below 640px a bottom bar (bottom-bar.tsx) whose Menu opens the same sheet. Which of the
+ * pill, its action and the bar shows is CSS on the chrome signals. Links are plain `#id` anchors, so
+ * they work without JS and keep any query string.
  */
 export function SiteNav() {
-  const current = useCurrentSection();
+  const { current, jumpTo } = useCurrentSection();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  // The trigger that opened the sheet (the pill's menu button or the bar's Menu tab): focus returns to
+  // it, and Take a minute's orb rises from it.
+  const openerRef = useRef<HTMLElement | null>(null);
   const landingRef = useRef<HTMLElement | null>(null);
   // The sheet locks page scroll and restores it on close, which would undo a jump made while it is
   // open. So a choice closes it first; the jump (or Take a minute) happens once it has closed.
@@ -316,7 +396,7 @@ export function SiteNav() {
     const { hash } = e.currentTarget;
     if (!hash) return;
     e.preventDefault();
-    pending.current = { kind: "section", hash };
+    pending.current = { kind: "section", hash: hash as `#${string}` };
     close();
   };
 
@@ -344,32 +424,12 @@ export function SiteNav() {
     // own history entry must come after it.
     void stepBack.current.then(() => {
       if (next.kind === "minute") {
-        openTakeAMinute("", triggerRef.current);
-        return;
-      }
-      const target = document.getElementById(next.hash.slice(1));
-      if (!target) {
-        triggerRef.current?.focus();
+        openTakeAMinute("", openerRef.current);
         return;
       }
       // The scroll lock lets go in the same tick that reports the close as complete.
       requestAnimationFrame(() => {
-        if (location.hash === next.hash) target.scrollIntoView();
-        else location.hash = next.hash;
-        // Like a real anchor jump, the next Tab (and a screen reader) carries on from the section.
-        if (!target.hasAttribute("tabindex")) {
-          target.setAttribute("tabindex", "-1");
-          target.setAttribute("data-nv-nav-target", "");
-          target.addEventListener(
-            "blur",
-            () => {
-              target.removeAttribute("tabindex");
-              target.removeAttribute("data-nv-nav-target");
-            },
-            { once: true },
-          );
-        }
-        target.focus({ preventScroll: true });
+        if (!jumpTo(next.hash)) openerRef.current?.focus();
       });
     });
   };
@@ -377,114 +437,131 @@ export function SiteNav() {
   const desktopActive = current ? (LINK_FOR[current] ?? null) : null;
 
   return (
-    <header ref={headerRef} className="nv-nav" data-scrolled={scrolled ? "" : undefined}>
-      {/* The links sit at the pill's true centre from xl; at lg the three groups simply spread out. */}
-      <div className="nv-nav-bar mx-auto flex h-16 max-w-[1220px] items-center justify-between gap-2 pr-2 pl-5 xl:grid xl:grid-cols-[1fr_auto_1fr]">
-        <a
-          href="#top"
-          aria-label="Nivar home"
-          className="nv-nav-logo -mx-1 -my-2 inline-flex h-11 min-w-11 items-center justify-start justify-self-start overflow-hidden rounded-full px-1 py-2 focus-ring"
-        >
-          <Logo size="sm" />
-        </a>
-
-        <DesktopLinks active={desktopActive} />
-
-        <div className="flex items-center gap-2 justify-self-end">
-          {bookingEnabled && (
-            <Link href="/login" className={buttonClass("ghost", "hidden hover:bg-aqua/70 sm:inline-flex", "sm")}>
-              Log in
-            </Link>
-          )}
-          <a href="#callback" className={buttonClass("accent", undefined, "sm")}>
-            Request a callback
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next, d) => {
+        if (next) {
+          openerRef.current = d.trigger instanceof HTMLElement ? d.trigger : triggerRef.current;
+          setOpen(true);
+        } else close();
+      }}
+      onOpenChangeComplete={afterClose}
+    >
+      <header ref={headerRef} className="nv-nav" data-scrolled={scrolled ? "" : undefined}>
+        {/* The links sit at the pill's true centre from xl; at lg the three groups simply spread out. */}
+        <div className="nv-nav-bar mx-auto flex h-16 max-w-[1220px] items-center justify-between gap-2 pr-2 pl-5 xl:grid xl:grid-cols-[1fr_auto_1fr]">
+          <a
+            href="#top"
+            aria-label="Nivar home"
+            className="nv-nav-logo -mx-1 -my-2 inline-flex h-11 min-w-11 items-center justify-start justify-self-start overflow-hidden rounded-full px-1 py-2 focus-ring"
+          >
+            <Logo size="sm" />
           </a>
 
-          <Dialog.Root
-            open={open}
-            onOpenChange={(next) => (next ? setOpen(true) : close())}
-            onOpenChangeComplete={afterClose}
-          >
+          <DesktopLinks active={desktopActive} />
+
+          <div className="flex items-center gap-2 justify-self-end">
+            {bookingEnabled && (
+              <Link href="/login" className={buttonClass("ghost", "hidden hover:bg-aqua/70 sm:inline-flex", "sm")}>
+                Log in
+              </Link>
+            )}
+            {/* On phones it shows only while the hero's own button is below the fold; at the form and
+                the footer it fades at every width (site-nav.css). Its box always stays. */}
+            <a href="#callback" className={buttonClass("accent", "nv-nav-cta", "sm")}>
+              Request a callback
+            </a>
+
             <Dialog.Trigger ref={triggerRef} aria-label="Open menu" className="nv-nav-menu focus-ring lg:hidden">
               <Menu aria-hidden />
             </Dialog.Trigger>
-            <Dialog.Portal container={landingRef}>
-              <Dialog.Backdrop className="nv-nav-dim" />
-              <Dialog.Popup
-                data-landing=""
-                aria-modal="true"
-                className="nv-nav-sheet"
-                finalFocus={() => pending.current?.kind !== "section"}
-              >
-                <div className="nv-nav-sheet-head">
-                  <div className="flex h-16 items-center justify-between pr-2 pl-5">
-                    <Logo size="sm" />
-                    <Dialog.Close aria-label="Close menu" className="nv-nav-menu focus-ring">
-                      <X aria-hidden />
-                    </Dialog.Close>
-                  </div>
-                </div>
-                <Dialog.Title className="sr-only">Menu</Dialog.Title>
-                <Dialog.Description className="sr-only">
-                  The sections of this page, Take a minute and the callback form.
-                </Dialog.Description>
-
-                <nav aria-label="Sections">
-                  <ul className="nv-nav-rows">
-                    {SHEET_LINKS.map((l, i) => (
-                      <li key={l.id} className="nv-nav-stagger" style={{ "--i": i } as CSSProperties}>
-                        <a
-                          href={`#${l.id}`}
-                          onClick={choose}
-                          aria-current={current === l.id ? "location" : undefined}
-                          className="nv-nav-row focus-ring"
-                        >
-                          {l.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-
-                <div
-                  className="nv-nav-dock nv-nav-stagger"
-                  style={{ "--i": SHEET_LINKS.length } as CSSProperties}
-                >
-                  <button
-                    type="button"
-                    aria-haspopup="dialog"
-                    onClick={takeAMinute}
-                    onPointerDown={prefetchQuietly}
-                    onFocus={prefetchQuietly}
-                    className={buttonClass("secondary", "w-full", "lg")}
-                  >
-                    <Pearl size={20} />
-                    Take a minute
-                  </button>
-                  <a
-                    href="#callback"
-                    onClick={choose}
-                    className={buttonClass("accent", "h-14 w-full text-[1.0625rem]", "lg")}
-                  >
-                    Request a callback
-                  </a>
-                  {bookingEnabled && (
-                    <Link
-                      href="/login"
-                      onClick={logIn}
-                      className={buttonClass("ghost", "w-full hover:bg-white/60", "md")}
-                    >
-                      Log in
-                    </Link>
-                  )}
-                  <p className="px-1 text-caption text-pretty text-ink-3">{SITE.emergency.short}</p>
-                </div>
-              </Dialog.Popup>
-            </Dialog.Portal>
-          </Dialog.Root>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <Dialog.Portal container={landingRef}>
+        <Dialog.Backdrop className="nv-nav-dim" />
+        <Dialog.Popup
+          ref={popupRef}
+          data-landing=""
+          aria-modal="true"
+          className="nv-nav-sheet"
+          // A tap focuses the sheet itself (no keyboard, no ring); a key or click lands on Close, where
+          // the menu button was.
+          initialFocus={(type) => (type === "touch" ? popupRef.current : closeRef.current)}
+          finalFocus={() => pending.current?.kind !== "section"}
+        >
+          <div className="nv-nav-sheet-head">
+            <div className="flex h-16 items-center justify-between pr-2 pl-5">
+              <a
+                href="#top"
+                aria-label="Nivar home"
+                onClick={choose}
+                className="nv-nav-logo -mx-1 -my-2 inline-flex h-11 min-w-11 items-center justify-start overflow-hidden rounded-full px-1 py-2 focus-ring"
+              >
+                <Logo size="sm" />
+              </a>
+              <Dialog.Close ref={closeRef} aria-label="Close menu" className="nv-nav-menu focus-ring">
+                <X aria-hidden />
+              </Dialog.Close>
+            </div>
+          </div>
+          <Dialog.Title className="sr-only">Menu</Dialog.Title>
+          <Dialog.Description className="sr-only">
+            The sections of this page, Take a minute and the callback form.
+          </Dialog.Description>
+
+          <nav aria-label="Sections">
+            <ul className="nv-nav-rows">
+              {SHEET_LINKS.map((l, i) => (
+                <li key={l.id} className="nv-nav-stagger" style={{ "--i": i } as CSSProperties}>
+                  <a
+                    href={`#${l.id}`}
+                    onClick={choose}
+                    aria-current={current === l.id ? "location" : undefined}
+                    className="nv-nav-row focus-ring"
+                  >
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="nv-nav-dock nv-nav-stagger" style={{ "--i": SHEET_LINKS.length } as CSSProperties}>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={takeAMinute}
+              onPointerDown={prefetchQuietly}
+              onFocus={prefetchQuietly}
+              className={buttonClass("secondary", "w-full", "lg")}
+            >
+              <Pearl size={20} />
+              Take a minute
+            </button>
+            <a href="#callback" onClick={choose} className={buttonClass("accent", "h-14 w-full text-[1.0625rem]", "lg")}>
+              Request a callback
+            </a>
+            {bookingEnabled && (
+              <Link href="/login" onClick={logIn} className={buttonClass("ghost", "w-full hover:bg-white/60", "md")}>
+                Log in
+              </Link>
+            )}
+            {/* On phones a second Close sits under the thumb, below where the bar's Menu tab is. */}
+            <div className="nv-nav-dock-end">
+              <p className="px-1 text-caption text-pretty text-ink-3">{SITE.emergency.short}</p>
+              <Dialog.Close aria-label="Close menu" className="nv-nav-close focus-ring">
+                <X aria-hidden />
+              </Dialog.Close>
+            </div>
+          </div>
+        </Dialog.Popup>
+      </Dialog.Portal>
+
+      <BottomBar current={current} jumpTo={jumpTo} />
+      <ChromeSignalsStore />
+    </Dialog.Root>
   );
 }
 

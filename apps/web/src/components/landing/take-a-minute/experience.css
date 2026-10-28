@@ -1,21 +1,22 @@
-/* Take a minute (experience.tsx, orb.tsx, ring.tsx, field.tsx), spec §5.7–§5.11.
+/* Take a minute (experience.tsx, orb.tsx, ring.tsx, field.tsx), spec §5.7–§5.11 and mobile spec U8.
    A pond that blooms from the launcher, a lit orb on a time-left ring, the tools' slots below.
    Only transform and opacity move. No backdrop-filter and no filter anywhere: every glow is a
-   gradient. Durations scale by --nv-k (×0.85 on phones). In a layer, so utilities can override. */
+   gradient. Durations scale by --nv-k (×0.85 on phones, ×0.8 more on repeat opens; experience.tsx
+   sets it per open). In a layer, so utilities can override. */
 @layer components {
   .nv-minute-popup {
     --nv-d: min(280px, 34vh);
     --nv-k: 1;
     position: fixed;
     inset: 0;
-    z-index: 70;
+    z-index: var(--z-minute, 70);
     outline: none;
     color: var(--on-pine);
     -webkit-tap-highlight-color: transparent;
   }
-  @media (max-width: 639.98px) {
+  @media (width < 40rem) {
     .nv-minute-popup {
-      --nv-d: min(232px, 60vw, 34dvh);
+      --nv-d: min(268px, 100vw - 96px, 34dvh);
       --nv-k: 0.85;
     }
   }
@@ -132,17 +133,25 @@
   .nv-minute-handle {
     display: none;
   }
+  /* Sound and Vibration on the left, Close on the right; on phones Close alone (and, during a
+     session, one Sound icon beside it). */
   .nv-minute-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 8px;
   }
   .nv-minute-toggles {
     display: flex;
     flex-wrap: wrap;
     gap: 2px;
+  }
+  .nv-minute-toggles-bar {
+    margin-right: auto;
     margin-left: -10px;
+  }
+  .nv-minute-toggles-under {
+    display: none;
   }
   .nv-minute-toggle {
     display: inline-flex;
@@ -170,8 +179,31 @@
   .nv-minute-toggle[aria-pressed="true"] {
     color: var(--on-pine);
   }
-  .nv-minute-toggle[aria-pressed="true"] svg {
+  .nv-minute-toggle[aria-pressed="true"] svg,
+  .nv-minute-sound[aria-pressed="true"] svg {
     color: var(--mint-glow);
+  }
+  /* The session's Sound toggle on phones: a 44px icon button named "Sound" (sr-only), aria-pressed. */
+  .nv-minute-sound {
+    display: none;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    color: var(--on-pine-2);
+    cursor: pointer;
+    transition:
+      background-color 180ms var(--curve-standard),
+      color 180ms var(--curve-standard),
+      scale 180ms var(--curve-standard);
+  }
+  .nv-minute-sound[aria-pressed="true"] {
+    color: var(--on-pine);
+  }
+  .nv-minute-sound svg {
+    width: 20px;
+    height: 20px;
   }
   .nv-minute-close {
     display: grid;
@@ -226,19 +258,23 @@
     padding-top: clamp(0px, calc((100dvh - 920px) * 0.45), 110px);
   }
   .nv-minute-tabsbox {
+    display: flex;
+    justify-content: center;
+    width: 100%;
     margin-top: clamp(10px, 1.6vh, 16px);
   }
 
-  /* A segmented control; the pill slides under the active tab. */
+  /* The switcher: four 56px segments, the name over its duration. The track (radius 20) holds a pill
+     (radius 16) inset 4px, which slides under the active segment. Every segment has the same width,
+     so only translate moves. */
   .nv-minute-tabs {
     position: relative;
     isolation: isolate;
-    display: inline-flex;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 9999px;
-    border: 1px solid rgb(255 255 255 / 0.12);
+    display: flex;
+    width: min(100%, 26rem);
+    border-radius: 20px;
     background: rgb(255 255 255 / 0.06);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
     transition:
       opacity 220ms var(--curve-standard),
       visibility 0s linear 0s;
@@ -253,32 +289,55 @@
   .nv-minute-tab {
     position: relative;
     z-index: 1;
-    height: 44px;
-    padding-inline: 1rem;
-    border-radius: 9999px;
-    font-size: 0.9375rem;
-    font-weight: 600;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 0;
+    height: 56px;
+    padding-inline: 6px;
+    border-radius: 20px;
     color: var(--on-pine-2);
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 220ms var(--curve-standard),
+      scale 180ms var(--curve-standard);
+  }
+  .nv-minute-tab-name {
+    font-size: 0.9375rem;
+    line-height: 1.125rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .nv-minute-tab-time {
+    font-size: 0.8125rem;
+    line-height: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--on-pine-3);
     transition: color 220ms var(--curve-standard);
   }
   .nv-minute-tab[data-active] {
     color: var(--ink);
   }
+  .nv-minute-tab[data-active] .nv-minute-tab-time {
+    color: var(--ink-2);
+  }
   .nv-minute-tab-pill {
     position: absolute;
     z-index: 0;
-    left: 0;
-    top: var(--active-tab-top);
-    width: var(--active-tab-width);
-    height: var(--active-tab-height);
+    left: 4px;
+    top: calc(var(--active-tab-top) + 4px);
+    width: calc(var(--active-tab-width) - 8px);
+    height: calc(var(--active-tab-height) - 8px);
     translate: var(--active-tab-left) 0;
-    border-radius: 9999px;
+    border-radius: 16px;
     background: var(--on-pine);
     box-shadow: 0 10px 22px -12px rgb(0 0 0 / 0.6);
-    transition:
-      translate 340ms var(--curve-calm),
-      width 340ms var(--curve-calm);
+    transition: translate 340ms var(--curve-calm);
   }
 
   /* ---- Stage: halo, ripple, ring, orb, text ------------------------------------------------- */
@@ -423,7 +482,7 @@
     outline-offset: calc(var(--nv-d) * 0.06);
   }
 
-  /* ---- The tools' slots -------------------------------------------------------------------- */
+  /* ---- The tools' slots: readout, prompt, options, always, controls, after, fine ----------- */
   .nv-minute-panel {
     width: 100%;
     outline: none;
@@ -435,11 +494,21 @@
     outline-offset: 4px;
     border-radius: 20px;
   }
-  .nv-minute-layout {
+  .nv-minute-layout,
+  .nv-minute-main {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
+  }
+  /* Marks where the dock would sit unstuck (experience.tsx attachDock); takes no room. */
+  .nv-minute-dock-end {
+    flex: none;
+    align-self: stretch;
+    height: 1px;
+    margin-top: -1px;
+    visibility: hidden;
+    pointer-events: none;
   }
   .nv-minute-readout {
     margin-top: clamp(10px, 1.8vh, 22px);
@@ -452,12 +521,110 @@
     color: var(--on-pine-2);
     text-wrap: pretty;
   }
-  .nv-minute-controls {
+  /* Chips, mode radios, Rest's ticks and the Eyes chime switch. */
+  .nv-minute-options {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    margin-top: clamp(12px, 2vh, 22px);
+    margin-top: clamp(12px, 2vh, 20px);
+  }
+  /* The safety line: never collapsed, directly above the controls, and docked with them on portrait
+     phones. The slot draws the frame (15px on-pine-2, a 16px mark, a hairline ring, radius 14); the
+     tool's line inside it sets only its mark and links (tools.css .nv-tool-safety). */
+  .nv-minute-always {
+    width: 100%;
+    max-width: 34rem;
+    margin-top: clamp(12px, 2vh, 20px);
+    padding: 10px 14px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 14px;
+    background: rgb(255 255 255 / 0.03);
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--on-pine-2);
+    text-align: start;
+    text-wrap: pretty;
+  }
+  .nv-minute-always svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+  /* The dock: Start, or Pause and Stop in one row, under the safety line (except in short landscape).
+     It sticks to the bottom of the sheet whenever the content runs past it, so Start and the safety
+     line stay on screen (portrait phones pin it there, below). Its 24px fade above and its room below
+     are padding; the margins keep the gaps around it as they were. */
+  .nv-minute-controls {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: calc(clamp(12px, 2vh, 22px) - 24px) 0 -16px;
+    padding: 24px 0 max(16px, calc(env(safe-area-inset-bottom) + 8px));
+    /* A tap on the fade reaches what shows through it (a chip or radio half under it); the rest of the
+       dock, its gaps included (::after), keeps its taps from what lies hidden under the backdrop. */
+    pointer-events: none;
+  }
+  .nv-minute-controls > * {
+    pointer-events: auto;
+  }
+  .nv-minute-controls::after {
+    content: "";
+    position: absolute;
+    inset: 24px 0 0;
+    z-index: -1;
+    pointer-events: auto;
+  }
+  .nv-minute-controls > .nv-minute-always {
+    margin-top: 0;
+  }
+  /* The dock's pond backdrop: it fades in over its first 24px and, beside a column, over its sides. It
+     shows only while content can pass under the dock (data-stuck): at once when the dock comes to rest
+     on the content, fading once it lifts off, so it never lies as a band on the field. Static: no
+     per-frame script. */
+  .nv-minute-controls::before {
+    content: "";
+    position: absolute;
+    inset: 0 -32px;
+    z-index: -1;
+    background: linear-gradient(to bottom, rgb(1 43 54 / 0), #012b36 24px);
+    mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms var(--curve-standard);
+  }
+  .nv-minute-controls[data-stuck]::before {
+    opacity: 1;
+    transition-duration: 0s;
+  }
+  /* Anything focused above a docked dock scrolls clear of it (WCAG 2.4.11); what is in it always shows. */
+  .nv-minute-main
+    :is(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):not(.nv-minute-controls *) {
+    scroll-margin-bottom: calc(var(--nv-dock-h, 0px) + 8px);
+  }
+  .nv-minute-after {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .nv-minute-about {
+    width: 100%;
+    max-width: 34rem;
+    margin-top: 12px;
+    text-align: start;
+  }
+  .nv-minute-about > .nv-disc {
+    border-block: 1px solid rgb(255 255 255 / 0.12);
+  }
+  .nv-minute-about .nv-disc-body > * + * {
+    margin-top: 8px;
   }
   .nv-minute-chip {
     display: inline-flex;
@@ -482,6 +649,7 @@
     background: rgb(142 211 224 / 0.14);
     color: var(--on-pine);
   }
+  /* The main button, 56px tall (the tools set its width: 232–320px alone, 160px beside Stop). */
   .nv-minute-primary {
     min-width: 168px;
     height: 56px;
@@ -495,6 +663,33 @@
     box-shadow: 0 16px 32px -20px rgb(0 0 0 / 0.75);
     transition:
       background-color 180ms var(--curve-standard),
+      scale 180ms var(--curve-standard);
+  }
+  /* One row of session controls: Pause/Resume (the primary) and Stop, 12px apart (U9 fills it). */
+  .nv-minute-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+  }
+  /* Stop: a 48px ghost pill beside the 56px primary. */
+  .nv-minute-stop {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    height: 48px;
+    padding-inline: 20px;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.22);
+    font-size: 1rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    color: var(--on-pine);
+    cursor: pointer;
+    transition:
+      background-color 180ms var(--curve-standard),
+      border-color 180ms var(--curve-standard),
       scale 180ms var(--curve-standard);
   }
   .nv-minute-quiet {
@@ -526,45 +721,6 @@
     text-decoration-color: rgb(255 255 255 / 0.3);
     text-underline-offset: 3px;
   }
-  .nv-minute-about summary {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    padding-inline: 8px;
-    font-weight: 600;
-    color: var(--on-pine-2);
-    cursor: pointer;
-    list-style: none;
-  }
-  .nv-minute-about summary::-webkit-details-marker {
-    display: none;
-  }
-  .nv-minute-about summary::after {
-    content: "";
-    width: 7px;
-    height: 7px;
-    margin-top: -3px;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    rotate: 45deg;
-    transition: rotate 160ms var(--curve-standard);
-  }
-  .nv-minute-about[open] summary::after {
-    margin-top: 3px;
-    rotate: 225deg;
-  }
-  .nv-minute-about-body > * + * {
-    margin-top: 6px;
-  }
-  .nv-minute-always {
-    max-width: 60ch;
-    margin-top: 10px;
-    font-size: 0.8125rem;
-    line-height: 1.45;
-    color: var(--on-pine-2);
-    text-wrap: pretty;
-  }
   .nv-minute-signoff {
     margin-top: auto;
     padding-top: clamp(12px, 2vh, 28px);
@@ -572,25 +728,37 @@
     color: var(--on-pine-3);
   }
 
-  /* Touch press (mobile addendum M2): 90ms in, 180ms out. */
-  :is(.nv-minute-toggle, .nv-minute-close, .nv-minute-chip, .nv-minute-primary, .nv-minute-quiet, .nv-minute-tab):active {
+  /* Touch press (mobile addendum M2): 90ms in, 180ms out; a tint alone under reduced motion or a pause. */
+  :is(
+      .nv-minute-toggle,
+      .nv-minute-sound,
+      .nv-minute-close,
+      .nv-minute-chip,
+      .nv-minute-primary,
+      .nv-minute-stop,
+      .nv-minute-quiet,
+      .nv-minute-tab
+    ):active {
     scale: 0.97;
     transition-duration: 90ms;
   }
-  .nv-minute-toggle:active,
-  .nv-minute-close:active {
+  :is(.nv-minute-toggle, .nv-minute-sound, .nv-minute-close, .nv-minute-stop):active {
     background: rgb(255 255 255 / 0.12);
   }
   .nv-minute-primary:active {
     background: #dfeef2;
   }
   @media (hover: hover) and (pointer: fine) {
-    .nv-minute-toggle:hover {
+    :is(.nv-minute-toggle, .nv-minute-sound):hover {
       background: rgb(255 255 255 / 0.07);
       color: var(--on-pine);
     }
     .nv-minute-close:hover {
       background: rgb(255 255 255 / 0.13);
+    }
+    .nv-minute-stop:hover {
+      border-color: rgb(255 255 255 / 0.36);
+      background: rgb(255 255 255 / 0.06);
     }
     .nv-minute-tab:not([data-active]):hover,
     .nv-minute-quiet:hover {
@@ -605,68 +773,67 @@
     }
   }
 
-  /* ---- The opening stagger (§5.8) and the closing fade (§5.9) ------------------------------ */
+  /* ---- The opening stagger and the closing fade --------------------------------------------- */
+  /* Title, switcher and Start are in (opacity ≥ .9) within 480ms of the tap while the orb still flies
+     (D10): delays and durations are ms at ×1, scaled by --nv-k. Closing fades everything in 120ms. */
   .nv-minute-sheet [data-nv-in] {
     opacity: 0;
     transition:
-      opacity calc(160ms * var(--nv-k)) var(--curve-exit),
-      translate calc(160ms * var(--nv-k)) var(--curve-exit);
+      opacity calc(120ms * var(--nv-k)) var(--curve-exit),
+      translate calc(120ms * var(--nv-k)) var(--curve-exit);
   }
   .nv-minute-sheet[data-ui="in"] [data-nv-in] {
     opacity: 1;
     translate: none;
     transition:
-      opacity calc(var(--nv-in-dur, 320ms) * var(--nv-k)) var(--curve-calm) calc(var(--nv-in, 600ms) * var(--nv-k)),
-      translate calc(380ms * var(--nv-k)) var(--curve-calm) calc(var(--nv-in, 600ms) * var(--nv-k));
+      opacity calc(var(--nv-in-dur, 260ms) * var(--nv-k)) var(--curve-calm) calc(var(--nv-in, 300ms) * var(--nv-k)),
+      translate calc(360ms * var(--nv-k)) var(--curve-calm) calc(var(--nv-in, 300ms) * var(--nv-k));
   }
   [data-nv-in="top"] {
-    --nv-in: 300ms;
-    --nv-in-dur: 280ms;
+    --nv-in: 100ms;
+    --nv-in-dur: 240ms;
   }
   [data-nv-in="title"] {
-    --nv-in: 560ms;
-    --nv-in-dur: 380ms;
+    --nv-in: 140ms;
+    --nv-in-dur: 280ms;
   }
   [data-nv-in="tabs"] {
-    --nv-in: 640ms;
-  }
-  [data-nv-in="ring"] {
-    --nv-in: 720ms;
+    --nv-in: 185ms;
     --nv-in-dur: 240ms;
   }
   [data-nv-in="readout"] {
-    --nv-in: 740ms;
+    --nv-in: 215ms;
   }
   [data-nv-in="prompt"] {
-    --nv-in: 760ms;
+    --nv-in: 225ms;
   }
-  [data-nv-in="controls"] {
-    --nv-in: 780ms;
+  [data-nv-in="options"] {
+    --nv-in: 240ms;
   }
-  [data-nv-in="fine"],
   [data-nv-in="always"] {
-    --nv-in: 900ms;
-    --nv-in-dur: 380ms;
+    --nv-in: 250ms;
+    --nv-in-dur: 220ms;
+  }
+  /* Start, the last of the three: a first open's first paint of the pond is its longest frame (worst at
+     1440), and this keeps Start in with room to spare. */
+  [data-nv-in="controls"] {
+    --nv-in: 270ms;
+    --nv-in-dur: 200ms;
+  }
+  [data-nv-in="after"],
+  [data-nv-in="toggles"],
+  [data-nv-in="fine"] {
+    --nv-in: 420ms;
+    --nv-in-dur: 320ms;
   }
   [data-nv-in="signoff"] {
-    --nv-in: 960ms;
-    --nv-in-dur: 380ms;
+    --nv-in: 480ms;
+    --nv-in-dur: 320ms;
   }
-  /* Start (or Pause) follows the chips by 60ms. */
-  .nv-minute-sheet .nv-minute-controls .nv-minute-primary {
-    transition:
-      opacity calc(160ms * var(--nv-k)) var(--curve-exit),
-      background-color 180ms var(--curve-standard),
-      scale 180ms var(--curve-standard);
-  }
-  .nv-minute-sheet:not([data-ui="in"]) .nv-minute-controls .nv-minute-primary {
-    opacity: 0;
-  }
-  .nv-minute-sheet[data-ui="in"]:not([data-ready]) .nv-minute-controls .nv-minute-primary {
-    transition:
-      opacity calc(300ms * var(--nv-k)) var(--curve-calm) calc(840ms * var(--nv-k)),
-      background-color 180ms var(--curve-standard),
-      scale 180ms var(--curve-standard);
+  /* The ring draws as the orb lands (experience.tsx ringDraw), not with the controls. */
+  [data-nv-in="ring"] {
+    --nv-in: 720ms;
+    --nv-in-dur: 240ms;
   }
 
   @keyframes nv-minute-panel-in {
@@ -677,28 +844,97 @@
   }
 
   /* ---- Phones ------------------------------------------------------------------------------ */
-  @media (max-width: 639.98px) {
+  @media (width < 40rem) {
+    .nv-minute-sheet {
+      /* Tall phones start the block lower (as from 640px); the stage's own gap grows with the height. */
+      --nv-lift: clamp(0px, calc((100dvh - 920px) * 0.45), 110px);
+      --nv-stage-gap: clamp(8px, 2dvh, 22px);
+    }
+    /* One 48px row: the title on the left, Close on the right (and the session's Sound icon). */
     .nv-minute-top {
       padding: max(0.5rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0
         max(1rem, env(safe-area-inset-left));
     }
-    .nv-minute-title {
-      font-size: 1.375rem;
-      line-height: 1.75rem;
-      margin-top: 0;
+    .nv-minute-bar {
+      min-height: 48px;
     }
-    .nv-minute-tab {
-      padding-inline: 0.875rem;
+    .nv-minute-toggles-bar {
+      display: none;
     }
-    .nv-minute-stage {
-      margin-top: clamp(14px, 4.2dvh, 40px);
+    .nv-minute-sheet[data-session] .nv-minute-sound {
+      display: grid;
     }
     .nv-minute-col {
+      margin-top: -48px;
       padding-inline: 1rem;
+    }
+    .nv-minute-title {
+      display: flex;
+      align-items: center;
+      align-self: flex-start;
+      min-height: 48px;
+      max-width: calc(100% - 7rem);
+      margin-top: 0;
+      font-size: 1.1875rem;
+      line-height: 1.5rem;
+      letter-spacing: -0.01em;
+      text-align: start;
+    }
+    .nv-minute-tabs-root {
+      padding-top: var(--nv-lift);
+    }
+    .nv-minute-tabsbox {
+      margin-top: 8px;
+    }
+    .nv-minute-stage {
+      margin-top: var(--nv-stage-gap);
+    }
+    .nv-minute-readout {
+      margin-top: clamp(6px, 1.4dvh, 16px);
+    }
+    .nv-minute-options {
+      margin-top: 12px;
+    }
+    /* Down to the controls, the content reaches the screen's bottom edge (1px past it), so the dock rests
+       there whatever the tool: Start never moves between tabs, and what follows starts below the fold.
+       Its box starts at the stage's top (a stage-sized spacer), so on short screens (320×568, 375×548)
+       the sticky dock may rise over the stage rather than be pushed off the screen. */
+    .nv-minute-main {
+      min-height: calc(
+        100dvh - max(0.5rem, env(safe-area-inset-top)) - 112px - var(--nv-lift) - var(--nv-stage-gap) + 1px
+      );
+      margin-top: calc(var(--nv-d) * -1.157);
+    }
+    .nv-minute-main::before {
+      content: "";
+      flex: none;
+      height: calc(var(--nv-d) * 1.157);
+    }
+    /* The dock rests on the bottom edge, edge to edge: the safety line and the controls stay there while
+       the rest scrolls under them, over a backdrop as wide as the screen (no mask on phones). */
+    .nv-minute-controls {
+      width: calc(100% + 2rem);
+      margin: auto -1rem 0;
+      padding-inline: 1rem;
+    }
+    .nv-minute-controls::before {
+      inset: 0;
+      mask-image: none;
+    }
+    /* Under the dock, idle only: the Sound and Vibration toggles (44px, constant names). */
+    .nv-minute-toggles-under {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .nv-minute-toggles-under .nv-minute-toggle {
+      padding-inline: 12px 16px;
+      border-color: rgb(255 255 255 / 0.12);
     }
   }
   /* From 768px the title sits in the header row, between Sound and Close (a 48px row). */
-  @media (min-width: 48rem) {
+  @media (width >= 48rem) {
     .nv-minute-col {
       margin-top: -40px;
     }
@@ -712,41 +948,29 @@
       touch-action: none;
     }
   }
-  @media (pointer: coarse) and (max-width: 639.98px) {
+  /* The grabber sits in the header row's top edge, between the title and Close. */
+  @media (pointer: coarse) and (width < 40rem) {
     .nv-minute-handle {
       display: block;
+      position: absolute;
+      top: max(0.5rem, env(safe-area-inset-top));
+      left: 50%;
       width: 40px;
       height: 5px;
-      margin: 2px auto 4px;
+      margin-left: -20px;
       border-radius: 9999px;
       background: rgb(255 255 255 / 0.26);
-    }
-  }
-  @media (max-width: 359.98px) {
-    .nv-minute-tab {
-      padding-inline: 0.75rem;
-    }
-  }
-  /* Short phones (360×740): the stage sits higher, so Pulse's Start clears the bottom edge. */
-  @media (max-width: 639.98px) and (max-height: 760px) {
-    .nv-minute-stage {
-      margin-top: 14px;
     }
   }
 
   /* ---- Short landscape (a phone on its side) ------------------------------------------------- */
   /* The stage on the left, centred below the bar and sticky, so the orb never scrolls away; the tabs
-     and the tool on the right. A long screen (Rest's ticks) docks its main button at the bottom; while
-     it floats over the content before it, that content fades out and is cut off just above it
-     (experience.tsx sets data-docked and --nv-dock-cut, how much of it reaches under the button). */
+     and the tool on the right. The controls dock alone at the bottom over the same static backdrop;
+     the safety line stays in the flow just above them. */
   @media (orientation: landscape) and (max-height: 520px) {
     .nv-minute-popup {
       --nv-bar: calc(max(0.75rem, env(safe-area-inset-top)) + 48px);
       --nv-d: min(240px, calc((100dvh - var(--nv-bar) - 24px) / 1.157));
-    }
-    /* While docked, a control focused under the button scrolls up clear of it. */
-    .nv-minute-sheet:has(.nv-minute-controls[data-docked]) {
-      scroll-padding-bottom: 8rem;
     }
     .nv-minute-top {
       padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0
@@ -763,6 +987,7 @@
       padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
     }
     .nv-minute-title {
+      min-height: 0;
       margin-top: 0;
       font-size: 1.375rem;
       line-height: 2rem;
@@ -793,16 +1018,57 @@
       grid-column: 2;
       grid-row: 2;
     }
-    .nv-minute-sheet .nv-minute-controls .nv-minute-primary {
-      position: sticky;
-      bottom: max(12px, env(safe-area-inset-bottom));
-      z-index: 2;
+    /* The stage has its own column here: the content starts under the tabs and is as tall as it is. */
+    .nv-minute-main {
+      min-height: 0;
+      margin-top: 0;
     }
-    /* The clip also keeps the hidden part from taking taps. */
-    .nv-minute-controls[data-docked] :has(+ .nv-minute-primary) {
-      mask-image: linear-gradient(to bottom, #000 calc(100% - var(--nv-dock-cut) - 48px), transparent calc(100% - var(--nv-dock-cut)));
-      clip-path: inset(-8px -8px var(--nv-dock-cut) -8px);
+    .nv-minute-main::before {
+      content: none;
     }
+    /* The controls dock alone, to the screen's right edge; the backdrop fades out towards the stage. */
+    .nv-minute-controls {
+      width: calc(100% + 2rem);
+      margin: calc(clamp(12px, 2vh, 22px) - 24px) -1rem 0;
+      padding-inline: 1rem;
+    }
+    /* The fade lies in the gap between the columns, so the tool's column is fully covered. */
+    .nv-minute-controls::before {
+      inset: 0 0 0 -2rem;
+      mask-image: linear-gradient(to right, transparent, #000 2rem);
+    }
+  }
+
+  /* ---- Reduced motion and the visitor's pause: presses tint, the switcher's pill jumps ----- */
+  @media (prefers-reduced-motion: reduce) {
+    :is(
+        .nv-minute-toggle,
+        .nv-minute-sound,
+        .nv-minute-close,
+        .nv-minute-chip,
+        .nv-minute-primary,
+        .nv-minute-stop,
+        .nv-minute-quiet,
+        .nv-minute-tab
+      ):active {
+      scale: none;
+    }
+  }
+  html[data-motion="paused"]
+    :is(
+      .nv-minute-toggle,
+      .nv-minute-sound,
+      .nv-minute-close,
+      .nv-minute-chip,
+      .nv-minute-primary,
+      .nv-minute-stop,
+      .nv-minute-quiet,
+      .nv-minute-tab
+    ):active {
+    scale: none;
+  }
+  html[data-motion="paused"] .nv-minute-tab-pill {
+    transition: none;
   }
 
   /* ---- Forced colours: the orb and ring in CanvasText, controls in system colours ----------- */
@@ -846,14 +1112,20 @@
     .nv-minute-tab-pill {
       background: Highlight;
     }
-    .nv-minute-tab[data-active] {
+    .nv-minute-tab[data-active],
+    .nv-minute-tab[data-active] .nv-minute-tab-time {
       forced-color-adjust: none;
       color: HighlightText;
     }
+    .nv-minute-controls::before {
+      background: Canvas;
+    }
     .nv-minute-tabs,
     .nv-minute-toggle,
+    .nv-minute-sound,
     .nv-minute-chip,
-    .nv-minute-primary {
+    .nv-minute-primary,
+    .nv-minute-stop {
       border: 1px solid ButtonText;
     }
   }

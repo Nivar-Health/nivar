@@ -14,6 +14,7 @@ import {
   renderGrid,
   useHiDpiCanvas,
   type CanvasSize,
+  type LabelScale,
   type MonitorStatus,
 } from "./monitor-shared";
 
@@ -31,10 +32,22 @@ export type StethMonitorProps = {
   /** Hide the Listen button (e.g. on the nurse's own device). */
   hideListen?: boolean;
   className?: string;
-  /** The landing page's reduced-motion rest: no feed, and this label in place of "Waiting for device". */
+  /**
+   * Freeze the trace on its last frame and stop the draw loop (the landing page's reduced-motion rest
+   * and its Pause), with this label in place of "Waiting for device". Default false.
+   */
   paused?: boolean;
   /** Overlay shown while paused before any signal has arrived. Default "Paused". */
   pausedLabel?: ReactNode;
+  /**
+   * Off screen: paint the current frame once and run no draw loop. Unlike `paused` nothing on the
+   * monitor changes, and it resumes without a "Waiting for device" flash. Default false.
+   */
+  idle?: boolean;
+  /** Grow past `height` when larger text needs the room (`minHeight` instead of `height`). Default false. */
+  growWithText?: boolean;
+  /** "landing" raises the 10-11px labels (and the S1/S2 marks) to 12px. Default "console". */
+  labelScale?: LabelScale;
 };
 
 const NO_SIGNAL_MS = 1800;
@@ -52,6 +65,9 @@ export function StethMonitor({
   className,
   paused = false,
   pausedLabel = "Paused",
+  idle = false,
+  growWithText = false,
+  labelScale = "console",
 }: StethMonitorProps) {
   const [hasSignal, setHasSignal] = useState(false);
   const [listening, setListening] = useState(false);
@@ -67,6 +83,12 @@ export function StethMonitor({
   const soundRef = useRef<HeartSound | null>(null);
   const hrTextRef = useRef<HTMLSpanElement>(null);
   const meterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  /** Set only while frozen: the frame painter, so a resize can repaint instead of leaving a blank canvas. */
+  const drawRef = useRef<(() => void) | null>(null);
+  /** Mirrors hasSignal for the draw loop, so a restarted (or frozen) loop keeps the current state. */
+  const signalRef = useRef(false);
+  /** Whether the last draw-loop run was frozen (paused or idle), to detect the frozen -> playing transition. */
+  const wasPausedRef = useRef(paused || idle);
 
   const view = useRef({
     size: null as CanvasSize | null,
@@ -94,6 +116,8 @@ export function StethMonitor({
       v.total = 0;
       v.markers = [];
     }
+    // While frozen no loop is running: repaint once so the resized canvas is not left blank.
+    drawRef.current?.();
   };
 
   const { containerRef, canvasRef } = useHiDpiCanvas((size) => setup(size));
@@ -134,8 +158,9 @@ export function StethMonitor({
     if (!ctx) return;
     let raf = 0;
     let last = performance.now();
-    let signal = false;
+    let signal = signalRef.current;
     let lastHrText = "";
+    const markerPx = labelScale === "landing" ? 12 : 10;
 
     const currentHr = () => hrPropRef.current ?? chunkHrRef.current ?? view.current.detectedHr;
 
@@ -246,7 +271,7 @@ export function StethMonitor({
       ctx.globalAlpha = 1;
 
       // S1 / S2 annotations.
-      ctx.font = "600 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.font = `600 ${markerPx}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       ctx.textAlign = "center";
       for (const m of v.markers) {
         const x = ((m.at - startAbs) / cap) * width;
@@ -280,6 +305,7 @@ export function StethMonitor({
       const nowSignal = player.lastDataAt > 0 && now - player.lastDataAt < NO_SIGNAL_MS;
       if (nowSignal !== signal) {
         signal = nowSignal;
+        signalRef.current = nowSignal;
         setHasSignal(nowSignal);
         if (!nowSignal) {
           view.current.s1Intervals = [];
@@ -308,9 +334,28 @@ export function StethMonitor({
       draw();
       raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [canvasRef]);
+    const frozen = paused || idle;
+    if (frozen) {
+      // Frozen: paint the last frame once and start no loop. The heart sound goes quiet with the trace,
+      // or it would beat on by itself (heart-sound.ts free-runs when triggers stop).
+      soundRef.current?.setVolume(0);
+      drawRef.current = draw;
+      draw();
+    } else {
+      // Resuming a frozen trace: count the pause as fresh data so "Waiting for device..." doesn't
+      // flash while the buffer refills. (Only on that transition; first mounts are untouched.)
+      if (wasPausedRef.current) {
+        if (signalRef.current) playerRef.current.lastDataAt = performance.now();
+        soundRef.current?.setVolume(signalRef.current ? 0.9 : 0);
+      }
+      raf = requestAnimationFrame(loop);
+    }
+    wasPausedRef.current = frozen;
+    return () => {
+      cancelAnimationFrame(raf);
+      drawRef.current = null;
+    };
+  }, [canvasRef, paused, idle, labelScale]);
 
   const toggleListen = async () => {
     if (listening) {
@@ -324,7 +369,7 @@ export function StethMonitor({
       soundRef.current = sound;
       const hr = hrPropRef.current ?? chunkHrRef.current ?? view.current.detectedHr ?? 74;
       await sound.start(hr);
-      if (!hasSignal) sound.setVolume(0);
+      if (!hasSignal || paused || idle) sound.setVolume(0);
       setAudioError(null);
       setListening(true);
     } catch {
@@ -334,6 +379,7 @@ export function StethMonitor({
   };
 
   const live = hasSignal && status !== "stopped" && status !== "connecting";
+  const landing = labelScale === "landing";
   const overlay =
     paused && !hasSignal ? (
       pausedLabel
@@ -353,17 +399,22 @@ export function StethMonitor({
         "relative flex flex-col overflow-hidden rounded-2xl border border-[#262626] bg-[#0a0a0a] text-[#F2F2EE] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-12px_rgba(0,0,0,0.55)]",
         className,
       )}
-      style={{ height }}
+      style={growWithText ? { minHeight: height } : { height }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3.5 py-2">
-        <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] tracking-wide whitespace-nowrap">
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-2.5 overflow-hidden tracking-wide whitespace-nowrap",
+            landing ? "text-xs" : "text-[11px]",
+          )}
+        >
           <span className="inline-flex items-center gap-1.5 font-semibold text-[#E6E6E1]">
             <Stethoscope className="size-3.5" /> PCG
           </span>
           <span className="truncate rounded border border-[#E6E6E1]/25 px-1.5 py-px font-medium text-[#F7D88E]">{site}</span>
           <span className="hidden text-[#8F8F89] sm:inline">20 to 400 Hz</span>
         </div>
-        <LiveBadge live={live && !paused} paused={paused} />
+        <LiveBadge live={live && !paused} paused={paused} labelScale={labelScale} />
       </div>
 
       <div className="flex min-h-0 flex-1">
@@ -374,7 +425,7 @@ export function StethMonitor({
 
         <div className="flex w-[92px] shrink-0 flex-col justify-between gap-2 border-l border-white/5 bg-[#0A221E] px-3 py-2.5 sm:w-[124px]">
           <div className="flex flex-col">
-            <span className="text-[10px] font-semibold tracking-[0.14em] text-[#E6E6E1]">HR</span>
+            <span className={cn("font-semibold tracking-[0.14em] text-[#E6E6E1]", landing ? "text-xs" : "text-[10px]")}>HR</span>
             <span
               ref={hrTextRef}
               className="mt-0.5 font-mono text-[34px] leading-none font-semibold tracking-tight text-[#E6E6E1] tabular-nums sm:text-[40px]"
@@ -382,7 +433,7 @@ export function StethMonitor({
             >
               --
             </span>
-            <span className="mt-1 text-[10px] tracking-wider text-[#8F8F89]">bpm</span>
+            <span className={cn("mt-1 tracking-wider text-[#8F8F89]", landing ? "text-xs" : "text-[10px]")}>bpm</span>
           </div>
 
           {!hideListen && (
@@ -421,7 +472,9 @@ export function StethMonitor({
                   />
                 ))}
               </div>
-              {audioError && <span className="text-[10px] leading-tight text-[#FF8A7F]">{audioError}</span>}
+              {audioError && (
+                <span className={cn("leading-tight text-[#FF8A7F]", landing ? "text-xs" : "text-[10px]")}>{audioError}</span>
+              )}
             </div>
           )}
         </div>

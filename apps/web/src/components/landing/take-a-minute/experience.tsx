@@ -11,18 +11,21 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type FC,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { Disclosure } from "../disclosure";
 import { usePrefersReducedMotion } from "../motion";
 import { bindStyle, spring, stopAll, tween, type Ease } from "./anim";
-import { ENABLED_TOOLS, TOOL_ENABLED, TOOL_LABEL, TOOL_TONE, isToolId } from "./config";
+import { ENABLED_TOOLS, TOOL_DURATION, TOOL_ENABLED, TOOL_LABEL, TOOL_SPOKEN, TOOL_TONE, isToolId } from "./config";
 import { onSessionDone } from "./engine";
 import { Field, createMotes, moteCount } from "./field";
 import { canVibrate, vibrate } from "./haptics";
@@ -40,17 +43,20 @@ import "./experience.css";
    drawn by motion values: the launcher's pearl blooms into a pond, flies up into the orb, lands
    with one ripple, and the time-left ring draws in (§5.8); closing plays it back into the pearl
    (§5.9). Every spring retargets from its current value and velocity, so Esc mid-flight simply
-   turns the motion around. The tools (tools/, U8) render through Layout and drive the stage
-   through the ExperienceApi; nothing they do goes through React state per frame. */
+   turns the motion around. The tools (tools/) render through Layout and drive the stage
+   through the ExperienceApi; nothing they do goes through React state per frame.
+   Mobile pass (mobile spec U8): the title, switcher and Start are in by 480 ms while the flight
+   finishes, repeat opens play at ×0.8, a close hands off within 350 ms, and on portrait phones the
+   safety line and the controls dock at the bottom of the sheet. */
 
 export type ExperienceProps = {
   open: boolean;
   /** The tool to show, already resolved by the cluster (enabled; "" mapped to the last used). */
   tool: ToolId;
   onToolChange(tool: ToolId): void;
-  /** false: the close has started (its timeline then runs for about 680ms). */
+  /** false: the close has started (its timeline then hands off within 280ms, ×0.85 on phones). */
   onOpenChange(open: boolean): void;
-  /** Where focus goes on close: the launcher while it is still in the page, else the corner button. */
+  /** Where focus goes on close, never <body>: the launcher, the corner button, the bar's Menu tab or the h1. */
   returnFocus(): HTMLElement | null;
   /** The element the orb flies from and back to: a pearl, or a launcher. Read at open and close. */
   origin?(): HTMLElement | null;
@@ -83,29 +89,66 @@ const TONE_LIGHT = 0.24;
 const ANNOUNCE_GAP_MS = 5000;
 /** Room kept between what a scroll brings into view and the top bar or the screen's bottom edge. */
 const CLEAR = 12;
+/** Closing (×0.85 on phones): the orb is checked against its pearl from LAND_MS, handed off by CLOSE_MS. */
+const LAND_MS = 220;
+const CLOSE_MS = 280;
+/** Every open after the first in a page view plays at this pace, flight and all. */
+const REPEAT_PACE = 0.8;
+/** A phone on its side (experience.css): the stage takes the left column and the controls dock alone. */
+const SHORT_LANDSCAPE = "(orientation: landscape) and (max-height: 520px)";
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /** The part of the sheet that shows: below the sticky top bar, above the screen's bottom edge. */
 type View = { top: number; bottom: number };
 
+/** The controls while they dock at the bottom of the sheet (portrait phones, short landscape), else null. */
+function stickyDock(panel: HTMLElement | null | undefined): HTMLElement | null {
+  const controls = panel?.querySelector<HTMLElement>(".nv-minute-controls");
+  return controls && getComputedStyle(controls).position === "sticky" ? controls : null;
+}
+
 /**
- * Where the sheet scrolls when a session starts (K3): the stage (the orb on its ring), the time left and
- * the first control (Pause) fully in view, by the shortest move; null when they already are. Rest's ticks
- * or a short screen can leave them scrolled away. A sticky stage (short landscape) is in view already.
+ * Where the sheet scrolls when a session starts (K3): the stage (the orb on its ring), the time left, a
+ * prompt with words in it (the lead-in line), a safety line in the flow (short landscape) and the first
+ * control (Pause) fully in view, by the shortest move; null when they already are. Rest's ticks or a short
+ * screen can leave them scrolled away. A sticky stage (short landscape) is in view already, and a docked
+ * Pause always is: then the rest must clear the dock, and where it cannot all fit above it (Rest's long
+ * safety line at 320×568) the words win over the top of the ring but not over the orb itself, and the time
+ * left never goes under the top bar.
  */
 function stageScroll(sheet: HTMLElement, view: View): number | null {
   const stage = sheet.querySelector<HTMLElement>(".nv-minute-stage");
+  const flowStage = stage && getComputedStyle(stage).position !== "sticky" ? stage : null;
   const panel = sheet.querySelector<HTMLElement>(".nv-minute-panel");
   const controls = panel?.querySelector<HTMLElement>(".nv-minute-controls");
+  const dock = stickyDock(panel);
+  const floor = dock ? view.bottom - dock.offsetHeight : view.bottom;
+  const readout = panel?.querySelector<HTMLElement>(".nv-minute-readout")?.getBoundingClientRect();
+  const prompt = panel?.querySelector<HTMLElement>(".nv-minute-prompt");
+  const words = prompt?.textContent?.trim() ? prompt.getBoundingClientRect() : null;
+  const alwaysEl = panel?.querySelector<HTMLElement>(".nv-minute-always");
+  const flowAlways = alwaysEl && !controls?.contains(alwaysEl) ? alwaysEl.getBoundingClientRect() : null;
   const parts = [
-    stage && getComputedStyle(stage).position !== "sticky" ? stage : null,
-    panel?.querySelector<HTMLElement>(".nv-minute-readout"),
-    controls?.querySelector<HTMLElement>(".nv-minute-primary") ?? controls?.querySelector<HTMLElement>("button"),
-  ].flatMap((el) => (el ? [el.getBoundingClientRect()] : []));
+    flowStage?.getBoundingClientRect(),
+    readout,
+    words,
+    flowAlways,
+    dock
+      ? null
+      : (controls?.querySelector<HTMLElement>(".nv-minute-primary") ?? controls?.querySelector<HTMLElement>("button"))?.getBoundingClientRect(),
+  ].flatMap((r) => (r ? [r] : []));
   if (!parts.length) return null;
   const top = Math.min(...parts.map((r) => r.top)) - (view.top + CLEAR);
-  const bottom = Math.max(...parts.map((r) => r.bottom)) - (view.bottom - CLEAR);
+  // A dock's own 24px fade is the room kept above it.
+  const bottom = Math.max(...parts.map((r) => r.bottom)) - (dock ? floor : floor - CLEAR);
+  if (dock && readout && bottom > top) {
+    const need = Math.max(readout.bottom, words?.bottom ?? 0, flowAlways?.bottom ?? 0) - floor;
+    // The orb stays below the bar (K3) unless the time left needs that room to clear the dock.
+    const orb = flowStage?.querySelector<HTMLElement>(".nv-minute-orb")?.getBoundingClientRect();
+    const orbRoom = orb ? Math.max(orb.top - view.top, readout.bottom - floor) : need;
+    return sheet.scrollTop + Math.min(need, orbRoom, readout.top - (view.top + CLEAR));
+  }
   if (top < 0) return sheet.scrollTop + top;
   if (bottom > 0) return sheet.scrollTop + Math.min(bottom, top);
   return null;
@@ -114,7 +157,8 @@ function stageScroll(sheet: HTMLElement, view: View): number | null {
 /**
  * Where the sheet scrolls when a session ends and the tabs come back (a11y-16). To the top if the focused
  * control still shows there; otherwise just far enough to show it, and then never with the tabs half under
- * the top bar: past them if focus allows, else back to them. Focus itself never moves.
+ * the top bar: past them if focus allows, else back to them. Focus itself never moves. A control in the
+ * docked controls shows wherever the sheet is scrolled.
  */
 function tabsScroll(sheet: HTMLElement, view: View): number | null {
   const tabs = sheet.querySelector<HTMLElement>(".nv-minute-tabs")?.getBoundingClientRect();
@@ -122,7 +166,9 @@ function tabsScroll(sheet: HTMLElement, view: View): number | null {
   const now = sheet.scrollTop;
   const max = sheet.scrollHeight - sheet.clientHeight;
   const active = document.activeElement;
-  const focus = active instanceof HTMLElement && sheet.contains(active) ? active.getBoundingClientRect() : null;
+  const dock = stickyDock(sheet.querySelector<HTMLElement>(".nv-minute-panel"));
+  const focus =
+    active instanceof HTMLElement && sheet.contains(active) && !dock?.contains(active) ? active.getBoundingClientRect() : null;
   // A rect measured now sits at rect.y + now - s once the sheet is scrolled to s.
   const shows = (s: number) => !focus || (focus.top + now - s >= view.top && focus.bottom + now - s <= view.bottom);
   let s = 0;
@@ -159,6 +205,9 @@ function useMedia(query: string): boolean {
 
 /** Phones play every duration at ×0.85 (spec §5.8). */
 const pace = () => (window.innerWidth < 640 ? 0.85 : 1);
+
+/** Opens so far in this page view (the module lives as long as the page). */
+let opens = 0;
 
 /** The bloom's opaque core: its outer 14% is a feather (experience.css). */
 const BLOOM_CORE = 0.86;
@@ -260,12 +309,59 @@ const TOOL_VIEWS: Partial<Record<ToolId, FC<ToolProps>>> = Object.fromEntries(
 );
 
 /** What Layout needs from the shell. */
-type Shell = { textHost: HTMLDivElement | null; compactHeight: boolean; setArmed(on: boolean): void };
-const ShellContext = createContext<Shell>({ textHost: null, compactHeight: false, setArmed: () => {} });
+type Shell = {
+  textHost: HTMLDivElement | null;
+  compactHeight: boolean;
+  /** Below 640px: "About this exercise" stays a closed disclosure at every height. */
+  phone: boolean;
+  /** The safety line docks with the controls (everywhere but short landscape). */
+  dockAlways: boolean;
+  /** A session is running (or paused): the Sound and Vibration toggles leave the content. */
+  session: boolean;
+  /** The Sound and Vibration toggles, shown under the dock on phones (experience.css). */
+  toggles: ReactNode;
+  setArmed(on: boolean): void;
+};
+const ShellContext = createContext<Shell>({
+  textHost: null,
+  compactHeight: false,
+  phone: false,
+  dockAlways: false,
+  session: false,
+  toggles: null,
+  setArmed: () => {},
+});
 
-/** The tools' slot layout (spec §5.2). The orb slot is portaled into the shell's stage. */
-function Layout({ orb, orbButton, readout, prompt, controls, fine, always }: LayoutSlots) {
-  const { textHost, compactHeight, setArmed } = useContext(ShellContext);
+/**
+ * The dock's two measures, both event-driven (no frame loop): its height, as --nv-dock-h on the sheet, so a
+ * control focused under it scrolls clear; and data-stuck, set while the dock floats over the content (or
+ * is within 32px of it), so its pond backdrop shows only when something can pass under it and never draws
+ * a band across the field. The sentinel after it marks where it would sit unstuck.
+ */
+function attachDock(el: HTMLDivElement | null) {
+  const sheet = el?.closest<HTMLElement>(".nv-minute-sheet");
+  const end = el?.nextElementSibling;
+  if (!el || !sheet || !end) return;
+  const sizes = new ResizeObserver(() => sheet.style.setProperty("--nv-dock-h", `${Math.ceil(el.offsetHeight)}px`));
+  sizes.observe(el);
+  const stuck = new IntersectionObserver(
+    ([e]) => el.toggleAttribute("data-stuck", !e.isIntersecting && e.boundingClientRect.top >= (e.rootBounds?.bottom ?? 0)),
+    { root: sheet, rootMargin: "0px 0px -32px 0px" },
+  );
+  stuck.observe(end);
+  return () => {
+    sizes.disconnect();
+    stuck.disconnect();
+  };
+}
+
+/**
+ * The tools' slot layout (spec §5.2; mobile spec U8 Behaviour 1): readout, prompt, options, the safety
+ * line, the controls, then what sits under them. The orb slot is portaled into the shell's stage.
+ */
+function Layout({ orb, orbButton, readout, prompt, options, always, controls, after, fine }: LayoutSlots) {
+  const { textHost, compactHeight, phone, dockAlways, session, toggles, setArmed } = useContext(ShellContext);
+  const aboutId = useId();
   const padRef = useRef<HTMLButtonElement>(null);
   const pressRef = useRef(orbButton?.onPress);
   const armed = Boolean(orbButton);
@@ -308,35 +404,59 @@ function Layout({ orb, orbButton, readout, prompt, controls, fine, always }: Lay
   return (
     <div className="nv-minute-layout">
       {textHost ? createPortal(face, textHost) : null}
-      {readout ? (
-        <div data-nv-in="readout" className="nv-minute-readout">
-          {readout}
+      {/* Everything down to the controls. On portrait phones it reaches the screen's bottom edge, so the
+          dock rests there in the thumb zone and what follows it starts below the fold. */}
+      <div className="nv-minute-main">
+        {readout ? (
+          <div data-nv-in="readout" className="nv-minute-readout">
+            {readout}
+          </div>
+        ) : null}
+        {prompt ? (
+          <div data-nv-in="prompt" className="nv-minute-prompt">
+            {prompt}
+          </div>
+        ) : null}
+        {options ? (
+          <div data-nv-in="options" className="nv-minute-options">
+            {options}
+          </div>
+        ) : null}
+        {always && !dockAlways ? (
+          <div data-nv-in="always" className="nv-minute-always">
+            {always}
+          </div>
+        ) : null}
+        {/* The dock: it sticks to the bottom of the sheet whenever the content runs past it, and on
+            portrait phones it always rests there (experience.css). */}
+        <div ref={attachDock} data-nv-in="controls" className="nv-minute-controls">
+          {always && dockAlways ? <div className="nv-minute-always">{always}</div> : null}
+          {controls}
         </div>
-      ) : null}
-      {prompt ? (
-        <div data-nv-in="prompt" className="nv-minute-prompt">
-          {prompt}
-        </div>
-      ) : null}
-      <div data-nv-in="controls" className="nv-minute-controls">
-        {controls}
+        <span aria-hidden className="nv-minute-dock-end" />
       </div>
+      {after ? (
+        <div data-nv-in="after" className="nv-minute-after">
+          {after}
+        </div>
+      ) : null}
+      {session ? null : (
+        <div data-nv-in="toggles" className="nv-minute-toggles nv-minute-toggles-under">
+          {toggles}
+        </div>
+      )}
       {fine ? (
-        compactHeight ? (
-          <details data-nv-in="fine" className="nv-minute-fine nv-minute-about">
-            <summary>About this exercise</summary>
-            <div className="nv-minute-about-body">{fine}</div>
-          </details>
+        phone || compactHeight ? (
+          <div data-nv-in="fine" className="nv-minute-about">
+            <Disclosure id={`nv-minute-about${aboutId}`} variant="dark" title="About this exercise">
+              {fine}
+            </Disclosure>
+          </div>
         ) : (
           <div data-nv-in="fine" className="nv-minute-fine">
             {fine}
           </div>
         )
-      ) : null}
-      {always ? (
-        <div data-nv-in="always" className="nv-minute-always">
-          {always}
-        </div>
       ) : null}
     </div>
   );
@@ -372,7 +492,11 @@ function Sheet({
 }: SheetProps) {
   const reducedMotion = usePrefersReducedMotion();
   const coarse = useMedia("(pointer: coarse)");
-  const compactHeight = useMedia("(max-height: 699.98px)");
+  const compactHeight = useMedia("(height < 700px)");
+  const phone = useMedia("(width < 40rem)");
+  // The safety line docks with the controls, except in short landscape, where it stays in the flow just
+  // above them so the little height there is left to the content.
+  const dockAlways = !useMedia(SHORT_LANDSCAPE);
   const [prefs, setPrefsState] = useState<Prefs>(loadPrefs);
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const [textHost, setTextHost] = useState<HTMLDivElement | null>(null);
@@ -464,7 +588,10 @@ function Sheet({
         sound.wake();
       }
 
-      const k = pace();
+      // The same choreography on every open, a little quicker after the first (the CSS stagger reads --nv-k).
+      if (!retarget) opens += 1;
+      const k = pace() * (opens > 1 ? REPEAT_PACE : 1);
+      ui.style.setProperty("--nv-k", String(k));
       const box = stage.getBoundingClientRect();
       const cx = box.left + box.width / 2;
       const cy = box.top + box.height / 2;
@@ -482,7 +609,7 @@ function Sheet({
       }
 
       if (reducedMotion) {
-        // A 200ms fade of the finished scene: no bloom, flight, ripple, stagger or motes.
+        // A 160ms crossfade of the finished scene: no bloom, flight, ripple, stagger or motes.
         stopAll(scene.all);
         if (!retarget) {
           ring.refill(1, 0);
@@ -510,7 +637,7 @@ function Sheet({
         v.textIn.jump(1);
         v.ringDraw.jump(1);
         if (!retarget) v.root.jump(0);
-        tween(v.root, 1, 0.2, "linear");
+        tween(v.root, 1, 0.16, "linear");
         ui.dataset.ui = "in";
         ui.dataset.ready = "";
         phaseRef.current = "open";
@@ -519,7 +646,7 @@ function Sheet({
 
       v.root.jump(1);
       // A swipe-close leaves the sheet below the screen.
-      if (retarget) spring(v.surfaceY, 0, 0.42 * pace(), 0);
+      if (retarget) spring(v.surfaceY, 0, 0.42 * k, 0);
       else v.surfaceY.jump(0);
       if (!retarget) {
         // A fresh stage: whatever the last session left (an empty ring, a receded orb, a dimmed
@@ -597,10 +724,10 @@ function Sheet({
       tweenK(v.ringDraw, 1, 0.7, CALM, retarget ? 0.2 : 0.72);
       tweenK(v.textIn, 1, 0.45, CALM, retarget ? 0.2 : 0.72);
 
-      // The stagger runs on CSS transitions (experience.css), so a close reverses each in place.
-      requestAnimationFrame(() => {
-        if (phaseRef.current !== "closing") ui.dataset.ui = "in";
-      });
+      // The stagger runs on CSS transitions (experience.css), so a close reverses each in place. Measuring the
+      // stage above, with the popup shown, gave every part its hidden style, so the transitions start now
+      // rather than a frame later.
+      ui.dataset.ui = "in";
 
       // One mint ripple when the orb lands (its rise settles within 2px at about 950ms).
       if (!retarget) {
@@ -622,24 +749,24 @@ function Sheet({
     [clearTimers, later, motes, origin, reducedMotion, ring, scene, titleRef, v],
   );
 
-  /* ---- Closing (§5.9) ------------------------------------------------------------------- */
+  /* ---- Closing (§5.9; mobile spec U8: the handoff within 350ms) -------------------------- */
   const playClose = useCallback(() => {
     const stage = stageRef.current;
     const orbEl = orbRef.current;
     const bloomEl = bloomRef.current;
     const ui = uiRef.current;
-    // Esc mid-opening: everything turns around from where it is, with no pause first.
-    const interrupting = phaseRef.current === "opening";
+    // Esc mid-opening turns everything around from where it is: no step waits on a delay.
     clearTimers();
     phaseRef.current = "closing";
     const token = ++closeTokenRef.current;
     motes.setMoving(false);
+    const k = pace();
     if (ui) {
+      ui.style.setProperty("--nv-k", String(k));
       ui.dataset.ui = "out";
       delete ui.dataset.ready;
     }
-    const k = pace();
-    sound.fadeOut(450 * k);
+    sound.fadeOut(CLOSE_MS * k);
     const handoff = (land?: () => void) => {
       if (phaseRef.current !== "closing" || token !== closeTokenRef.current) return;
       phaseRef.current = "closed";
@@ -656,25 +783,24 @@ function Sheet({
       later(170, () => handoff());
       return;
     }
-    const lead = (s: number) => (interrupting ? 0 : s * k);
     const springK = (value: MotionValue<number>, to: number, vd: number, bounce: number, delay = 0) =>
-      spring(value, to, vd * k, bounce, { delay: lead(delay) });
+      spring(value, to, vd * k, bounce, { delay: delay * k });
     const tweenK = (value: MotionValue<number>, to: number, s: number, ease: Ease, delay = 0) =>
       tween(value, to, s * k, ease, { delay: delay * k });
 
     const style = closeStyle();
     if (style.kind === "swipe") {
       // The sheet keeps the finger's speed on its way down; the page brightens behind it.
-      spring(v.surfaceY, window.innerHeight, 0.42 * k, 0, { velocity: Math.max(0, style.speed) });
-      tweenK(v.dim, 0, 0.36, EXIT);
-      later(440 * k, () => handoff());
+      spring(v.surfaceY, window.innerHeight, 0.28 * k, 0, { velocity: Math.max(0, style.speed) });
+      tweenK(v.dim, 0, 0.26, EXIT);
+      later(CLOSE_MS * k, () => handoff());
       return;
     }
 
-    tweenK(v.textIn, 0, 0.16, EXIT);
-    tweenK(v.haloIn, 0, 0.3, EXIT);
-    tweenK(v.fieldIn, 0, 0.3, EXIT);
-    tweenK(v.rippleOpacity, 0, 0.16, EXIT);
+    tweenK(v.textIn, 0, 0.12, EXIT);
+    tweenK(v.haloIn, 0, 0.2, EXIT);
+    tweenK(v.fieldIn, 0, 0.2, EXIT);
+    tweenK(v.rippleOpacity, 0, 0.12, EXIT);
 
     const box = stage.getBoundingClientRect();
     const cx = box.left + box.width / 2;
@@ -682,13 +808,13 @@ function Sheet({
     const d = orbEl.offsetWidth || 1;
     const to = readOrigin(origin?.());
     if (!to?.pearl) {
-      // Nowhere to land (no pearl on screen): the orb fades where it is.
-      tweenK(v.orbIn, 0, 0.3, EXIT);
-      tweenK(v.flyScale, v.flyScale.get() * 0.9, 0.3, EXIT);
-      springK(v.bloom, 0.4, 0.52, 0, 0.12);
-      tweenK(v.bloomFade, 0, 0.2, EXIT, 0.46);
-      tweenK(v.dim, 0, 0.24, EXIT, 0.36);
-      later(680 * k, () => handoff());
+      // Nowhere to land (no pearl on screen): the orb fades where it is and the pond drains to its origin.
+      tweenK(v.orbIn, 0, 0.2, EXIT);
+      tweenK(v.flyScale, v.flyScale.get() * 0.9, 0.2, EXIT);
+      springK(v.bloom, 0.4, 0.24, 0, 0.04);
+      tweenK(v.bloomFade, 0, 0.14, EXIT, 0.14);
+      tweenK(v.dim, 0, 0.18, EXIT, 0.1);
+      later(CLOSE_MS * k, () => handoff());
       return;
     }
     // Re-centre the pond on the landing point while it still covers the screen, so it contracts
@@ -700,17 +826,19 @@ function Sheet({
       v.bloom.jump(v.cover.get());
     }
     const target = { x: to.x - cx, y: to.y - cy, scale: to.size / (d * REST_SCALE) };
-    springK(v.flyX, target.x, 0.55, 0, 0.08);
-    springK(v.flyY, target.y, 0.55, 0, 0.08);
-    springK(v.flyScale, target.scale, 0.55, 0, 0.08);
-    springK(v.scale, REST_SCALE, 0.55, 0, 0.08);
-    springK(v.lift, 0, 0.55, 0, 0.08);
-    tweenK(v.skin, 1, 0.34, "easeInOut", interrupting ? 0.1 : 0.26);
-    tweenK(v.orbIn, 1, 0.16, "linear");
-    springK(v.bloom, to.size / BLOOM, 0.52, 0, 0.12);
-    tweenK(v.bloomFade, 0, 0.2, EXIT, 0.46);
-    tweenK(v.dim, 0, 0.24, EXIT, 0.36);
-    // The handoff waits until the orb sits on the pearl (within a pixel; at most 420ms more), then
+    // Short, critically damped springs: the orb is home in about 200ms, and a retarget keeps its velocity.
+    // Everything else ends with the handoff (CLOSE_MS), so nothing is cut short when the popup hides.
+    springK(v.flyX, target.x, 0.2, 0);
+    springK(v.flyY, target.y, 0.2, 0);
+    springK(v.flyScale, target.scale, 0.2, 0);
+    springK(v.scale, REST_SCALE, 0.2, 0);
+    springK(v.lift, 0, 0.2, 0);
+    tweenK(v.skin, 1, 0.2, "easeInOut", 0.04);
+    tweenK(v.orbIn, 1, 0.1, "linear");
+    springK(v.bloom, to.size / BLOOM, 0.24, 0, 0.04);
+    tweenK(v.bloomFade, 0, 0.14, EXIT, 0.14);
+    tweenK(v.dim, 0, 0.18, EXIT, 0.1);
+    // The handoff waits until the orb sits on the pearl (within a pixel; at most until CLOSE_MS), then
     // sets it exactly there, so the real pearl takes over without a jump.
     const land = () => {
       v.flyX.jump(target.x);
@@ -724,10 +852,10 @@ function Sheet({
       Math.abs(v.flyX.get() - target.x) < 1 &&
       Math.abs(v.flyY.get() - target.y) < 1 &&
       Math.abs(v.flyScale.get() - target.scale) * d * REST_SCALE < 1;
-    later(680 * k, () => {
-      const deadline = performance.now() + 420 * k;
+    later(LAND_MS * k, () => {
+      const deadline = performance.now() + (CLOSE_MS - LAND_MS) * k;
       const wait = () => {
-        if (landed() || performance.now() > deadline) handoff(land);
+        if (landed() || performance.now() >= deadline) handoff(land);
         else requestAnimationFrame(wait);
       };
       wait();
@@ -781,44 +909,14 @@ function Sheet({
     return () => document.removeEventListener("focusin", onFocusIn);
   }, [open, titleRef]);
 
-  // The header's backdrop appears once the sheet scrolls (experience.css). In short landscape a long
-  // screen docks the main button at the bottom (sticky); while it floats over the content before it,
-  // that content fades out and is cut off 8px above it (data-docked, --nv-dock-cut).
+  // The header's backdrop appears once the sheet scrolls (experience.css). The docked controls carry
+  // their own static backdrop, so nothing here runs per frame.
   useEffect(() => {
     const sheet = uiRef.current;
     if (!sheet) return;
-    let raf = 0;
-    const dock = () => {
-      raf = 0;
-      const controls = sheet.querySelector<HTMLElement>(".nv-minute-panel .nv-minute-controls");
-      if (!controls) return;
-      const button = controls.querySelector<HTMLElement>(".nv-minute-primary");
-      const before = button?.previousElementSibling;
-      let cut = 0;
-      if (button && before && getComputedStyle(button).position === "sticky") {
-        const top = button.getBoundingClientRect().top;
-        if (top > 0) cut = before.getBoundingClientRect().bottom - (top - 8);
-      }
-      if (cut > 0) controls.style.setProperty("--nv-dock-cut", `${Math.round(cut)}px`);
-      controls.toggleAttribute("data-docked", cut > 0);
-    };
-    const update = () => {
-      if (!raf) raf = requestAnimationFrame(dock);
-    };
-    const onScroll = () => {
-      sheet.toggleAttribute("data-scrolled", sheet.scrollTop > 4);
-      update();
-    };
+    const onScroll = () => sheet.toggleAttribute("data-scrolled", sheet.scrollTop > 4);
     sheet.addEventListener("scroll", onScroll, { passive: true });
-    const sizes = new ResizeObserver(update);
-    sizes.observe(sheet);
-    const col = sheet.querySelector(".nv-minute-col");
-    if (col) sizes.observe(col);
-    return () => {
-      cancelAnimationFrame(raf);
-      sheet.removeEventListener("scroll", onScroll);
-      sizes.disconnect();
-    };
+    return () => sheet.removeEventListener("scroll", onScroll);
   }, []);
 
   // The sheet scrolls by itself only around a session and after a tool switch from a link: smoothly,
@@ -834,7 +932,9 @@ function Sheet({
   );
 
   // A session's start brings its stage into view; its end settles the returning tabs (stageScroll,
-  // tabsScroll). Measured a frame after the commit, once the tool's controls have changed.
+  // tabsScroll). Measured a frame after the commit, once the tool's controls have changed. For the session,
+  // the prompt keeps the height it starts with: phones reserve no lines for it (tools.css), so a line that
+  // empties (the lead-in) would otherwise lift a docked dock off the screen's bottom edge once scrolled.
   const sessionWasRef = useRef(false);
   useEffect(() => {
     const was = sessionWasRef.current;
@@ -844,6 +944,8 @@ function Sheet({
       const sheet = uiRef.current;
       const bar = zoneRef.current;
       if (!sheet || !bar) return;
+      const prompt = sheet.querySelector<HTMLElement>(".nv-minute-panel .nv-minute-prompt");
+      if (prompt) prompt.style.minHeight = sessionActive ? `${prompt.offsetHeight}px` : "";
       const view = { top: bar.getBoundingClientRect().bottom, bottom: sheet.getBoundingClientRect().top + sheet.clientHeight };
       const to = sessionActive ? stageScroll(sheet, view) : tabsScroll(sheet, view);
       if (to !== null) scrollSheet(to);
@@ -989,6 +1091,9 @@ function Sheet({
         tick() {
           if (live()) sound.tick();
         },
+        cue(kind) {
+          if (live() && (prefs.sound || prefs.eyesChime)) sound.cue(kind);
+        },
       },
       haptics: {
         supported: vibrationOk,
@@ -1044,7 +1149,47 @@ function Sheet({
   const setArmed = useCallback((on: boolean) => {
     armedRef.current = on;
   }, []);
-  const shell = useMemo<Shell>(() => ({ textHost, compactHeight, setArmed }), [textHost, compactHeight, setArmed]);
+
+  const toggleSound = useCallback(() => {
+    const on = !prefs.sound;
+    if (on) sound.enable();
+    else {
+      sound.disable();
+      // The Eyes chime still sounds with Sound off: this press keeps its context running.
+      if (prefs.eyesChime && tool === "eyes") sound.prime();
+    }
+    setPrefs({ sound: on });
+  }, [prefs.sound, prefs.eyesChime, tool, setPrefs]);
+  const toggleVibration = useCallback(() => {
+    const on = !prefs.vibration;
+    if (on) vibrate("tap");
+    setPrefs({ vibration: on });
+  }, [prefs.vibration, setPrefs]);
+
+  // Toggle buttons: a constant name with aria-pressed; the icon shows the state (a11y-13). Rendered in
+  // the top bar from 640px and under the dock on phones (experience.css shows one of the two).
+  const toggles = useMemo(
+    () => (
+      <>
+        <button type="button" aria-pressed={prefs.sound} className="nv-minute-toggle" onClick={toggleSound}>
+          {prefs.sound ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
+          Sound
+        </button>
+        {vibrationOk ? (
+          <button type="button" aria-pressed={prefs.vibration} className="nv-minute-toggle" onClick={toggleVibration}>
+            {prefs.vibration ? <Vibrate aria-hidden /> : <VibrateOff aria-hidden />}
+            Vibration
+          </button>
+        ) : null}
+      </>
+    ),
+    [prefs.sound, prefs.vibration, toggleSound, toggleVibration, vibrationOk],
+  );
+
+  const shell = useMemo<Shell>(
+    () => ({ textHost, compactHeight, phone, dockAlways, session: sessionActive, toggles, setArmed }),
+    [textHost, compactHeight, phone, dockAlways, sessionActive, toggles, setArmed],
+  );
 
   const {
     root: rootBind,
@@ -1088,16 +1233,11 @@ function Sheet({
     [bloomStyle],
   );
 
-  const toggleSound = () => {
-    const on = !prefs.sound;
-    if (on) sound.enable();
-    else sound.disable();
-    setPrefs({ sound: on });
-  };
-  const toggleVibration = () => {
-    const on = !prefs.vibration;
-    if (on) vibrate("tap");
-    setPrefs({ vibration: on });
+  // Sound left on last time starts with the first press inside (a touch grants it at the click). The
+  // Eyes chime primes the context from the same presses, so the Start tap lets it sound with Sound off.
+  const wake = () => {
+    sound.wake();
+    if (prefs.eyesChime && tool === "eyes") sound.prime();
   };
 
   return (
@@ -1112,32 +1252,19 @@ function Sheet({
           ref={uiRef}
           className="theme-pine nv-minute-sheet"
           data-session={sessionActive ? "" : undefined}
-          // Sound left on last time starts with the first press inside (a touch grants it at the click).
-          onPointerDownCapture={() => sound.wake()}
-          onClickCapture={() => sound.wake()}
-          onKeyDownCapture={() => sound.wake()}
+          onPointerDownCapture={wake}
+          onClickCapture={wake}
+          onKeyDownCapture={wake}
         >
           <div ref={zoneRef} data-nv-in="top" className="nv-minute-top">
             <span aria-hidden className="nv-minute-handle" />
             <div className="nv-minute-bar">
-              {/* Toggle buttons: a constant name with aria-pressed; the icon shows the state. */}
-              <div className="nv-minute-toggles">
-                <button type="button" aria-pressed={prefs.sound} className="nv-minute-toggle" onClick={toggleSound}>
-                  {prefs.sound ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
-                  Sound
-                </button>
-                {vibrationOk ? (
-                  <button
-                    type="button"
-                    aria-pressed={prefs.vibration}
-                    className="nv-minute-toggle"
-                    onClick={toggleVibration}
-                  >
-                    {prefs.vibration ? <Vibrate aria-hidden /> : <VibrateOff aria-hidden />}
-                    Vibration
-                  </button>
-                ) : null}
-              </div>
+              <div className="nv-minute-toggles nv-minute-toggles-bar">{toggles}</div>
+              {/* Phones, during a session: the one Sound toggle, as an icon left of Close. */}
+              <button type="button" aria-pressed={prefs.sound} className="nv-minute-sound" onClick={toggleSound}>
+                {prefs.sound ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
+                <span className="sr-only">Sound</span>
+              </button>
               <Dialog.Close aria-label="Close" className="nv-minute-close">
                 <X aria-hidden />
               </Dialog.Close>
@@ -1158,9 +1285,16 @@ function Sheet({
               >
                 <div data-nv-in="tabs" className="nv-minute-tabsbox">
                   <Tabs.List aria-label="Timers" className="nv-minute-tabs" inert={sessionActive}>
+                    {/* Name over duration; screen readers hear the spoken name alone (TOOL_SPOKEN). */}
                     {ENABLED_TOOLS.map((id) => (
                       <Tabs.Tab key={id} value={id} className="nv-minute-tab">
-                        {TOOL_LABEL[id]}
+                        <span aria-hidden className="nv-minute-tab-name">
+                          {TOOL_LABEL[id]}
+                        </span>
+                        <span aria-hidden className="nv-minute-tab-time">
+                          {TOOL_DURATION[id]}
+                        </span>
+                        <span className="sr-only">{TOOL_SPOKEN[id]}</span>
                       </Tabs.Tab>
                     ))}
                     <Tabs.Indicator aria-hidden className="nv-minute-tab-pill" />

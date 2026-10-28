@@ -1,6 +1,7 @@
 /* Take a minute tools (tools/*.tsx): what goes inside the shell's Layout slots. The shell owns the
-   stage, the orb, the ring and the spacing between slots; these rules style only the tools' own
-   content. Pond sheet, pine tokens (landing.css [data-landing]). Transform and opacity only. */
+   stage, the orb, the ring, the dock (.nv-minute-row, .nv-minute-stop) and the spacing between slots;
+   these rules style only the tools' own content. Pond sheet, pine tokens (landing.css [data-landing]).
+   Only transform, translate, scale and opacity move; colours change as tints. */
 @layer components {
   /* ---- Orb text layer: fixed size, never scales with the orb ---- */
   /* The type keeps its size; the box stays inside the resting orb (.62 D) when the orb is small. */
@@ -136,13 +137,17 @@
     align-items: center;
     gap: 2px;
   }
+  /* The countdown: 36px in every tool, idle and running (K2), read from a table at arm's length. */
   .nv-tool-clock {
-    font-size: 1.375rem;
-    line-height: 1.25;
+    font-size: 2.25rem;
+    line-height: 1;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
     color: var(--on-pine);
+  }
+  .nv-tool-clock + .nv-tool-sub {
+    margin-top: 6px;
   }
   .nv-tool-sub {
     max-width: 34ch;
@@ -167,7 +172,7 @@
     text-wrap: balance;
   }
   .nv-tool-welcome {
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     font-size: 0.9375rem;
     font-weight: 600;
     color: var(--mint-glow);
@@ -183,9 +188,12 @@
   }
 
   /* ---- Prompt ---- */
-  /* Two lines reserved in either size, so swapping lines never moves the controls. */
+  /* The measure fits the lead-in line (297px) and Rest's longest prompt (315px) on one line from 360px,
+     so a session's words take as little of a short screen as they can; Eyes' longer lines wrap in two
+     balanced halves. Two lines are reserved in either size, so swapping lines never moves the controls
+     under them (phones that dock the controls need no reserve: see below). */
   .nv-tool-prompt {
-    max-width: 34ch;
+    max-width: min(100%, 20.5rem);
     min-height: 3rem;
     margin-inline: auto;
     font-size: 0.9375rem;
@@ -194,7 +202,6 @@
     text-wrap: balance;
   }
   .nv-tool-prompt-strong {
-    max-width: 30ch;
     font-size: 1.0625rem;
     line-height: 1.4;
     color: var(--on-pine);
@@ -214,28 +221,43 @@
     color: var(--on-pine-2);
     text-wrap: pretty;
   }
-  .nv-tool-hint {
-    max-width: 36ch;
-    margin-inline: auto;
-    font-size: 0.8125rem;
-    line-height: 1.45;
-    color: var(--on-pine-3);
-    text-wrap: balance;
-  }
 
-  /* ---- Controls ---- */
+  /* ---- Controls (the dock's content) ---- */
+  /* The wrapper spans the column and centres the main button; during a session it is the shell's
+     .nv-minute-row (Pause and Stop). Done sits centred under it. The shell styles the buttons; only
+     the main button's width is set here. */
   .nv-tool-controls {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 12px;
+    align-items: stretch;
+    gap: 8px;
     width: 100%;
   }
-  /* Start/Pause, Stop and Done wear the shell's nv-minute-primary and nv-minute-quiet; these only
-     add what the tools need on top. */
+  .nv-tool-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .nv-tool-controls > .nv-tool-quiet {
+    align-self: center;
+  }
   .nv-tool-primary {
-    max-width: 100%;
     line-height: 1.25;
+  }
+  /* The main button alone (Start, Again, See result): 232–320px. Beside Stop (Pause, Resume): 160px. */
+  .nv-tool-primary.nv-tool-solo {
+    min-width: min(232px, 100%);
+    max-width: min(320px, 100%);
+  }
+  .nv-tool-primary.nv-tool-paired {
+    min-width: 160px;
+    transition:
+      background-color 180ms var(--curve-standard),
+      scale 180ms var(--curve-standard),
+      opacity 240ms var(--curve-calm);
+  }
+  .nv-tool-primary.nv-tool-paired:active {
+    transition-duration: 90ms;
   }
   /* Holds Pause's place while the Tap along pad waits; it fades in with the first tap. */
   .nv-tool-held {
@@ -251,7 +273,7 @@
     min-height: 44px;
     max-width: 34ch;
     padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     line-height: 1.4;
     color: var(--on-pine-2);
     text-decoration: underline;
@@ -268,15 +290,97 @@
     scale: 0.97;
     transition-duration: 90ms;
   }
-  .nv-tool-controls :is(button, input):focus-visible {
+  .nv-tool-controls button:focus-visible,
+  .nv-tool-input:focus-visible {
     outline: 2px solid var(--ring-on-dark);
     outline-offset: 3px;
   }
   /* Focus scrolled into view clears the shell's sticky top bar (67–72px), never hides under it. */
-  .nv-tool-controls :is(button, input),
+  .nv-tool-controls button,
+  .nv-tool-input,
+  .nv-tool-switch,
+  .nv-tool-textlink,
   .nv-tool-link,
   .nv-tool-tel {
     scroll-margin-block: 5.5rem 1rem;
+  }
+
+  /* Eyes: the chime switch, a 44px row in the options slot. The track shows the state (role="switch",
+     aria-checked); its fill fades and the thumb slides, opacity and translate only. */
+  .nv-tool-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 6px 16px 6px 8px;
+    border-radius: 9999px;
+    font-size: 0.9375rem;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--on-pine-2);
+    text-align: left;
+    text-wrap: balance;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 160ms var(--curve-standard),
+      background-color 180ms var(--curve-standard),
+      scale 180ms var(--curve-standard);
+  }
+  .nv-tool-switch[aria-checked="true"] {
+    color: var(--on-pine);
+  }
+  .nv-tool-switch-track {
+    position: relative;
+    flex: none;
+    width: 40px;
+    height: 24px;
+    border-radius: 9999px;
+    border: 1.5px solid rgb(255 255 255 / 0.36);
+  }
+  /* The on fill, over the hairline. */
+  .nv-tool-switch-track::before {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    background: var(--mint-glow);
+    opacity: 0;
+    transition: opacity 180ms var(--curve-standard);
+  }
+  .nv-tool-switch-thumb {
+    position: absolute;
+    left: 2.5px;
+    top: 2.5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--on-pine-2);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    transition: translate 220ms var(--curve-calm);
+  }
+  /* Pond over the thumb when on: the mark reads dark on mint. */
+  .nv-tool-switch-thumb::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--pond);
+    opacity: 0;
+    transition: opacity 180ms var(--curve-standard);
+  }
+  [aria-checked="true"] > .nv-tool-switch-track::before,
+  [aria-checked="true"] > .nv-tool-switch-track > .nv-tool-switch-thumb::before {
+    opacity: 1;
+  }
+  [aria-checked="true"] > .nv-tool-switch-track > .nv-tool-switch-thumb {
+    translate: 16px 0;
+  }
+  .nv-tool-switch:active {
+    background: rgb(255 255 255 / 0.06);
+    scale: 0.98;
+    transition-duration: 90ms;
   }
 
   .nv-tool-chips,
@@ -413,7 +517,8 @@
     transition-duration: 90ms;
   }
 
-  /* Pulse, Just count: the number of beats. 16px+ text, so iOS never zooms on focus. */
+  /* Pulse, Just count: the number of beats, in the options slot; See result is the dock's main button
+     (form=). 16px+ text, so iOS never zooms on focus. */
   .nv-tool-entry {
     display: flex;
     flex-direction: column;
@@ -441,19 +546,19 @@
   .nv-tool-input[aria-invalid="true"] {
     border-color: var(--amber-on-dark);
   }
-  /* 12px above See result, as in the controls: closer, a short landscape screen reads the button
-     as docked over the message and fades it. */
+  /* One line kept for the message, which fits it (317px) from 360px, so nothing under it moves when it
+     appears. */
   .nv-tool-error {
-    max-width: 34ch;
+    max-width: min(100%, 20.5rem);
     min-height: 1.45em;
-    margin: 8px 0 12px;
-    font-size: 0.875rem;
+    margin-top: 8px;
+    font-size: 0.9375rem;
     line-height: 1.45;
     color: var(--amber-on-dark);
     text-wrap: balance;
   }
 
-  /* ---- Fine print and the emergency line ---- */
+  /* ---- Fine print and the safety lines ---- */
   .nv-tool-fine + .nv-tool-fine {
     margin-top: 4px;
   }
@@ -472,30 +577,22 @@
     outline: 2px solid var(--ring-on-dark);
     outline-offset: 2px;
   }
-  .nv-tool-sos {
+  /* A safety line inside the always slot, whose frame, 15px type and colour are the shell's: the 16px
+     mark leads, and wrapped lines align under the text, not under the mark. */
+  .nv-tool-safety {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    max-width: 46ch;
-    margin-inline: auto;
-    padding: 12px 16px;
-    border-radius: 16px;
-    background: rgb(255 255 255 / 0.06);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-    font-size: 0.8125rem;
-    line-height: 1.5;
-    color: var(--on-pine-2);
-    text-align: left;
-    text-wrap: pretty;
+    text-align: start;
   }
-  .nv-tool-sos-icon {
+  .nv-tool-safety-icon {
     flex: none;
-    width: 15px;
-    height: 15px;
-    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    margin-top: 0.15em;
     color: var(--mint-glow);
   }
-  .nv-tool-sos .nv-tool-tel {
+  .nv-tool-safety .nv-tool-tel {
     position: relative;
     border-radius: 4px;
     font-weight: 600;
@@ -515,16 +612,20 @@
   @media (hover: hover) and (pointer: fine) {
     .nv-tool-textlink:hover,
     .nv-minute-sheet .nv-tool-link:hover,
-    .nv-tool-sos .nv-tool-tel:hover {
+    .nv-tool-safety .nv-tool-tel:hover {
       color: var(--on-pine);
       text-decoration-color: currentColor;
     }
-    .nv-tool-tick:hover {
+    .nv-tool-tick:hover,
+    .nv-tool-switch:hover {
       background: rgb(255 255 255 / 0.04);
+    }
+    .nv-tool-switch:hover {
+      color: var(--on-pine);
     }
   }
 
-  @media (max-width: 639.98px) {
+  @media (width < 40rem) {
     .nv-tool-orb {
       max-width: min(116px, calc(var(--nv-d) * 0.54));
     }
@@ -535,8 +636,24 @@
       font-size: min(52px, calc(var(--nv-d) * 0.25));
     }
   }
+  /* Phones dock the controls at the screen's bottom edge (all but short landscape, where the safety line
+     stays in the flow), so a prompt changing length can't move them: no lines are reserved, and the
+     shell's scroll at Start measures only the words it has to keep clear of the dock. */
+  @media (width < 40rem) and (orientation: portrait), (width < 40rem) and (height > 520px) {
+    .nv-tool-prompt {
+      min-height: 0;
+    }
+  }
+  /* Short landscape: the safety line follows the prompt in the flow, above the docked controls, and the
+     height is scarce. One line of the prompt's own size is reserved, so a line that empties as the count
+     starts never moves the safety line, and no empty second line pushes it under the dock. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .nv-tool-prompt {
+      min-height: 1lh;
+    }
+  }
 
-  @media (min-width: 640px) {
+  @media (width >= 40rem) {
     .nv-tool-lead {
       max-width: min(100%, 32rem);
     }
@@ -549,16 +666,13 @@
     .nv-tool-textlink {
       max-width: min(100%, 30rem);
     }
-    .nv-tool-sos {
-      max-width: min(100%, 34rem);
-    }
     .nv-tool-ticks {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       width: min(100%, 34rem);
     }
   }
   /* With a mouse the ticks can sit closer, so Start stays on a 900px-tall screen. */
-  @media (min-width: 640px) and (pointer: fine) {
+  @media (width >= 40rem) and (pointer: fine) {
     .nv-tool-tick {
       min-height: 36px;
       padding-block: 7px;
@@ -569,11 +683,14 @@
     .nv-tool-swap {
       animation: none;
     }
-    .nv-minute-sheet :is(.nv-tool-primary, .nv-tool-quiet, .nv-tool-textlink, .nv-tool-chip):active {
+    .nv-minute-sheet :is(.nv-tool-textlink, .nv-tool-switch):active {
       scale: none;
     }
     .nv-tool-tick:active {
       transform: none;
+    }
+    .nv-tool-switch-thumb {
+      transition: none;
     }
     .nv-tool-part-base,
     .nv-tool-part-lit,
@@ -584,8 +701,18 @@
       transform: none;
     }
   }
+  /* The visitor's own pause: no motion either, and presses are a tint only. */
   html[data-motion="paused"] .nv-tool-swap {
     animation: none;
+  }
+  html[data-motion="paused"] .nv-tool-switch-thumb {
+    transition: none;
+  }
+  html[data-motion="paused"] .nv-minute-sheet :is(.nv-tool-textlink, .nv-tool-switch):active {
+    scale: none;
+  }
+  html[data-motion="paused"] .nv-tool-tick:active {
+    transform: none;
   }
 
   /* Forced colours: the shell paints the orb CanvasText and its text layer Canvas, with
@@ -609,9 +736,23 @@
       fill-opacity: 0.3;
     }
     .nv-tool-input,
-    .nv-tool-tick-box,
-    .nv-tool-sos {
+    .nv-tool-tick-box {
       border: 1px solid CanvasText;
+    }
+    /* The switch keeps its own system colours (inherited by the thumb): ButtonText off, Highlight on. */
+    .nv-tool-switch-track {
+      forced-color-adjust: none;
+      border-color: ButtonText;
+    }
+    .nv-tool-switch-track::before {
+      background: Highlight;
+    }
+    .nv-tool-switch-thumb {
+      background: ButtonText;
+      box-shadow: none;
+    }
+    .nv-tool-switch-thumb::before {
+      background: HighlightText;
     }
     /* No text backplate on the chosen chip, or its HighlightText label would vanish behind it. */
     .nv-tool-chip:has(input:checked) {
