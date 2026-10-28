@@ -28,6 +28,14 @@
   --border: #d5e4e9;
   --border-strong: #bcd3da;
 }
+/* Fixed layers, lowest first. Literal values elsewhere are numerically equal. */
+[data-landing] {
+  --z-corner: 40;  /* corner cluster, from 640px only */
+  --z-tabbar: 45;  /* phone bar */
+  --z-nav: 50;     /* top pill */
+  --z-sheet: 60;   /* menu sheet and its dim */
+  --z-minute: 70;  /* Take a minute */
+}
 /* Deep teal panels: the pine tokens, re-tinted from green to the uniform's teal. */
 [data-landing] {
   --pine: #012b36;
@@ -124,6 +132,14 @@
   }
   html[data-nv-reveal-ready]:not([data-motion="paused"]) [data-nv-reveal]:not([data-nv-revealed]) {
     transform: translateY(12px);
+  }
+}
+/* A group holding the URL's target shows at once, so a hash jump lands at the target's scroll margin. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-nv-reveal-ready]:not([data-motion="paused"]) [data-nv-reveal]:has(:target) {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 @media print {
@@ -398,9 +414,40 @@ html:not([data-motion="paused"]) [data-nv-revealed] .ecg-draw { animation: draw 
   }
 }
 
-/* ---- 11. Keyboard focus clears the fixed chrome (WCAG 2.4.11): a control the browser scrolls into
-   view stops below the nav pill (and the notch) and above the corner buttons. Page content only:
-   the menu sheet and Take a minute keep their own scroll padding. ---- */
+/* ---- 11. Scroll and safe areas. Anchor targets: below the pill on desktop; near the top on phones,
+   where the pill hides mid-page. Targets inside #callback and the footer keep the pill's clearance on
+   phones too (the pill shows there). #top and #callback keep their own margins (scroll-mt-*). ---- */
+[data-landing] :is(main, footer) :is(section, article, details, li)[id]:not(#top, #callback),
+[data-landing] main :is(#services-nursing, #team, #who-its-for) {
+  scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
+}
+@media (width < 40rem) {
+  [data-landing] main :is(section, article, details, li)[id]:not(#top, #callback, #callback *),
+  [data-landing] main :is(#services-nursing, #team, #who-its-for) {
+    scroll-margin-top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+}
+/* Keyboard focus clears the fixed chrome (WCAG 2.4.11): a control the browser scrolls into view stops
+   below the pill (and the notch), and above the corner from 640px. Phones have no corner: the bar is
+   cleared by the scroll padding while it shows. Page content only: the menu sheet and Take a minute
+   keep their own scroll padding. */
 [data-landing] :is(main, footer) :is(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])) {
   scroll-margin-block: calc(6.5rem + env(safe-area-inset-top, 0px)) 6rem;
+}
+@media (width < 40rem) {
+  [data-landing] :is(main, footer) :is(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])) {
+    scroll-margin-block-end: 1rem;
+  }
+  html[data-nv-zone="mid"]:not([data-nv-typing]) {
+    scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  /* The corner's buttons only: its island stays mounted, as it hosts Take a minute and every launcher. */
+  .nv-minute-cluster {
+    display: none;
+  }
+}
+/* White behind the safe areas, the overscroll and the bar's home-indicator strip. */
+html:has([data-landing]),
+html:has([data-landing]) > body {
+  background-color: #ffffff;
 }

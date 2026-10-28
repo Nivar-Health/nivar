@@ -1,32 +1,46 @@
-import { Activity, RotateCcw, Stethoscope } from "lucide-react";
+import Image from "next/image";
+import { Activity, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LiveDashboardSlot } from "./live-slot";
 
-/* Monitor heights. The skeleton's Tailwind heights mirror them, and the slot's min-heights (388px
-   phones, 632px sm, 640px lg) are the dashboard's measured heights plus a few px the vitals absorb, so
-   it lands exactly on its reserved box: no layout shift. Change one, re-measure all. */
-const ECG_PHONE = 150;
+/* Monitor heights, each its content's own at the landing's 12px labels (the stethoscope's Listen and
+   level meter need 195). The skeleton's Tailwind heights mirror them, and the slot's min-heights (388px
+   phones, 654px sm, 662px lg) are the dashboard's measured heights (385.6, 651.3, 659.3) plus the few px
+   the vitals absorb, so it lands exactly on its reserved box: no layout shift. Change one, re-measure
+   all (.qa-state/mobile/build/checkups/slot.mjs). */
+const ECG_PHONE = 151;
 const ECG = 168;
-const STETH = 170;
+const STETH = 195;
 
 const SEES = [
   { icon: Activity, text: "The heart's rhythm, from the smart ECG, as it records." },
   { icon: Stethoscope, text: "Heart and lung sounds through the digital stethoscope, live." },
-  { icon: RotateCcw, text: "If something looks or sounds off, a repeat on the spot." },
 ] as const;
 
 /**
- * The live readings panel, last in #check-ups (spec §4.6). Server-rendered copy around one client
+ * The live readings panel, last in #check-ups (spec U6). Server-rendered copy around one client
  * island (live-slot.tsx) that reserves the dashboard's box, shows a still pond skeleton, and loads the
- * dashboard chunk once the box is within 600px of the viewport. No call to action here or after it.
+ * dashboard chunk once the box is within 600px of the viewport. Below lg a photo of a nurse taking an
+ * ECG at home opens the card. No call to action here or after it.
  */
 export function LivePanel({ className }: { className?: string }) {
   return (
     <section id="live" aria-labelledby="live-title" className={cn("scroll-mt-24", className)}>
-      <div className="theme-pine band-pond relative isolate overflow-hidden rounded-4xl lg:grid lg:grid-cols-12">
+      <div className="nv-chk-live theme-pine band-pond relative isolate overflow-hidden rounded-4xl lg:grid lg:grid-cols-12">
         <div aria-hidden className="absolute inset-0 -z-10 bg-ecg-grid-dark" />
 
-        <div className="p-5 sm:px-8 sm:pt-10 sm:pb-8 lg:col-span-5 lg:flex lg:flex-col lg:justify-center lg:gap-10 lg:py-12 lg:pr-6 lg:pl-11 xl:pl-12">
+        {/* Inset like the dashboard below it, so the photo's corners are concentric with the card's. */}
+        <div className="nv-chk-live-photo relative mx-2 mt-2 aspect-[3/2] overflow-hidden rounded-[1.5rem] bg-white/5 sm:mx-2.5 sm:mt-2.5 lg:hidden">
+          <Image
+            src="/img/nurse-ecg-home.jpg"
+            alt="A Nivar nurse holds a handheld ECG while an older man rests his fingertips on its pads, on his sofa at home"
+            fill
+            sizes="(min-width: 640px) calc(100vw - 48px), calc(100vw - 40px)"
+            className="object-cover object-[50%_35%]"
+          />
+        </div>
+
+        <div className="p-5 sm:p-8 lg:col-span-5 lg:flex lg:flex-col lg:justify-center lg:gap-10 lg:py-12 lg:pr-6 lg:pl-11 xl:pl-12">
           <div>
             <h3
               id="live-title"
@@ -60,12 +74,12 @@ export function LivePanel({ className }: { className?: string }) {
           </div>
         </div>
 
-        <div className="px-2 pb-2 sm:px-2.5 sm:pb-2.5 lg:col-span-7 lg:p-3">
+        <div className="nv-chk-live-dash px-2 pb-2 sm:px-2.5 sm:pb-2.5 lg:col-span-7 lg:p-3">
           <LiveDashboardSlot
             ecgPhone={ECG_PHONE}
             ecg={ECG}
             steth={STETH}
-            className="min-h-[388px] sm:min-h-[632px] lg:min-h-[640px]"
+            className="min-h-[388px] sm:min-h-[654px] lg:min-h-[662px]"
           >
             <Skeleton />
             <p className="nv-chk-loading sr-only">Loading the live demo</p>
@@ -92,8 +106,8 @@ function Skeleton() {
         </div>
         <span className="h-8 w-20 rounded-full bg-white/8 sm:h-9 sm:w-36" />
       </div>
-      <SkeletonMonitor className="h-[150px] sm:h-[168px]" />
-      <SkeletonMonitor className="mt-3 hidden h-[170px] sm:flex" />
+      <SkeletonMonitor className="h-[151px] sm:h-[168px]" />
+      <SkeletonMonitor className="mt-3 hidden h-[195px] sm:flex" />
       <div className="mt-2.5 grid flex-1 grid-cols-2 gap-px overflow-hidden rounded-2xl bg-border sm:mt-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="flex flex-col justify-center gap-3 bg-card p-3 sm:px-4">

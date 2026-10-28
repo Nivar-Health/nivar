@@ -1,4 +1,5 @@
 import type { JSX, ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
 import { CALLBACK_HREF, buttonClass, inr, type ButtonSize } from "./primitives";
@@ -52,7 +53,8 @@ function prefill(need?: string, needLabel?: string, forWho?: WhoFor) {
 
 /**
  * The page's pair of calls to action: "WhatsApp us" (WhatsApp green) and "Request a callback".
- * While no WhatsApp number is set, only the callback button shows, in the accent colour.
+ * While no WhatsApp number is set, only the callback button shows, in the accent colour; `quiet` keeps
+ * it secondary instead, for mid-page callers (one marigold action per screen, spec D4).
  * `tone="dark"` swaps the secondary button for the light pill used on teal panels.
  * `need`, `needLabel` and `forWho` prefill the callback form (data-need, data-need-label, data-for).
  */
@@ -65,6 +67,7 @@ export function ContactCtas({
   need,
   needLabel,
   forWho,
+  quiet = false,
 }: {
   message?: string;
   size?: ButtonSize;
@@ -74,9 +77,11 @@ export function ContactCtas({
   need?: string;
   needLabel?: string;
   forWho?: WhoFor;
+  /** Mid-page: the callback button stays secondary (inverse on dark) when it would be the accent. */
+  quiet?: boolean;
 }) {
   const href = whatsappHref(message);
-  const callback = href ? (tone === "dark" ? "inverse" : "secondary") : "accent";
+  const callback = href || quiet ? (tone === "dark" ? "inverse" : "secondary") : "accent";
   return (
     <div className={cn("flex flex-col gap-3 min-[420px]:flex-row min-[420px]:flex-wrap", className)}>
       {href && (
@@ -96,10 +101,14 @@ export function ContactCtas({
 /**
  * One service's call to action (spec §3.2):
  * - WhatsApp set: [Ask on WhatsApp], sr " about {name}"; the message asks the price (from null) or
- *   books ("I'd like to book {ask} at home.").
+ *   books ("I'd like to book {ask} at home."). `compactLabel` shows only "Ask" below sm (the WhatsApp
+ *   glyph stays); " on WhatsApp" is still read, so the accessible name does not change.
  * - No WhatsApp, from null: [Get the price], sr " for {name}", need "Please tell me the price for {ask} at home."
- * - No WhatsApp, priced: [Request this visit], sr ": {name}", need "I'd like to book {ask} at home ({priceLabel})."
+ * - No WhatsApp, priced: [Request this visit], named "Request this visit: {name}", need "I'd like to book {ask}
+ *   at home ({priceLabel})."
  * Without WhatsApp it is a plain `<a href="#callback">` that prefills the form, so it works without JS.
+ * `appearance="link"` drops the pill: the caller's `className` styles it and a 16px chevron follows the
+ * text (the services tiles' action line). The prefill and the names are the same in both appearances.
  * `needLabel` defaults to `name`; `priceLabel` to "from ₹{from}". `label`, `need` and `needLabel` apply
  * to the callback variant only (a custom `label` replaces the visible text and the sr suffix).
  */
@@ -116,6 +125,8 @@ export function CareCta({
   needLabel,
   label,
   className,
+  appearance = "button",
+  compactLabel = false,
 }: {
   name: string;
   ask: string;
@@ -129,16 +140,29 @@ export function CareCta({
   needLabel?: string;
   label?: string;
   className?: string;
+  appearance?: "button" | "link";
+  /** WhatsApp only: "Ask" below sm, "Ask on WhatsApp" from sm. */
+  compactLabel?: boolean;
 }): JSX.Element {
+  const link = appearance === "link";
   const width = fullWidth && "w-full";
+  const chevron = link && <ChevronRight aria-hidden className="size-4 shrink-0" strokeWidth={2.25} />;
   const wa = whatsappHref(
     from === null ? `Hi Nivar, what's the price for ${ask} at home?` : `Hi Nivar, I'd like to book ${ask} at home.`,
   );
   if (wa) {
     return (
-      <WhatsAppLink href={wa} className={buttonClass("whatsapp", cn(width, className), size)}>
-        <WhatsAppIcon className="size-4.5!" />
-        Ask on WhatsApp<span className="sr-only"> about {name}</span>
+      <WhatsAppLink href={wa} className={link ? cn(width, className) : buttonClass("whatsapp", cn(width, className), size)}>
+        <WhatsAppIcon className={link ? "size-4" : "size-4.5!"} />
+        {compactLabel ? (
+          <span>
+            Ask<span className="max-sm:sr-only"> on WhatsApp</span>
+          </span>
+        ) : (
+          "Ask on WhatsApp"
+        )}
+        <span className="sr-only"> about {name}</span>
+        {chevron}
       </WhatsAppLink>
     );
   }
@@ -149,22 +173,31 @@ export function CareCta({
   return (
     <a
       href={CALLBACK_HREF}
-      className={buttonClass(tone === "dark" ? "inverse" : "secondary", cn(width, className), size)}
+      className={link ? cn(width, className) : buttonClass(tone === "dark" ? "inverse" : "secondary", cn(width, className), size)}
       {...prefill(need ?? composed, needLabel ?? name, forWho)}
     >
-      {label ?? (
-        <>
-          {priced ? "Request this visit" : "Get the price"}
-          <span className="sr-only">{priced ? `: ${name}` : ` for ${name}`}</span>
-        </>
-      )}
+      {label ??
+        (priced ? (
+          <>
+            {/* Chromium reads an sr-only span as a block and would put a space before ": {name}", so the
+                visible words stay out of the name and the sr-only copy carries all of it. */}
+            <span aria-hidden>Request this visit</span>
+            <span className="sr-only">{`Request this visit: ${name}`}</span>
+          </>
+        ) : (
+          <>
+            Get the price<span className="sr-only">{` for ${name}`}</span>
+          </>
+        ))}
+      {chevron}
     </a>
   );
 }
 
 /**
  * "WhatsApp us": a 56px circle on phones, a labelled pill from sm. On its own it is fixed to the
- * corner; `docked` drops the fixed positioning for the corner cluster (take-a-minute/cluster.tsx).
+ * corner; `docked` drops the fixed positioning for the corner cluster (take-a-minute/cluster.tsx) and
+ * stays a 56px circle at every width, so the corner stack never reaches into the content column.
  * Renders nothing while no WhatsApp number is set.
  */
 export function WhatsAppFab({ docked = false, className }: { docked?: boolean; className?: string } = {}) {
@@ -174,13 +207,13 @@ export function WhatsAppFab({ docked = false, className }: { docked?: boolean; c
     <WhatsAppLink
       href={href}
       className={cn(
-        "inline-flex h-14 items-center gap-2.5 rounded-full bg-whatsapp px-4 text-base font-semibold text-whatsapp-ink shadow-[0_16px_32px_-12px_rgb(7_59_40/0.55)] ring-1 ring-whatsapp-ink/10 transition-[background-color,translate,scale] duration-180 ease-standard select-none hover:-translate-y-0.5 hover:bg-whatsapp-hover focus-ring active:scale-[0.97] active:bg-whatsapp-hover active:duration-90 motion-reduce:active:scale-100 sm:pr-5",
-        !docked && "fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 sm:right-6 sm:bottom-6",
+        "inline-flex h-14 items-center gap-2.5 rounded-full bg-whatsapp px-4 text-base font-semibold text-whatsapp-ink shadow-[0_16px_32px_-12px_rgb(7_59_40/0.55)] ring-1 ring-whatsapp-ink/10 transition-[background-color,translate,scale] duration-180 ease-standard select-none hover:-translate-y-0.5 hover:bg-whatsapp-hover focus-ring active:scale-[0.97] active:bg-whatsapp-hover active:duration-90 motion-reduce:active:scale-100",
+        !docked && "fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 sm:right-6 sm:bottom-6 sm:pr-5",
         className,
       )}
     >
       <WhatsAppIcon className="size-6" />
-      <span className="sr-only sm:not-sr-only">WhatsApp us</span>
+      <span className={docked ? "sr-only" : "sr-only sm:not-sr-only"}>WhatsApp us</span>
     </WhatsAppLink>
   );
 }

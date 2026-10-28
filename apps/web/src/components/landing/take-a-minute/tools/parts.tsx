@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone } from "lucide-react";
+import { Info, Phone } from "lucide-react";
 import {
   Fragment,
   useCallback,
@@ -9,6 +9,7 @@ import {
   useRef,
   type ComponentProps,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { cn } from "@/lib/utils";
 import { formatClock, useSession } from "../engine";
@@ -181,7 +182,10 @@ export function LeadInOrb({ left }: { left: number }) {
   );
 }
 
-/** The countdown: role="timer", not live (spec §5.11). Idle shows the length without the role. */
+/**
+ * The countdown, 36px in every tool (K2): role="timer", not live (spec §5.11). Idle shows the length
+ * without the role. Breathe's phase numeral in the orb stays the larger number.
+ */
 export function Clock({ seconds, running = true }: { seconds: number; running?: boolean }) {
   return (
     <p role={running ? "timer" : undefined} aria-label={running ? COMMON.timeLeft : undefined} className="nv-tool-clock">
@@ -231,11 +235,15 @@ export function FineLines({ lines }: { lines: readonly Rich[] }) {
   ));
 }
 
-/** The always-visible emergency line, with 112 and 108 as tel: links. */
-export function Emergency({ text }: { text: string }) {
+/**
+ * A safety line for the always slot, right above the dock: it never collapses. A caution (Breathe,
+ * Eyes) carries an info mark; an emergency line (Rest, Pulse) a phone, and its 112 and 108 are tel: links.
+ */
+export function SafetyLine({ text, emergency = false }: { text: string; emergency?: boolean }) {
+  const Icon = emergency ? Phone : Info;
   return (
-    <p className="nv-tool-sos">
-      <Phone aria-hidden className="nv-tool-sos-icon" />
+    <p className="nv-tool-safety">
+      <Icon aria-hidden className="nv-tool-safety-icon" />
       <span>
         {text.split(/\b(112|108)\b/).map((part, i) =>
           part === "112" || part === "108" ? (
@@ -251,17 +259,99 @@ export function Emergency({ text }: { text: string }) {
   );
 }
 
-/**
- * Start, Pause, Resume and the end-of-session action: 56px, at least 168px wide (spec §5.7). It wears
- * the shell's nv-minute-primary, so it matches the shell and enters 60ms after the chips (§5.8).
- */
+/** The main button: the shell's 56px nv-minute-primary, so it matches the shell and enters with it (§5.8). */
 export function PrimaryButton({ className, ...rest }: ComponentProps<"button">) {
   return <button type="button" className={cn("nv-minute-primary nv-tool-primary", className)} {...rest} />;
 }
 
-/** "Stop" and "Done": the shell's quiet text button, with a 44px target. */
+/** "Done" after a session: the shell's quiet text button, with a 44px target. */
 export function QuietButton({ className, ...rest }: ComponentProps<"button">) {
   return <button type="button" className={cn("nv-minute-quiet nv-tool-quiet", className)} {...rest} />;
+}
+
+/** What the main button says and does. With `form` it submits that form instead (Pulse's beat count). */
+export type MainAction = { label: string; run?(): void; form?: string };
+
+/**
+ * The dock's content, the same in every tool: the main button alone (232–320px), or with Stop beside it
+ * in one .nv-minute-row during a session (Pause 160px; Stop the shell's 48px ghost pill), and the quiet
+ * Done under it once a session ends. The wrapper is one element throughout (only its class changes), so
+ * the main button stays one element from Start to Pause to Again and keeps focus. If Stop leaves while
+ * it has focus (the session ended under it), focus moves to the main button, never to the page.
+ */
+export function ToolControls({
+  main,
+  mainRef,
+  onStop,
+  onDone,
+  held = false,
+}: {
+  main: MainAction;
+  mainRef: RefObject<HTMLButtonElement | null>;
+  /** During a session: Stop, beside the main button. */
+  onStop?(): void;
+  /** After a session: Done, under the row. */
+  onDone?(): void;
+  /** Pulse's armed pad: the main button keeps its place, hidden and inert, until the first tap. */
+  held?: boolean;
+}) {
+  const refocus = useRef(false);
+  const stopRef = useCallback((el: HTMLButtonElement | null) => {
+    if (!el) return;
+    // Runs as Stop leaves the page, before it is removed: it still knows whether it had focus.
+    return () => {
+      if (document.activeElement === el) refocus.current = true;
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) mainRef.current?.focus({ preventScroll: true });
+  });
+
+  return (
+    <div className="nv-tool-controls">
+      <div className={onStop ? "nv-minute-row" : "nv-tool-row"}>
+        <PrimaryButton
+          ref={mainRef}
+          type={main.form ? "submit" : "button"}
+          form={main.form}
+          onClick={main.run}
+          inert={held}
+          className={cn(onStop ? "nv-tool-paired" : "nv-tool-solo", held && "nv-tool-held")}
+        >
+          {main.label}
+        </PrimaryButton>
+        {onStop ? (
+          <button ref={stopRef} type="button" className="nv-minute-stop" onClick={onStop}>
+            {COMMON.stop}
+          </button>
+        ) : null}
+      </div>
+      {onDone ? <QuietButton onClick={onDone}>{COMMON.done}</QuietButton> : null}
+    </div>
+  );
+}
+
+/** A remembered setting as a 44px switch row (role="switch"): the track shows the state, the label names it. */
+export function SwitchRow({
+  checked,
+  onChange,
+  children,
+}: {
+  checked: boolean;
+  onChange(next: boolean): void;
+  children: ReactNode;
+}) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} className="nv-tool-switch" onClick={() => onChange(!checked)}>
+      <span aria-hidden className="nv-tool-switch-track">
+        <span className="nv-tool-switch-thumb" />
+      </span>
+      <span>{children}</span>
+    </button>
+  );
 }
 
 /** A radio styled as the shell's chip (nv-minute-chip): 44px, mint when chosen. */

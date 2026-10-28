@@ -16,37 +16,38 @@ const COLUMNS: readonly { id: Col; name: string }[] = [
 
 const SAY: Record<MarkKind, string> = { yes: "Yes.", partly: "Partly.", no: "No." };
 
-/** [Nivar at home, Hospital OPD, Local compounder] for each row (spec §3.5): typical experiences, kept honest. */
+/** [Nivar at home, Hospital OPD, Local compounder] for each row (mobile spec U5): typical experiences, kept
+ * honest and short, so every cell reads at 15px in three lines or fewer on a phone. */
 const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
   {
-    label: "Care at home, at a booked time",
+    label: "At home, at a set time",
     cells: [
-      { mark: "yes", text: `At home, in a slot we confirm, ${SITE.hours.short}` },
-      { mark: "no", text: "You travel, then queue" },
-      { mark: "partly", text: "Often at home, when they're free" },
+      { mark: "yes", text: `Booked slot, ${SITE.hours.short}` },
+      { mark: "no", text: "You travel and queue" },
+      { mark: "partly", text: "When they're free" },
     ],
   },
   {
-    label: "A registered nurse gives the care",
+    label: "A registered nurse",
     cells: [
-      { mark: "yes", text: "Registered with the Karnataka State Nursing Council" },
-      { mark: "yes", text: "Hospital nursing staff" },
-      { mark: "partly", text: "Training and registration vary" },
+      { mark: "yes", text: "Registered in Karnataka" },
+      { mark: "yes", text: "Hospital nurses" },
+      { mark: "partly", text: "Varies" },
     ],
   },
   {
     label: "A doctor involved",
     cells: [
-      { mark: "yes", text: "Calls before your visit; on video when needed" },
+      { mark: "yes", text: "Calls ahead; video if needed" },
       { mark: "yes", text: "In person" },
       { mark: "no", text: "Not usually" },
     ],
   },
   {
-    label: "BP, sugar and ECG checks",
+    label: "BP, sugar and ECG",
     cells: [
-      { mark: "yes", text: "At home, including a smart ECG" },
-      { mark: "yes", text: "At the hospital, often at separate counters" },
+      { mark: "yes", text: "At home, smart ECG" },
+      { mark: "yes", text: "Often separate counters" },
       { mark: "no", text: "Not usually" },
     ],
   },
@@ -59,10 +60,10 @@ const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
     ],
   },
   {
-    label: "Price told before you commit",
+    label: "Price told upfront",
     cells: [
-      { mark: "yes", text: "No travel charge, no surge pricing" },
-      { mark: "partly", text: "Consultation fee is fixed; tests add to the bill" },
+      { mark: "yes", text: "Before we confirm" },
+      { mark: "partly", text: "Fee fixed, tests extra" },
       { mark: "partly", text: "Agreed on the spot" },
     ],
   },
@@ -70,7 +71,7 @@ const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
     label: "A record of the visit",
     cells: [
       { mark: "yes", text: `Visit report ${SITE.report.channel}` },
-      { mark: "yes", text: "Prescription and lab reports" },
+      { mark: "yes", text: "Prescription, lab reports" },
       { mark: "no", text: "Usually none" },
     ],
   },
@@ -88,7 +89,8 @@ const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
  * "Why families choose Nivar": one real table (sr-only caption, column and row headers) on a white sheet,
  * with Nivar's column raised on a jade spine. Every cell is a mark plus a short phrase.
  * Below lg it shows Nivar and one comparator at a time, picked by a radio switch that works through CSS
- * :has() alone; browsers without :has() get all four columns, scrolling inside the sheet.
+ * :has() alone (browsers without :has() get all four columns, scrolling inside the sheet), and the
+ * column names stay in view while the rows scroll.
  */
 export function Comparison() {
   return (
@@ -100,7 +102,7 @@ export function Comparison() {
           lede="How a Nivar visit compares with the two usual options. We've kept it honest, including where a hospital is the better choice."
         />
 
-        <div className="nv-cmp mt-5 lg:mt-14">
+        <div className="nv-cmp mt-7 sm:mt-5 lg:mt-14">
           <fieldset className="nv-cmp-switch">
             <legend className="nv-cmp-legend">Compare Nivar with</legend>
             <div className="nv-cmp-seg">
@@ -135,7 +137,11 @@ export function Comparison() {
                   <tbody>
                     {ROWS.map((r) => (
                       <tr key={r.label}>
-                        <th scope="row">{r.label}</th>
+                        <th scope="row">
+                          {r.label
+                            .split(/(\S+-\S+)/)
+                            .map((part, i) => (i % 2 ? <span key={i} className="whitespace-nowrap">{part}</span> : part))}
+                        </th>
                         {r.cells.map((cell, i) => (
                           <td key={COLUMNS[i].id} data-col={COLUMNS[i].id} data-go={cell.go ? "" : undefined}>
                             <Mark kind={cell.mark} />
@@ -156,14 +162,15 @@ export function Comparison() {
             </div>
           </div>
 
-          <p className="mt-3 text-caption text-ink-3 lg:mt-7">Typical experiences, not a rating of any hospital or person.</p>
+          <p className="mt-3 text-caption text-ink-2 text-balance lg:mt-7">Typical experiences, not a rating of any hospital or person.</p>
         </div>
       </Container>
     </Section>
   );
 }
 
-/** ● yes, ◐ partly, ○ no (with a dash). Decorative: each cell's sr-only "Yes." / "Partly." / "No." says it. */
+/** ● yes (a check on a filled disc), ◐ partly (a half-filled ring), ○ no (a ring with a dash). Decorative:
+ * each cell's sr-only "Yes." / "Partly." / "No." says it. */
 function Mark({ kind }: { kind: MarkKind }) {
   return (
     <span aria-hidden className="nv-cmp-mark" data-mark={kind}>

@@ -51,8 +51,8 @@ export const BREATHE = {
       { text: "NHS, Breathing exercises for stress", href: MINUTE_SOURCES.nhsBreathing.url },
       ". The NHS suggests at least 5 minutes.",
     ],
-    ["Feel dizzy or unwell? Stop and breathe normally."],
   ] satisfies readonly Rich[],
+  always: "Feel dizzy or unwell? Stop and breathe normally.",
 } as const;
 
 export type RestPart = "bladder" | "back" | "feet" | "arm" | "cuff" | "clock" | "mouth";
@@ -141,15 +141,15 @@ export const EYES = {
   idleWord: "seconds",
   idleBody: "Every 20 minutes, look at something at least 20 feet (about 6 metres) away for at least 20 seconds.",
   start: "Start a 20-second break",
-  hint: "Turn on sound or vibration for a cue when it's time to look back.",
+  chime: "Chime when it's time to look back",
   leadIn: "When the count ends, look out of a window or to the far end of the room.",
   running: "Look away now: out of a window, or to the far end of the room.",
   left: "left of 20 seconds",
   done: "Welcome back. Blink a few times before you go on.",
   fine: [
     ["Source: ", { text: "American Academy of Ophthalmology", href: MINUTE_SOURCES.aaoEyeStrain.url }, "."],
-    ["If your eyes stay sore or your vision changes, see an eye doctor."],
   ] satisfies readonly Rich[],
+  always: "If your eyes stay sore or your vision changes, see an eye doctor.",
   announceStart: "Look away now. 20 seconds.",
   announceDone: "Done. You can look back.",
 } as const;

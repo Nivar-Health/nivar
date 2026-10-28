@@ -15,6 +15,7 @@ export const DEFAULT_PREFS: Prefs = {
   pulseMode: "count",
   sound: false,
   vibration: false,
+  eyesChime: false,
   completed: 0,
 };
 
@@ -30,6 +31,7 @@ function valid(raw: unknown): Prefs {
     pulseMode: p.pulseMode === "tap" ? "tap" : "count",
     sound: p.sound === true,
     vibration: p.vibration === true,
+    eyesChime: p.eyesChime === true,
     completed: Math.min(completed, 1_000_000),
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Pause, Play } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { LANGUAGES, LIKE_FAMILY } from "./l10n";
 import { useMotionPaused } from "./motion";
@@ -12,14 +12,32 @@ const DWELL_MS = 3400;
 const EXIT_MS = 300;
 const FONTS_CAP_MS = 3000;
 const NAMES: Record<string, string> = Object.fromEntries(LANGUAGES.map((l) => [l.lang, l.english]));
+/** Phones show all three lines at once (your-nurse.css, `.nv-nurse-words`), so nothing rotates there. */
+const PHONE_QUERY = "(width < 40rem)";
 
 /** Only the Indic code points: a space would also fetch Noto's Latin subset, which the line never uses. */
 const indicText = (s: string) => s.replace(/[^ऀ-￿]/g, "");
 
+function subscribePhone(onChange: () => void) {
+  const mq = window.matchMedia(PHONE_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+/** Behaviour only (the layout is CSS): false on the server and during hydration. */
+function useIsPhone(): boolean {
+  return useSyncExternalStore(
+    subscribePhone,
+    () => window.matchMedia(PHONE_QUERY).matches,
+    () => false,
+  );
+}
+
 /**
- * "Cared for like family" in English, Kannada and Hindi, changing on its own.
+ * "Cared for like family" in English, Kannada and Hindi, changing on its own from 640px.
  * It holds still while off screen, in a hidden tab or paused with its button, and stays on English
- * under reduced motion or the page-wide pause. Screen readers get all three once, not every change.
+ * under reduced motion or the page-wide pause. Below 640px the three lines stand together and no timer
+ * runs. Screen readers get all three once, not every change.
  */
 export function HealthWords({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -33,6 +51,7 @@ export function HealthWords({ className }: { className?: string }) {
   const [fontsReady, setFontsReady] = useState(false);
   const [held, setHeld] = useState(false);
   const motionPaused = useMotionPaused();
+  const phone = useIsPhone();
 
   useEffect(() => {
     const onVisibility = () => setTabVisible(document.visibilityState === "visible");
@@ -70,7 +89,7 @@ export function HealthWords({ className }: { className?: string }) {
     };
   }, [inView, fontsReady]);
 
-  const running = !motionPaused && !held && inView && tabVisible && fontsReady;
+  const running = !phone && !motionPaused && !held && inView && tabVisible && fontsReady;
   // Under reduced motion or the page-wide pause the line rests on English.
   const shown = motionPaused ? 0 : index;
 
@@ -103,7 +122,7 @@ export function HealthWords({ className }: { className?: string }) {
 
       {/* One centre line for the badge, the words and Pause, whichever language is showing (Kannada
           wraps only on the narrowest phones). */}
-      <div aria-hidden="true" className="flex min-w-0 flex-1 items-center gap-3 text-rotator text-primary sm:gap-4">
+      <div aria-hidden="true" className="flex min-w-0 flex-1 items-center gap-3 text-rotator text-primary max-sm:text-[1.25rem] sm:gap-4">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_6px_16px_-8px_rgb(1_76_94/0.5)] ring-1 ring-aqua-2 sm:size-12">
           <svg
             key={drawKey}

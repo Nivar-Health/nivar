@@ -6,17 +6,17 @@ import type { ExperienceApi, Prefs, ToolProps } from "../types";
 import { COMMON, PULSE } from "./copy";
 import {
   ChipRadio,
-  Emergency,
   LeadInOrb,
   ORB_REST,
   OrbNum,
   OrbWord,
-  PrimaryButton,
   PromptLine,
-  QuietButton,
   RichText,
+  SafetyLine,
   TimeLeft,
+  ToolControls,
   useToolSession,
+  type MainAction,
 } from "./parts";
 import { Wrist } from "./wrist";
 
@@ -75,6 +75,7 @@ export function Pulse({ api, Layout }: ToolProps) {
   const input = useRef<HTMLInputElement>(null);
   const ids = useId();
   const errorId = `${ids}-error`;
+  const formId = `${ids}-count`;
 
   const s = useToolSession({
     api,
@@ -206,14 +207,16 @@ export function Pulse({ api, Layout }: ToolProps) {
 
   const tapping = mode === "tap" && (stage === "armed" || (stage === "session" && phase === "running"));
 
-  // The main button keeps one slot in the controls, so focus stays on it from Start to Pause.
+  // The main button keeps one place in the dock, so focus stays on it from Start to Pause; after a
+  // count it submits the beats form above the safety line (Return in the field submits it too).
   let orb;
   let readout = null;
   let prompt;
-  let modes = null;
-  let form = null;
-  let action: { label: string; run(): void } = { label: "", run: () => {} };
-  let secondary = null;
+  let options = null;
+  let main: MainAction;
+  let held = false;
+  let onStop: (() => void) | undefined;
+  let onDone: (() => void) | undefined;
   if (stage === "idle") {
     orb = <Wrist />;
     readout = (
@@ -222,7 +225,7 @@ export function Pulse({ api, Layout }: ToolProps) {
         <p className="nv-tool-sub nv-tool-sub-wide">{PULSE.idleBody}</p>
       </>
     );
-    modes = (
+    options = (
       <fieldset className="nv-tool-modes">
         <legend className="nv-tool-legend">{PULSE.modeLegend}</legend>
         <div className="nv-tool-chips">
@@ -234,7 +237,7 @@ export function Pulse({ api, Layout }: ToolProps) {
         </div>
       </fieldset>
     );
-    action = { label: PULSE.start, run: start };
+    main = { label: PULSE.start, run: start };
   } else if (stage === "armed") {
     orb = <OrbWord>{PULSE.tapWord}</OrbWord>;
     readout = (
@@ -245,8 +248,9 @@ export function Pulse({ api, Layout }: ToolProps) {
     );
     prompt = <PromptLine>{PULSE.tapHint}</PromptLine>;
     // Pause's place is kept (hidden), so nothing moves when the first tap starts the count.
-    action = { label: COMMON.pause, run: () => {} };
-    secondary = <QuietButton onClick={toIdle}>{COMMON.stop}</QuietButton>;
+    main = { label: COMMON.pause };
+    held = true;
+    onStop = toIdle;
   } else if (stage === "session") {
     if (phase === "leadin") orb = <LeadInOrb left={s.leadInLeft} />;
     else if (phase === "paused") orb = <OrbWord>{COMMON.paused}</OrbWord>;
@@ -262,12 +266,12 @@ export function Pulse({ api, Layout }: ToolProps) {
         {phase === "leadin" ? PULSE.leadIn : s.pausedByVisibility ? COMMON.away : null}
       </PromptLine>
     );
-    action = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause };
-    secondary = <QuietButton onClick={toIdle}>{COMMON.stop}</QuietButton>;
+    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause };
+    onStop = toIdle;
   } else if (stage === "entry") {
     orb = ENTRY.test(entry.trim()) ? <OrbNum aria-hidden>{entry.trim()}</OrbNum> : null;
-    form = (
-      <form className="nv-tool-entry" noValidate onSubmit={submit}>
+    options = (
+      <form id={formId} className="nv-tool-entry" noValidate onSubmit={submit}>
         <label htmlFor={`${ids}-beats`} className="nv-tool-legend">
           {PULSE.entryLabel}
         </label>
@@ -293,9 +297,9 @@ export function Pulse({ api, Layout }: ToolProps) {
         <p id={errorId} className="nv-tool-error" aria-live="polite">
           {invalid ? PULSE.entryError : ""}
         </p>
-        <PrimaryButton type="submit">{PULSE.seeResult}</PrimaryButton>
       </form>
     );
+    main = { label: PULSE.seeResult, form: formId };
   } else {
     const r = result ?? { kind: "few" as const, n: taps };
     if (r.kind === "rate") {
@@ -316,8 +320,8 @@ export function Pulse({ api, Layout }: ToolProps) {
       orb = <Wrist />;
       readout = <p className="nv-tool-lead">{PULSE.fewTaps(r.n)}</p>;
     }
-    action = { label: PULSE.again, run: toIdle };
-    secondary = <QuietButton onClick={api.close}>{COMMON.done}</QuietButton>;
+    main = { label: PULSE.again, run: toIdle };
+    onDone = api.close;
   }
 
   return (
@@ -326,29 +330,14 @@ export function Pulse({ api, Layout }: ToolProps) {
       orbButton={tapping ? { label: PULSE.tapWord, onPress: tap } : undefined}
       readout={readout ? <div className="nv-tool-readout">{readout}</div> : undefined}
       prompt={prompt}
-      controls={
-        <div className="nv-tool-controls">
-          {modes}
-          {form}
-          {stage === "entry" ? null : (
-            <PrimaryButton
-              ref={primary}
-              onClick={action.run}
-              inert={stage === "armed"}
-              className={stage === "armed" ? "nv-tool-held" : undefined}
-            >
-              {action.label}
-            </PrimaryButton>
-          )}
-          {secondary}
-        </div>
-      }
+      options={options}
+      always={<SafetyLine emergency text={PULSE.always} />}
+      controls={<ToolControls main={main} mainRef={primary} held={held} onStop={onStop} onDone={onDone} />}
       fine={
         <p className="nv-tool-fine">
           <RichText parts={PULSE.sources} />
         </p>
       }
-      always={<Emergency text={PULSE.always} />}
     />
   );
 }

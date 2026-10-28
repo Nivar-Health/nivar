@@ -12,7 +12,7 @@
   }
 }
 
-/* "See services and prices": a quiet text link with a 44px target and a pressed tint on touch. */
+/* "See what a nurse can do": a quiet text link with a 44px target and a pressed tint on touch. */
 .nv-hero-link {
   display: inline-flex;
   align-items: center;
@@ -61,6 +61,40 @@ html[data-motion="paused"] .nv-hero-link:active {
   }
   .nv-hero-link:hover svg {
     transform: translateY(2px);
+  }
+}
+
+/* Short landscape from sm (844×390 and the like): a lower top, title and lede, the phone gaps and a 48px
+   button, and from md a wider copy column (the lede in three lines, a smaller arch), so the whole CTA is
+   in the first screen (A1-20). Unlayered, so it beats the Tailwind sizes and gaps on these elements. */
+@media (width >= 40rem) and (orientation: landscape) and (max-height: 520px) {
+  .nv-hero-pad {
+    padding-top: 5.5rem;
+  }
+  .nv-hero-title {
+    margin-top: 0.75rem;
+    font-size: 2.75rem;
+  }
+  .nv-hero-lede {
+    margin-top: 0.75rem;
+    font-size: 1.0625rem; /* text-body; both keep line-height 1.6 */
+  }
+  .nv-hero-actions {
+    margin-top: 1rem;
+  }
+  .nv-hero-cta {
+    height: 3rem;
+  }
+}
+@media (width >= 48rem) and (orientation: landscape) and (max-height: 520px) {
+  .nv-hero-grid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.6fr);
+  }
+}
+/* Landscape phones under sm (568×320): the photo is a thin band (38svh), so it frames the two faces. */
+@media (width < 40rem) and (orientation: landscape) and (max-height: 520px) {
+  .nv-hero-photo img {
+    object-position: 50% 15%;
   }
 }
 

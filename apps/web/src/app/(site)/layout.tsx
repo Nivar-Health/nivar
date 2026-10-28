@@ -1,6 +1,7 @@
 import type { Viewport } from "next";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/landing/closing";
+import { DisclosureHash } from "@/components/landing/disclosure-hash";
 import { RevealObserver } from "@/components/landing/reveal";
 import { SiteNav } from "@/components/landing/site-nav";
 import { FloatingCluster } from "@/components/landing/take-a-minute/cluster";
@@ -31,6 +32,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <SiteFooter />
       <FloatingCluster />
       <RevealObserver />
+      <DisclosureHash />
     </div>
   );
 }

@@ -13,11 +13,12 @@ import {
   ORB_REST,
   OrbNum,
   OrbWord,
-  PrimaryButton,
   PromptLine,
-  QuietButton,
+  SafetyLine,
   TimeLeft,
+  ToolControls,
   useToolSession,
+  type MainAction,
 } from "./parts";
 
 /* Breathe (spec §3.12, §5.5, §5.6): a countdown, never a stopwatch. Five seconds in, five out, with
@@ -191,8 +192,11 @@ export function Breathe({ api, Layout }: ToolProps) {
   let orb;
   let readout;
   let prompt;
-  let action: { label: string; run(): void };
-  let secondary = null;
+  let options = null;
+  let after = null;
+  let main: MainAction;
+  let onStop: (() => void) | undefined;
+  let onDone: (() => void) | undefined;
   if (phase === "idle") {
     orb = <OrbWord>{BREATHE.word}</OrbWord>;
     readout = (
@@ -202,7 +206,22 @@ export function Breathe({ api, Layout }: ToolProps) {
         <p className="nv-tool-sub">{BREATHE.idleSub}</p>
       </>
     );
-    action = { label: BREATHE.start, run: () => start(chosen) };
+    options = (
+      <fieldset className="nv-tool-chips">
+        <legend className="sr-only">{BREATHE.chipsLabel}</legend>
+        {BREATHE.chips.map((m) => (
+          <ChipRadio key={m} name="nv-breathe-minutes" checked={chosen === m} onSelect={() => api.setPrefs({ breatheMinutes: m })}>
+            {BREATHE.chip(m)}
+          </ChipRadio>
+        ))}
+      </fieldset>
+    );
+    after = (
+      <button type="button" className="nv-tool-textlink" onClick={() => api.switchTool("rest")}>
+        {BREATHE.restLink}
+      </button>
+    );
+    main = { label: BREATHE.start, run: () => start(chosen) };
   } else if (phase === "done") {
     orb = (
       <span className="nv-tool-proverb">
@@ -214,11 +233,11 @@ export function Breathe({ api, Layout }: ToolProps) {
       </span>
     );
     readout = <p className="nv-tool-lead">{BREATHE.done(minutes)}</p>;
-    action =
+    main =
       minutes === 5
         ? { label: COMMON.again, run: () => start(5) }
         : { label: BREATHE.keepGoing(minutes === 1 ? 4 : 2), run: () => keepGoing(minutes === 1 ? 4 : 2) };
-    secondary = <QuietButton onClick={api.close}>{COMMON.done}</QuietButton>;
+    onDone = api.close;
   } else {
     orb =
       phase === "leadin" ? (
@@ -239,8 +258,8 @@ export function Breathe({ api, Layout }: ToolProps) {
         {phase === "leadin" ? COMMON.leadInLine : s.pausedByVisibility ? COMMON.away : null}
       </PromptLine>
     );
-    action = phase === "paused" ? { label: COMMON.resume, run: s.togglePause } : { label: COMMON.pause, run: s.togglePause };
-    secondary = <QuietButton onClick={stop}>{COMMON.stop}</QuietButton>;
+    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause };
+    onStop = stop;
   }
 
   return (
@@ -248,34 +267,10 @@ export function Breathe({ api, Layout }: ToolProps) {
       orb={<span className="nv-tool-orb">{orb}</span>}
       readout={<div className="nv-tool-readout">{readout}</div>}
       prompt={prompt}
-      controls={
-        <div className="nv-tool-controls">
-          {phase === "idle" ? (
-            <fieldset className="nv-tool-chips">
-              <legend className="sr-only">{BREATHE.chipsLabel}</legend>
-              {BREATHE.chips.map((m) => (
-                <ChipRadio
-                  key={m}
-                  name="nv-breathe-minutes"
-                  checked={chosen === m}
-                  onSelect={() => api.setPrefs({ breatheMinutes: m })}
-                >
-                  {BREATHE.chip(m)}
-                </ChipRadio>
-              ))}
-            </fieldset>
-          ) : null}
-          <PrimaryButton ref={primary} onClick={action.run}>
-            {action.label}
-          </PrimaryButton>
-          {secondary}
-          {phase === "idle" ? (
-            <button type="button" className="nv-tool-textlink" onClick={() => api.switchTool("rest")}>
-              {BREATHE.restLink}
-            </button>
-          ) : null}
-        </div>
-      }
+      options={options}
+      always={<SafetyLine text={BREATHE.always} />}
+      controls={<ToolControls main={main} mainRef={primary} onStop={onStop} onDone={onDone} />}
+      after={after}
       fine={<FineLines lines={BREATHE.fine} />}
     />
   );

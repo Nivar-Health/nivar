@@ -13,6 +13,7 @@ import {
   renderGrid,
   useHiDpiCanvas,
   type CanvasSize,
+  type LabelScale,
   type MonitorStatus,
 } from "./monitor-shared";
 
@@ -36,6 +37,15 @@ export type EcgMonitorProps = {
   paused?: boolean;
   /** Overlay shown while paused before any signal has arrived. Default "Paused". */
   pausedLabel?: ReactNode;
+  /**
+   * Off screen: paint the current frame once and run no draw loop. Unlike `paused` nothing on the
+   * monitor changes, and it resumes without a "Waiting for device" flash. Default false.
+   */
+  idle?: boolean;
+  /** Grow past `height` when larger text needs the room (`minHeight` instead of `height`). Default false. */
+  growWithText?: boolean;
+  /** "landing" raises the 10-11px labels to 12px. Default "console". */
+  labelScale?: LabelScale;
 };
 
 const SPEED_MM_S = 25;
@@ -50,6 +60,9 @@ export function EcgMonitor({
   className,
   paused = false,
   pausedLabel = "Paused",
+  idle = false,
+  growWithText = false,
+  labelScale = "console",
 }: EcgMonitorProps) {
   const [hasSignal, setHasSignal] = useState(false);
   const [gainLabel, setGainLabel] = useState("10 mm/mV");
@@ -68,8 +81,8 @@ export function EcgMonitor({
   const drawRef = useRef<(() => void) | null>(null);
   /** Mirrors hasSignal for the draw loop, so a restarted (or paused) loop keeps the current state. */
   const signalRef = useRef(false);
-  /** `paused` as of the last draw-loop run, to detect the paused -> playing transition. */
-  const wasPausedRef = useRef(paused);
+  /** Whether the last draw-loop run was frozen (paused or idle), to detect the frozen -> playing transition. */
+  const wasPausedRef = useRef(paused || idle);
 
   // Drawing state lives in a ref; the rAF loop mutates it without re-rendering.
   const view = useRef({
@@ -304,24 +317,30 @@ export function EcgMonitor({
       draw();
       raf = requestAnimationFrame(loop);
     };
-    if (paused) {
+    const frozen = paused || idle;
+    if (frozen) {
       // Frozen: paint the last frame once and start no loop.
       drawRef.current = draw;
       draw();
     } else {
       // Resuming a frozen trace: count the pause as fresh data so "Waiting for device..." doesn't
-      // flash while the buffer refills. (Only on that transition; first mounts are untouched.)
-      if (wasPausedRef.current && signalRef.current) playerRef.current.lastDataAt = performance.now();
+      // flash while the buffer refills, and start RR afresh, so the first beat's interval never spans
+      // the pause. (Only on that transition; first mounts are untouched.)
+      if (wasPausedRef.current) {
+        if (signalRef.current) playerRef.current.lastDataAt = performance.now();
+        view.current.sinceBeat = 1e9;
+      }
       raf = requestAnimationFrame(loop);
     }
-    wasPausedRef.current = paused;
+    wasPausedRef.current = frozen;
     return () => {
       cancelAnimationFrame(raf);
       drawRef.current = null;
     };
-  }, [canvasRef, paused]);
+  }, [canvasRef, paused, idle]);
 
   const live = hasSignal && status !== "stopped" && status !== "connecting";
+  const landing = labelScale === "landing";
   const overlay =
     paused && !hasSignal ? (
       pausedLabel
@@ -341,17 +360,22 @@ export function EcgMonitor({
         "relative flex flex-col overflow-hidden rounded-2xl border border-[#262626] bg-[#0a0a0a] text-[#F2F2EE] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-12px_rgba(0,0,0,0.55)]",
         className,
       )}
-      style={{ height }}
+      style={growWithText ? { minHeight: height } : { height }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3.5 py-2">
-        <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] tracking-wide whitespace-nowrap">
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-2.5 overflow-hidden tracking-wide whitespace-nowrap",
+            landing ? "text-xs" : "text-[11px]",
+          )}
+        >
           <span className="font-semibold text-[#19C37D]">ECG</span>
           <span className="rounded border border-[#19C37D]/25 px-1.5 py-px font-medium text-[#8FE3BF]">{lead}</span>
           <span className="hidden text-[#8F8F89] tabular-nums sm:inline">{SPEED_MM_S} mm/s</span>
           <span className="hidden text-[#8F8F89] tabular-nums sm:inline">{gainLabel}</span>
           <span className="hidden text-[#8F8F89] md:inline">0.5 to 40 Hz</span>
         </div>
-        <LiveBadge live={live && !paused} paused={paused} />
+        <LiveBadge live={live && !paused} paused={paused} labelScale={labelScale} />
       </div>
 
       <div className="flex min-h-0 flex-1">
@@ -361,7 +385,12 @@ export function EcgMonitor({
         </div>
 
         <div className="flex w-[92px] shrink-0 flex-col justify-between border-l border-white/5 bg-[#0A221E] px-3 py-2.5 sm:w-[124px]">
-          <div className="flex items-center justify-between text-[10px] font-semibold tracking-[0.14em] text-[#19C37D]">
+          <div
+            className={cn(
+              "flex items-center justify-between font-semibold tracking-[0.14em] text-[#19C37D]",
+              landing ? "text-xs" : "text-[10px]",
+            )}
+          >
             <span>HR</span>
             <span ref={heartRef} className="inline-flex origin-center text-[#19C37D] opacity-85">
               <HeartPulse className="size-4" strokeWidth={2.25} />
@@ -375,9 +404,9 @@ export function EcgMonitor({
             >
               --
             </span>
-            <span className="mt-1 text-[10px] tracking-wider text-[#8F8F89]">bpm</span>
+            <span className={cn("mt-1 tracking-wider text-[#8F8F89]", landing ? "text-xs" : "text-[10px]")}>bpm</span>
           </div>
-          <div className="flex items-baseline justify-between text-[10px] text-[#8F8F89]">
+          <div className={cn("flex items-baseline justify-between text-[#8F8F89]", landing ? "text-xs" : "text-[10px]")}>
             <span className="tracking-wider">RR</span>
             <span className="font-mono text-xs text-[#8FE3BF] tabular-nums">
               <span ref={rrTextRef}>--</span> ms
