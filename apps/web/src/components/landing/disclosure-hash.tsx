@@ -18,13 +18,29 @@ export function openForHash(): void {
   const target = id ? document.getElementById(id) : null;
   if (!target) return;
   let hidden = false;
+  // A target too near the end to reach its scroll margin yet: the browser stops (or, gliding, will stop) at
+  // the end of the page, which the open then lengthens. Measured, not read from scrollY, because the glide
+  // to a fragment on load is often still under way here.
+  const clamped =
+    scrollY + target.getBoundingClientRect().top - parseFloat(getComputedStyle(target).scrollMarginTop) >
+    document.documentElement.scrollHeight - innerHeight + 1;
+  let opened = false;
   for (let d = target.closest("details"); d; d = d.parentElement?.closest("details") ?? null) {
     if (d.open) continue;
     d.open = true;
+    opened = true;
     // Its summary was in view all along when the target is the details or sits in that summary.
     if (d !== target && !d.querySelector(":scope > summary")?.contains(target)) hidden = true;
   }
-  if (hidden) requestAnimationFrame(() => target.scrollIntoView({ block: "start", behavior: "instant" }));
+  const align = () => target.scrollIntoView({ block: "start", behavior: "instant" });
+  if (hidden) requestAnimationFrame(align);
+  // The page grows over the 280 ms open, so a rAF is too early. Chrome's glide to the fragment, often still
+  // under way then, carries an instant scroll on to the end of the page; the call a frame later lands it.
+  else if (opened && clamped)
+    window.setTimeout(() => {
+      align();
+      requestAnimationFrame(align);
+    }, 320);
 }
 
 /** The guard on the phone-only rules in disclosure.css. Change both together. */

@@ -266,8 +266,8 @@
     color: var(--jade);
     background-color: var(--aqua);
   }
-  .nv-nav-rows > li:has(> [aria-current])::before,
-  .nv-nav-rows > li:has(> [aria-current]) + li::before {
+  .nv-nav-rows > li[data-on]::before,
+  .nv-nav-rows > li[data-on] + li::before {
     background: transparent;
   }
   .nv-nav-row[aria-current]::before {
@@ -315,6 +315,10 @@
      in block flow inside it), and the dock's own auto margin would otherwise share the free space. A
      screen too short for them scrolls the sheet as before. */
   @media (width < 40rem) {
+    /* Keyboard focus scrolls a row clear of the sticky head (0.75rem + 4rem + 0.25rem), landscape too. */
+    .nv-nav-sheet {
+      scroll-padding-top: calc(5rem + env(safe-area-inset-top, 0px));
+    }
     .nv-nav-sheet > nav {
       margin-top: auto;
     }
@@ -342,6 +346,28 @@
       height: 1.25rem;
     }
   }
+  /* Short phones: rows at §2.3's 48px minimum, and the actions stay in thumb reach while the rows scroll beneath them. */
+  @media (width < 40rem) and (max-height: 47.5rem) {
+    .nv-nav-row {
+      min-height: 3rem;
+    }
+    .nv-nav-dock {
+      gap: 0.5rem;
+      padding-block: 0.75rem;
+    }
+  }
+  @media (width < 40rem) and (min-height: 30rem) {
+    .nv-nav-dock {
+      position: sticky;
+      bottom: 0.75rem;
+      z-index: 1;
+    }
+    /* Keyboard focus scrolls a row clear of the sticky dock (WCAG 2.4.11): its height with Log in, plus
+       its 0.75rem offset. Without Log in the rows simply stop a little higher. */
+    .nv-nav-sheet {
+      scroll-padding-bottom: 16rem;
+    }
+  }
 
   /* Pressed (mobile addendum M2): a tint and a slight press, 90ms in and 180ms out. */
   .nv-nav-logo:active,
@@ -364,12 +390,19 @@
     transition-duration: 90ms;
   }
 
-  /* Forced colours drop the jade backgrounds: the current-section bar and dot become Highlight. */
+  /* Forced colours drop the jade backgrounds: the current-section bar and dot become Highlight. The pill
+     keeps its alpha there, and its only edge is a shadow, so it gets an opaque Canvas and an outline
+     (nothing inside it moves). */
   @media (forced-colors: active) {
     .nv-nav-ind,
     .nv-nav-row[aria-current]::before {
       forced-color-adjust: none;
       background: Highlight;
+    }
+    .nv-nav-bar {
+      background-color: Canvas;
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
     }
   }
 

@@ -53,7 +53,7 @@ export function HowItWorks() {
           lede={`Nothing to download and nowhere to travel. Here is what happens, from the moment you ask to the report ${SITE.report.channel}.`}
         />
 
-        <div className="mt-6 lg:mt-16">
+        <div className="mt-7 sm:mt-6 lg:mt-16">
           <VisitJourney steps={journeySteps()} />
         </div>
 

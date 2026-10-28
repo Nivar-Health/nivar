@@ -7,6 +7,23 @@ export const MINUTE_OPEN_EVENT = "nivar:minute-open";
 export const MINUTE_WARM_EVENT = "nivar:minute-warm";
 
 /**
+ * Fired on window by the corner whenever Take a minute opens or closes (`detail.open`), so a loop under
+ * the sheet (the live ECG) can rest. A window event, not an html attribute: §1.4 keeps those for chrome-signals.
+ */
+export const MINUTE_STATE_EVENT = "nivar:minute-state";
+
+let minuteOpen = false;
+
+/** The corner's report: fires MINUTE_STATE_EVENT and keeps the state for a listener that mounts later. */
+export function reportMinuteState(open: boolean): void {
+  minuteOpen = open;
+  window.dispatchEvent(new CustomEvent<{ open: boolean }>(MINUTE_STATE_EVENT, { detail: { open } }));
+}
+
+/** Whether Take a minute is open now: the initial state for a listener whose chunk arrives while it is. */
+export const isMinuteOpen = (): boolean => minuteOpen;
+
+/**
  * Opens Take a minute from client code (the nav sheet, for example). `tool` omitted or "" opens the
  * last-used tool. `origin` is the launcher: focus returns to it on close and the orb flies from it.
  * Markup-only launchers use `<button data-minute-open="<tool|''>" aria-haspopup="dialog">` instead.

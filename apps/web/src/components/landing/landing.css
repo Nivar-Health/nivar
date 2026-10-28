@@ -134,6 +134,14 @@
     transform: translateY(12px);
   }
 }
+/* A group holding the URL's target shows at once, so a hash jump lands at the target's scroll margin. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-nv-reveal-ready]:not([data-motion="paused"]) [data-nv-reveal]:has(:target) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
 @media print {
   [data-nv-reveal] { opacity: 1 !important; transform: none !important; }
 }

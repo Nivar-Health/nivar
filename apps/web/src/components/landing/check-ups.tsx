@@ -18,7 +18,7 @@ export function CheckUps({ packages, services }: { packages: Package[]; services
           <SectionTitle
             id="check-ups-title"
             className="lg:col-span-7"
-            title="Check-ups at home, reviewed by a doctor."
+            title={"Check-ups at\u00a0home, reviewed by a doctor."}
             lede={
               <>
                 Your nurse checks blood pressure, sugar, oxygen and the heart at home, and every{" "}

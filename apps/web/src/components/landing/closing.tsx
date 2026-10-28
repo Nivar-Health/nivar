@@ -267,7 +267,7 @@ export function SiteFooter() {
                     title={col.heading}
                     head={<h3 className="text-sm font-semibold text-white">{col.heading}</h3>}
                   >
-                    <ul className="grid gap-2 sm:mt-2.5">
+                    <ul className="grid gap-2 max-sm:pt-2 sm:mt-2.5">
                       {col.items.map((item) => (
                         <li key={item.label} className="flex">
                           <FooterLink item={item} />

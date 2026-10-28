@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useEcgFeed, useInView, usePairing, useStethFeed } from "./live-feeds";
 import { useMotionPaused } from "./motion";
 import { LiveDot, Pill } from "./primitives";
+import { MINUTE_STATE_EVENT, isMinuteOpen } from "./take-a-minute/open";
 
 /**
  * Demo vitals. 126/78 is "Elevated" under AHA/ACC 2025 (120-129/<80). 92 mg/dL is normal fasting and
@@ -54,7 +55,17 @@ export function LiveDashboard({
   const motionPaused = useMotionPaused();
   /** The visitor's own Pause. */
   const [held, setHeld] = useState(false);
-  const running = inView && !motionPaused && !held;
+  /**
+   * Take a minute is open over the page (corner.tsx reports it): the traces rest under the sheet. The chunk
+   * can arrive while it is open (client-only, so reading the module state on mount cannot mismatch).
+   */
+  const [minuteOpen, setMinuteOpen] = useState(isMinuteOpen);
+  useEffect(() => {
+    const on = (e: Event) => setMinuteOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    window.addEventListener(MINUTE_STATE_EVENT, on);
+    return () => window.removeEventListener(MINUTE_STATE_EVENT, on);
+  }, []);
+  const running = inView && !motionPaused && !held && !minuteOpen;
   // Pairing starts as the chunk mounts, 600px ahead of the panel, so the monitors are live on arrival.
   const paired = usePairing(!motionPaused, 1200);
   const feed = useEcgFeed(76);

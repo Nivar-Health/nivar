@@ -206,10 +206,11 @@ const FIELD =
 /**
  * 44px pills; pressed: a tint and, with motion, a 0.98 scale (90 ms in, 180 ms out). In forced colours
  * the chosen pill keeps its own Highlight fill: without forced-color-adjust:none the browser would
- * paint a Canvas backplate behind HighlightText and the label would vanish.
+ * paint a Canvas backplate behind HighlightText and the label would vanish. In the two-by-two grid the sides
+ * are 12px, so "Someone else" keeps one line in a 128px cell at 360.
  */
 const RADIO_PILL =
-  "relative inline-flex h-11 cursor-pointer items-center rounded-full border border-border-strong bg-card px-4 text-[0.9375rem] font-medium text-foreground transition-[background-color,border-color,color,transform] duration-180 ease-standard select-none hover:bg-muted active:bg-aqua-2/60 active:duration-90 motion-safe:active:scale-[0.98] has-[:checked]:border-primary has-[:checked]:bg-aqua has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-ring forced-colors:has-[:checked]:border-[Highlight] forced-colors:has-[:checked]:bg-[Highlight] forced-colors:has-[:checked]:text-[HighlightText] forced-colors:has-[:checked]:forced-color-adjust-none forced-colors:has-[:checked]:outline-[CanvasText]";
+  "relative inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-border-strong bg-card px-4 min-[22.5rem]:max-[32rem]:px-3 text-[0.9375rem] font-medium text-foreground transition-[background-color,border-color,color,transform] duration-180 ease-standard select-none hover:bg-muted active:bg-aqua-2/60 active:duration-90 motion-safe:active:scale-[0.98] has-[:checked]:border-primary has-[:checked]:bg-aqua has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-ring forced-colors:has-[:checked]:border-[Highlight] forced-colors:has-[:checked]:bg-[Highlight] forced-colors:has-[:checked]:text-[HighlightText] forced-colors:has-[:checked]:forced-color-adjust-none forced-colors:has-[:checked]:outline-[CanvasText]";
 
 /**
  * Text button in the success state. Text flows inline; the outline hugs the text and ::before makes
@@ -254,7 +255,8 @@ export function CallbackForm() {
       headingRef.current?.focus({ preventScroll: true });
       const box = successRef.current?.getBoundingClientRect();
       if (!box) return;
-      const nav = document.querySelector("[data-landing] > header")?.getBoundingClientRect().bottom ?? 0;
+      const header = document.querySelector<HTMLElement>("[data-landing] > header");
+      const nav = header ? header.offsetTop + header.offsetHeight : 0; // the layout box: the typing state's translate may still be easing out
       const view = window.visualViewport?.height ?? window.innerHeight;
       const up = nav + 12 - box.top;
       const down = box.bottom - (view - 12);
@@ -457,7 +459,9 @@ export function CallbackForm() {
             tabIndex={-1}
             className="font-display mt-5 text-[1.75rem] leading-tight font-medium tracking-[-0.02em] text-balance text-foreground outline-none"
           >
-            Thanks, {first}. We will call you soon.
+            {/* One line each, so "We" never ends the first line. The space keeps the text whole for copy and AT. */}
+            <span className="block">Thanks, {first}.</span>{" "}
+            <span className="block">We will call you soon.</span>
           </h3>
           <p className="mt-3 max-w-[38ch] text-body text-balance text-foreground-2">
             A Nivar care coordinator will call you on{" "}
@@ -537,7 +541,11 @@ export function CallbackForm() {
           <legend className="flex w-full items-baseline justify-between gap-x-1.5 text-[0.9375rem] font-medium text-balance text-foreground">
             Who is the visit for? <span className="text-caption font-normal text-muted-foreground">Optional</span>
           </legend>
-          <div ref={pillsRef} className="mt-2 flex flex-wrap gap-2">
+          {/* 360 to 511px: two by two, never 3 + 1. Narrower they wrap 2 + 2 anyway; wider all four fit one row. */}
+          <div
+            ref={pillsRef}
+            className="mt-2 flex flex-wrap gap-2 min-[22.5rem]:max-[32rem]:grid min-[22.5rem]:max-[32rem]:grid-cols-2"
+          >
             {WHO_FOR.map((v) => (
               <label key={v} className={RADIO_PILL}>
                 <input
@@ -640,6 +648,7 @@ export function CallbackForm() {
             htmlFor={id("language")}
             hint="We'll match a coordinator who speaks it when we can."
             hintId={id("language-hint")}
+            hintClassName="text-small"
           >
             <div className="relative">
               <select
@@ -739,6 +748,7 @@ function Field({
   htmlFor,
   hint,
   hintId,
+  hintClassName,
   error,
   errorId,
   optional,
@@ -748,6 +758,8 @@ function Field({
   htmlFor: string;
   hint?: string;
   hintId?: string;
+  /** A hint that is a sentence to read (not meta) sets its own size here. */
+  hintClassName?: string;
   error?: string;
   errorId?: string;
   optional?: boolean;
@@ -763,7 +775,7 @@ function Field({
         {optional && <span className="text-caption font-normal text-muted-foreground">Optional</span>}
       </label>
       {hint && (
-        <p id={hintId} className="-mt-0.5 text-caption text-pretty text-muted-foreground">
+        <p id={hintId} className={cn("-mt-0.5 text-caption text-pretty text-muted-foreground", hintClassName)}>
           {hint}
         </p>
       )}

@@ -340,6 +340,23 @@ export function SiteNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    // a11y-01 (WCAG 2.4.11): Chrome leaves a focused text field where it is once part of it shows,
+    // ignoring its scroll-margin, so Shift+Tab can park the phone or Name field under the pill. A stop
+    // wholly above the screen is left to Chrome, which centres it.
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target;
+      const header = headerRef.current;
+      if (!(t instanceof HTMLElement) || !header || !t.matches(":focus-visible") || !t.closest("main, footer")) return;
+      if (document.documentElement.hasAttribute("data-nv-typing") || getComputedStyle(header).visibility !== "visible") return;
+      const pill = header.querySelector(".nv-nav-bar")?.getBoundingClientRect();
+      const r = t.getBoundingClientRect();
+      if (pill && r.bottom > 0 && r.top < pill.bottom + 4) t.scrollIntoView({ block: "nearest" });
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => document.removeEventListener("focusin", onFocusIn);
+  }, []);
+
   /** Closes the sheet from its own UI, stepping back over its history entry. */
   const close = useCallback(() => {
     setOpen(false);
@@ -514,7 +531,12 @@ export function SiteNav() {
           <nav aria-label="Sections">
             <ul className="nv-nav-rows">
               {SHEET_LINKS.map((l, i) => (
-                <li key={l.id} className="nv-nav-stagger" style={{ "--i": i } as CSSProperties}>
+                <li
+                  key={l.id}
+                  className="nv-nav-stagger"
+                  style={{ "--i": i } as CSSProperties}
+                  data-on={current === l.id ? "" : undefined}
+                >
                   <a
                     href={`#${l.id}`}
                     onClick={choose}
@@ -550,7 +572,7 @@ export function SiteNav() {
             )}
             {/* On phones a second Close sits under the thumb, below where the bar's Menu tab is. */}
             <div className="nv-nav-dock-end">
-              <p className="px-1 text-caption text-pretty text-ink-3">{SITE.emergency.short}</p>
+              <p className="px-1 text-small text-pretty text-ink-2">{SITE.emergency.short}</p>
               <Dialog.Close aria-label="Close menu" className="nv-nav-close focus-ring">
                 <X aria-hidden />
               </Dialog.Close>

@@ -102,7 +102,7 @@ export function Comparison() {
           lede="How a Nivar visit compares with the two usual options. We've kept it honest, including where a hospital is the better choice."
         />
 
-        <div className="nv-cmp mt-5 lg:mt-14">
+        <div className="nv-cmp mt-7 sm:mt-5 lg:mt-14">
           <fieldset className="nv-cmp-switch">
             <legend className="nv-cmp-legend">Compare Nivar with</legend>
             <div className="nv-cmp-seg">
@@ -137,7 +137,11 @@ export function Comparison() {
                   <tbody>
                     {ROWS.map((r) => (
                       <tr key={r.label}>
-                        <th scope="row">{r.label}</th>
+                        <th scope="row">
+                          {r.label
+                            .split(/(\S+-\S+)/)
+                            .map((part, i) => (i % 2 ? <span key={i} className="whitespace-nowrap">{part}</span> : part))}
+                        </th>
                         {r.cells.map((cell, i) => (
                           <td key={COLUMNS[i].id} data-col={COLUMNS[i].id} data-go={cell.go ? "" : undefined}>
                             <Mark kind={cell.mark} />
@@ -158,7 +162,7 @@ export function Comparison() {
             </div>
           </div>
 
-          <p className="mt-3 text-caption text-ink-2 lg:mt-7">Typical experiences, not a rating of any hospital or person.</p>
+          <p className="mt-3 text-caption text-ink-2 text-balance lg:mt-7">Typical experiences, not a rating of any hospital or person.</p>
         </div>
       </Container>
     </Section>

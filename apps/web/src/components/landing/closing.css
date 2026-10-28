@@ -88,6 +88,14 @@
       padding-bottom: 0;
     }
   }
+  /* Below 640px the open group clips its content while it grows (disclosure.css); the links bleed 10px
+     left (-mx-2.5), so clip only vertically, or their focus ring and the launcher's failure outline lose
+     their left edge. A rule of its own, as every ::details-content rule is (0,2,1 beats 0,1,1). */
+  @media (width < 40rem) {
+    .nv-foot-groups .nv-disc::details-content {
+      overflow-x: visible;
+    }
+  }
 
   /* ---- Footer: in-page links (and the Take a minute button) on the pond band ---- */
   .nv-foot-link {

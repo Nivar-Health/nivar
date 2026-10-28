@@ -1070,6 +1070,12 @@
   html[data-motion="paused"] .nv-minute-tab-pill {
     transition: none;
   }
+  /* The visitor's pause opens and closes with the root's 160ms crossfade (experience.tsx quietOpen), so the
+     stagger lands at once, as globals.css makes it do under reduced motion (§1.15). */
+  html[data-motion="paused"] .nv-minute-sheet [data-nv-in] {
+    transition-duration: 0.001ms !important;
+    transition-delay: 0s !important;
+  }
 
   /* ---- Forced colours: the orb and ring in CanvasText, controls in system colours ----------- */
   @media (forced-colors: active) {

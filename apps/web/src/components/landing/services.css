@@ -769,7 +769,7 @@
   }
   /* With WhatsApp set the chevron shares the price's side with the glyph. */
   @media (width < 48rem) {
-    .nv-care-row:has(> .nv-care-row-go > svg:not(.lucide)) .nv-care-price {
+    .nv-care-row[data-wa] .nv-care-price {
       margin-inline-end: 44px;
     }
   }

@@ -23,7 +23,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Disclosure } from "../disclosure";
-import { usePrefersReducedMotion } from "../motion";
+import { useMotionPaused, usePrefersReducedMotion } from "../motion";
 import { bindStyle, spring, stopAll, tween, type Ease } from "./anim";
 import { ENABLED_TOOLS, TOOL_DURATION, TOOL_ENABLED, TOOL_LABEL, TOOL_SPOKEN, TOOL_TONE, isToolId } from "./config";
 import { onSessionDone } from "./engine";
@@ -491,6 +491,9 @@ function Sheet({
   generation,
 }: SheetProps) {
   const reducedMotion = usePrefersReducedMotion();
+  // The OS setting or the visitor's pause: opening and closing are the 160 ms crossfade (§1.15). Everything
+  // else (the ring, tones, scrolling, the tools) keeps the OS setting only, so a session still runs under the pause.
+  const quietOpen = useMotionPaused();
   const coarse = useMedia("(pointer: coarse)");
   const compactHeight = useMedia("(height < 700px)");
   const phone = useMedia("(width < 40rem)");
@@ -608,7 +611,7 @@ function Sheet({
         v.cover.jump(coverScale(bx, by));
       }
 
-      if (reducedMotion) {
+      if (quietOpen) {
         // A 160ms crossfade of the finished scene: no bloom, flight, ripple, stagger or motes.
         stopAll(scene.all);
         if (!retarget) {
@@ -746,7 +749,7 @@ function Sheet({
         ui.dataset.ready = "";
       });
     },
-    [clearTimers, later, motes, origin, reducedMotion, ring, scene, titleRef, v],
+    [clearTimers, later, motes, origin, quietOpen, reducedMotion, ring, scene, titleRef, v],
   );
 
   /* ---- Closing (§5.9; mobile spec U8: the handoff within 350ms) -------------------------- */
@@ -778,7 +781,7 @@ function Sheet({
       completedRef.current = false;
     };
 
-    if (reducedMotion || !stage || !orbEl || !bloomEl) {
+    if (quietOpen || !stage || !orbEl || !bloomEl) {
       tween(v.root, 0, 0.16, "linear");
       later(170, () => handoff());
       return;
@@ -860,7 +863,7 @@ function Sheet({
       };
       wait();
     });
-  }, [clearTimers, closeStyle, later, motes, onHandoff, origin, reducedMotion, scene, showPearl, v]);
+  }, [clearTimers, closeStyle, later, motes, onHandoff, origin, quietOpen, scene, showPearl, v]);
 
   // Only a change of `open` plays a timeline; the latest closures are read through a ref.
   const playRef = useRef({ open: playOpen, close: playClose });

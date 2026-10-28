@@ -395,7 +395,7 @@ function NursingCard({ c }: { c: CareCategory }) {
  */
 function AlsoRow({ c }: { c: CareCategory }) {
   return (
-    <li id={`service-${c.id}`} className="nv-care-row">
+    <li id={`service-${c.id}`} className="nv-care-row" data-wa={!c.link && whatsappHref() ? "" : undefined}>
       <div className="nv-care-row-main">
         <span aria-hidden className="nv-care-row-icon">
           <c.icon strokeWidth={1.9} />

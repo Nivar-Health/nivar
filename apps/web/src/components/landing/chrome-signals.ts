@@ -73,8 +73,9 @@ function attach(): () => void {
           const r = e.intersectionRatio;
           if (r >= 0.99) heroCta = "in";
           else if (!e.isIntersecting || r === 0) heroCta = e.boundingClientRect.top >= bottom ? "below" : "above";
+          else if (r >= 0.5) heroCta = "in"; // half in view: the hero's own button is the screen's one marigold (D4, §5's 50% rule)
           else if (heroCta === null) heroCta = e.boundingClientRect.bottom > bottom ? "below" : "in";
-          // Partly visible after the first report: keep the last state (the CTA's height is the hysteresis).
+          // Under half visible after the first report: keep the last state (the CTA's lower half is the hysteresis).
         } else if (e.target === form) {
           formOn = e.intersectionRatio >= (formOn ? FORM_OUT : FORM_IN);
         } else if (e.target === footer) {
@@ -94,7 +95,7 @@ function attach(): () => void {
       commit({ ...state, heroCta: h, zone: formOn || footerOn ? "form" : h === "above" ? "mid" : "hero" });
       armTransitions();
     },
-    { threshold: [0, FORM_OUT, FORM_IN, 1] },
+    { threshold: [0, FORM_OUT, FORM_IN, 0.5, 1] },
   );
   for (const el of [cta, form, footer, hero]) if (el) io.observe(el);
 

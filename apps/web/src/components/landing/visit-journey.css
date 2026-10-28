@@ -61,6 +61,12 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.25rem;
   }
+  /* §2.3's 8px between targets from 360; below it "4 Report" needs the whole 67px cell, so 4px there. */
+  @media (width >= 22.5rem) {
+    .nv-jn-tabs {
+      gap: 0.5rem;
+    }
+  }
   .nv-jn-tab {
     position: relative;
     isolation: isolate;

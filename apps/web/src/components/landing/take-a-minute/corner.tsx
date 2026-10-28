@@ -2,10 +2,10 @@
 
 import { startTransition, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { useChromeSignals } from "../chrome-signals";
-import { HASH, TOOL_ENABLED, enabledTool, isToolId } from "./config";
+import { ENABLED_TOOLS, HASH, TOOL_LABEL, enabledTool, isToolId } from "./config";
 import type { ExperienceProps } from "./experience";
 import { keepRouterState, stripHash } from "./history";
-import { MINUTE_OPEN_EVENT, MINUTE_WARM_EVENT, prefetchTakeAMinute } from "./open";
+import { MINUTE_OPEN_EVENT, MINUTE_WARM_EVENT, prefetchTakeAMinute, reportMinuteState } from "./open";
 import type { MinuteOpenDetail, ToolId } from "./types";
 
 /* The corner island (spec §5.3), first-load JS: no motion, no Base UI. It shows the pearl button,
@@ -16,9 +16,8 @@ import type { MinuteOpenDetail, ToolId } from "./types";
    Take a minute for every launcher, prefetches it as a launcher nears, and marks the launcher a visitor
    tapped while the chunk loads or fails (§1.17). */
 
-const NAME = TOOL_ENABLED.pulse
-  ? "Take a minute: breathing, rest, pulse and eye-break timers"
-  : "Take a minute: breathing, rest and eye-break timers";
+/** The config names (mobile spec §1.16), as every launcher uses them: "Take a minute: Breathe, BP rest, Eyes". */
+const NAME = `Take a minute: ${ENABLED_TOOLS.map((t) => TOOL_LABEL[t]).join(", ")}`;
 const LABEL = "Take a minute";
 const FAILED = "Couldn't open. Try again.";
 /** How long the failure note (and the launcher's danger outline) shows. */
@@ -150,6 +149,8 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
   const openRef = useRef(false);
   const [Experience, setExperience] = useState<ComponentType<ExperienceProps> | null>(null);
   const [open, setOpen] = useState(false);
+  // Tells the live ECG (live-dashboard.tsx) to rest while the sheet covers the page.
+  useEffect(() => reportMinuteState(open), [open]);
   const [tool, setTool] = useState<ToolId | null>(null);
   const [failed, setFailed] = useState(false);
   // Hidden at the hero (the store reports "hero" until its first report, so the pearl never flashes

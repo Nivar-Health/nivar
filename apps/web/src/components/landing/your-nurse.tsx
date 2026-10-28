@@ -122,7 +122,7 @@ export function YourNurse() {
             className="lg:col-span-7 lg:col-start-6 lg:row-start-1"
           />
 
-          <div className="mt-5 sm:mt-10 lg:col-span-5 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0">
+          <div className="mt-7 sm:mt-10 lg:col-span-5 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0">
             {/* The cell spans the copy's full height, so the photo stays in view beside it on large screens.
                 Its height is capped by the viewport there, so the pinned frame never runs off a short laptop screen. */}
             <div className="lg:sticky lg:top-28">

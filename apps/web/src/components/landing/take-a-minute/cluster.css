@@ -269,10 +269,8 @@
 
   /* The launcher a visitor tapped (a tile button, the footer, checklist or success-state launcher, the
      bar's Menu tab or the menu button), marked by corner.tsx while the chunk loads and after it fails
-     (mobile spec §1.17). Every page of the (site) layout loads this file through FloatingCluster. */
-  [data-landing] [data-minute-loading] {
-    cursor: progress;
-  }
+     (mobile spec §1.17). Every page of the (site) layout loads this file through FloatingCluster. Its
+     cursor:progress is unlayered, at the end of this file. */
   /* The pearl the orb will rise from inhales and waits, as the corner's does (existing keyframes).
      The :has() rule stands alone, so a browser without :has() keeps the first one. */
   [data-landing] [data-minute-loading] .nv-minute-pearl {
@@ -435,4 +433,9 @@
       transition: none;
     }
   }
+}
+
+/* Unlayered, so it beats Tailwind's cursor-pointer on the footer and success launchers (§1.17). */
+[data-landing] [data-minute-loading] {
+  cursor: progress;
 }

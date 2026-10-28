@@ -172,7 +172,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
               <SectionTitle
                 id="faq-title"
                 title="Questions, answered plainly."
-                lede="The things families ask us most before a first visit."
+                lede={"The things families ask us most before a\u00a0first visit."}
               />
               <StillUnsure className="mt-10 hidden lg:flex" />
             </div>
