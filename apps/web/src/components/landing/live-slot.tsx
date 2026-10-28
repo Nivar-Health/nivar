@@ -4,13 +4,18 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** The dashboard and its monitors and simulators: a client-only chunk, fetched only near the panel. */
-const LiveDashboard = dynamic(() => import("./live-dashboard").then((m) => m.LiveDashboard), {
+/**
+ * The dashboard and its monitors and simulators: a client-only chunk, fetched only near the panel. A failed
+ * load renders nothing and the skeleton stays: no error boundary sits above the slot, so a ChunkLoadError
+ * would replace the whole page.
+ */
+const LiveDashboard = dynamic(() => import("./live-dashboard").then((m) => m.LiveDashboard).catch(() => () => null), {
   ssr: false,
   loading: () => null,
 });
 
-const PHONE_QUERY = "(max-width: 39.98rem)";
+/** The phone breakpoint in range syntax, exactly as the CSS writes it, so the two never disagree at fractional widths. */
+const PHONE_QUERY = "(width < 40rem)";
 
 function subscribePhone(onChange: () => void) {
   const mq = window.matchMedia(PHONE_QUERY);

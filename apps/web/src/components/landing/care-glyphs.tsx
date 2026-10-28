@@ -2,11 +2,12 @@ import type { ReactElement } from "react";
 import { cn } from "@/lib/utils";
 
 /*
- * Care illustrations for the four nursing cards: one calm line scene per service, in the language of
+ * Care illustrations for the four nursing services, shown wherever a service has no photo (a frame that
+ * fails the nurse's check loses its `photo`): one calm line scene per service, in the language of
  * programme-glyphs.tsx (2px teal strokes, white fills at 0.7, one accent colour per scene). Drawn on a
  * 4:3 canvas (240×180) with the subject inside the centre square, so `preserveAspectRatio="xMidYMid
- * slice"` crops it to a square for the 96px phone thumbnail. Strokes don't scale (services.css), so
- * they stay 2px on screen at both sizes.
+ * slice"` crops it to a square for the phone tiles and the 96px thumbnail. Strokes don't scale
+ * (services.css), so they stay 2px on screen at every size.
  * Every shape's base style is its final pose: the scenes read without JavaScript and under reduced
  * motion. The nv-care-* classes are motion hooks for services.css: once when the card is revealed
  * (data-nv-revealed) and once on hover or keyboard focus (*-h wrappers). Server component, no hooks.

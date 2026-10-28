@@ -1,0 +1,375 @@
+/* The page's one drop-down (disclosure.tsx, spec §1.10): native <details> in three looks.
+   ruled: hairline rows (wrap them in ul.nv-disc-group); card: the FAQ's white cards; dark: on the pond
+   (wrap them in ul.nv-disc-group--dark). Every rule that names ::details-content stands alone: a browser
+   that doesn't know the pseudo-element drops the whole rule it sits in. The global reduced-motion rule
+   (globals.css *, ::before, ::after) never reaches ::details-content, so it gets its own. Presses are a
+   tint plus a slight scale, 90 ms in and 180 ms out; tint only under reduced motion or a pause. */
+
+@layer components {
+  /* ---- Groups ---- */
+  .nv-disc-group,
+  .nv-disc-group--dark {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-block: 1px solid var(--border);
+  }
+  .nv-disc-group > li + li,
+  .nv-disc-group--dark > li + li {
+    border-top: 1px solid var(--border);
+  }
+  .nv-disc-group--dark,
+  .nv-disc-group--dark > li + li {
+    border-color: rgb(255 255 255 / 0.12);
+  }
+
+  /* ---- The row (ruled, and dark) ---- */
+  .nv-disc-sum {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-block-size: 3.5rem;
+    padding: 0.75rem 0.5rem;
+    margin-inline: -0.5rem;
+    border-radius: 0.75rem;
+    list-style: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 180ms var(--curve-standard);
+  }
+  .nv-disc-sum::-webkit-details-marker {
+    display: none;
+  }
+  .nv-disc-sum:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .nv-disc-lead {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--jade);
+  }
+  .nv-disc[data-lead="icon"] > .nv-disc-sum > .nv-disc-lead,
+  .nv-disc[data-lead="icon"] > .nv-disc-sum > .nv-disc-lead svg {
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+  }
+  /* The caller's glyph paints the tile; aqua shows wherever it doesn't fill it. */
+  .nv-disc[data-lead="tile"] > .nv-disc-sum > .nv-disc-lead {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background-color: var(--aqua);
+  }
+  .nv-disc-text {
+    flex: 1;
+    min-inline-size: 0;
+  }
+  .nv-disc-title,
+  .nv-disc-meta {
+    display: block;
+  }
+  .nv-disc-title {
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--ink);
+    text-wrap: balance;
+    transition: color 160ms var(--curve-standard);
+  }
+  .nv-disc[open] > .nv-disc-sum .nv-disc-title {
+    color: var(--jade);
+  }
+  .nv-disc-meta {
+    margin-top: 2px;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+  .nv-disc-value {
+    flex: none;
+  }
+  .nv-disc-price {
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .nv-disc-chev {
+    flex: none;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    margin-inline-start: auto;
+    color: var(--jade);
+    transition: rotate 240ms var(--curve-standard);
+  }
+  .nv-disc[open] > .nv-disc-sum > .nv-disc-chev {
+    rotate: 180deg;
+  }
+  .nv-disc-head {
+    display: none;
+  }
+  .nv-disc-body {
+    padding: 0 0 1.125rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+  .nv-disc[data-lead="icon"] > .nv-disc-body {
+    padding-inline-start: 2.125rem; /* 22px icon + 12px gap: the text lines up with the title */
+  }
+  .nv-disc[data-lead="tile"] > .nv-disc-body {
+    padding-inline-start: 3.25rem; /* 40px tile + 12px gap */
+  }
+
+  /* Press: the row tints, its lead and words settle towards the left. */
+  .nv-disc-sum > :is(.nv-disc-lead, .nv-disc-text) {
+    transform-origin: left center;
+    transition: scale 180ms var(--curve-standard);
+  }
+  .nv-disc-sum:active {
+    background-color: var(--aqua);
+    transition-duration: 90ms;
+  }
+  .nv-disc-sum:active > :is(.nv-disc-lead, .nv-disc-text) {
+    scale: 0.98;
+    transition-duration: 90ms;
+  }
+
+  /* ---- Dark: on the pond (footer, Take a minute's "About") ---- */
+  .nv-disc--dark > .nv-disc-sum .nv-disc-title,
+  .nv-disc--dark[open] > .nv-disc-sum .nv-disc-title {
+    color: var(--on-pine);
+  }
+  .nv-disc--dark > .nv-disc-sum .nv-disc-meta,
+  .nv-disc--dark > .nv-disc-sum > .nv-disc-chev,
+  .nv-disc--dark > .nv-disc-body {
+    color: var(--on-pine-2);
+  }
+  .nv-disc--dark > .nv-disc-sum > .nv-disc-lead {
+    color: var(--mint-glow);
+  }
+  .nv-disc--dark > .nv-disc-sum:active {
+    background-color: rgb(255 255 255 / 0.06);
+  }
+  .nv-disc--dark > .nv-disc-sum:focus-visible {
+    outline-color: var(--ring-on-dark);
+  }
+
+  /* ---- Card: one white card per item (FAQ). The open lift fades a pseudo-element; no shadow animates. ---- */
+  .nv-disc--card {
+    position: relative;
+    isolation: isolate;
+    border-radius: 1rem;
+    background-color: #ffffff;
+    box-shadow:
+      0 0 0 1px rgb(1 58 72 / 0.06),
+      0 1px 2px rgb(1 43 54 / 0.05);
+    -webkit-tap-highlight-color: transparent;
+    /* A press settles towards the top edge, so the question being tapped never shifts up or down. */
+    transform-origin: 50% 0;
+    transition:
+      scale 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  .nv-disc--card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: 0 18px 40px -28px rgb(1 43 54 / 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms var(--curve-standard);
+  }
+  .nv-disc--card[open]::after {
+    opacity: 1;
+  }
+  /* Its own rule, so a browser without :has() keeps the others. */
+  .nv-disc--card:has(> .nv-disc-sum:active) {
+    background-color: #f4f9fa;
+    scale: 0.985;
+    transition-duration: 90ms;
+  }
+  .nv-disc--card > .nv-disc-sum {
+    align-items: flex-start;
+    margin-inline: 0;
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+  }
+  .nv-disc--card > .nv-disc-sum:active {
+    background-color: transparent;
+  }
+  .nv-disc--card > .nv-disc-sum:active > :is(.nv-disc-lead, .nv-disc-text) {
+    scale: none;
+  }
+  .nv-disc--card > .nv-disc-sum .nv-disc-title {
+    line-height: 1.35;
+  }
+  /* The chevron sits on the first line of a question that wraps. */
+  .nv-disc--card > .nv-disc-sum > .nv-disc-chev {
+    margin-block-start: 0.125rem;
+  }
+  /* The measure is 52ch of text, not counting the card's padding (desktop-11). */
+  .nv-disc--card > .nv-disc-body {
+    box-sizing: content-box;
+    max-inline-size: 52ch;
+    padding: 0 1.25rem 1.5rem;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+  @media (width >= 40rem) {
+    .nv-disc--card > .nv-disc-sum {
+      min-block-size: 4rem;
+      padding: 1.25rem 1.5rem;
+    }
+    .nv-disc--card > .nv-disc-body {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  /* Hover, fine pointers only: the title takes the open colour. */
+  @media (hover: hover) and (pointer: fine) {
+    .nv-disc:not(.nv-disc--dark) > .nv-disc-sum:hover .nv-disc-title {
+      color: var(--jade);
+    }
+    .nv-disc--dark > .nv-disc-sum:hover > .nv-disc-chev {
+      color: var(--on-pine);
+    }
+  }
+
+  /* ---- Opening. Chromium: the content grows from 0 to its height and fades in, and shrinks away again. ---- */
+  @supports (interpolate-size: allow-keywords) and selector(::details-content) {
+    .nv-disc {
+      interpolate-size: allow-keywords;
+    }
+    .nv-disc::details-content {
+      block-size: 0;
+      overflow: clip;
+      overflow-clip-margin: 0.25rem;
+      opacity: 0;
+      transition:
+        block-size 280ms var(--curve-standard),
+        opacity 120ms var(--curve-standard),
+        content-visibility 280ms allow-discrete;
+    }
+    /* Opening shows the content at once (0s), so a hash target, a find-in-page match or a focus move inside
+       it is laid out in the same frame; closing keeps it until the box has shrunk away. */
+    .nv-disc[open]::details-content {
+      block-size: auto;
+      opacity: 1;
+      transition-duration: 280ms, 200ms, 0s;
+      transition-delay: 0s, 40ms, 0s;
+    }
+  }
+  /* Elsewhere it opens at once, and the body fades and lifts in. */
+  @supports not ((interpolate-size: allow-keywords) and selector(::details-content)) {
+    .nv-disc[open] > .nv-disc-body {
+      animation: nv-disc-in 220ms var(--curve-calm) backwards;
+    }
+  }
+
+  /* ---- Phone-only collapse, rendered once ---- */
+  /* From 640px a phone-only disclosure reads as plain content. Chromium only for now: it is the one engine
+     verified (scratch-eng/probe-disc.json) to show a closed details' content when an author overrides
+     ::details-content. Every other engine keeps a working collapsible row until hydration, then gets the
+     same shape from syncPhoneDisclosures() (disclosure-hash.tsx) and the [data-nv-forced] rules below.
+     Whoever widens this guard re-runs .qa-state/mobile/build/disclosure-faq/fixture-disc.html in the
+     engines it admits, and changes the matching check in syncPhoneDisclosures(). */
+  @media (width >= 40rem) {
+    @supports (interpolate-size: allow-keywords) and selector(::details-content) {
+      .nv-disc.nv-disc--phone > summary {
+        display: none;
+      }
+      .nv-disc.nv-disc--phone > .nv-disc-head {
+        display: block;
+      }
+      /* The lead left with the summary, so the body's indent goes too. */
+      .nv-disc.nv-disc--phone > .nv-disc-body {
+        padding-inline-start: 0;
+      }
+      .nv-disc.nv-disc--phone::details-content {
+        display: block;
+        content-visibility: visible;
+        block-size: auto;
+        overflow: visible;
+        opacity: 1;
+        transition: none;
+      }
+    }
+  }
+  /* Engines without that guard, once syncPhoneDisclosures() has opened the rows. With the summary gone
+     there is no collapsed/expanded control to announce. */
+  @media (width >= 40rem) {
+    .nv-disc.nv-disc--phone[data-nv-forced] > summary {
+      display: none;
+    }
+    .nv-disc.nv-disc--phone[data-nv-forced] > .nv-disc-head {
+      display: block;
+    }
+    .nv-disc.nv-disc--phone[data-nv-forced] > .nv-disc-body {
+      padding-inline-start: 0;
+      animation: none;
+    }
+  }
+
+  /* ---- Reduced motion and the visitor's pause: open at once, presses tint only. Under reduced motion the
+     global rule already stops the chevron, the colours and the fallback fade. ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .nv-disc::details-content {
+      transition: none;
+    }
+    .nv-disc-sum:active > :is(.nv-disc-lead, .nv-disc-text) {
+      scale: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nv-disc--card:has(> .nv-disc-sum:active) {
+      scale: none;
+    }
+  }
+  html[data-motion="paused"] .nv-disc::details-content {
+    transition: none;
+  }
+  html[data-motion="paused"] .nv-disc-chev,
+  html[data-motion="paused"] .nv-disc-title,
+  html[data-motion="paused"] .nv-disc--card::after {
+    transition: none;
+  }
+  html[data-motion="paused"] .nv-disc[open] > .nv-disc-body {
+    animation: none;
+  }
+  html[data-motion="paused"] .nv-disc-sum:active > :is(.nv-disc-lead, .nv-disc-text) {
+    scale: none;
+  }
+  html[data-motion="paused"] .nv-disc--card:has(> .nv-disc-sum:active) {
+    scale: none;
+  }
+
+  @media (forced-colors: active) {
+    /* The dark variant's own colours (0,3,0, and 0,4,0 on hover) would otherwise keep a pale chevron. */
+    .nv-disc-chev,
+    .nv-disc--dark > .nv-disc-sum > .nv-disc-chev,
+    .nv-disc--dark > .nv-disc-sum:hover > .nv-disc-chev {
+      color: CanvasText;
+    }
+    .nv-disc--card {
+      border: 1px solid CanvasText;
+    }
+  }
+}
+
+@keyframes nv-disc-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}

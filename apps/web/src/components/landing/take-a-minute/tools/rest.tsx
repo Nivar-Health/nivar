@@ -5,15 +5,15 @@ import { TOOL_TONE } from "../config";
 import type { ToolProps } from "../types";
 import { ANNOUNCE, COMMON, REST, type RestPart } from "./copy";
 import {
-  Emergency,
   LeadInOrb,
   OrbWord,
-  PrimaryButton,
   PromptLine,
-  QuietButton,
   RichText,
+  SafetyLine,
   TimeLeft,
+  ToolControls,
   useToolSession,
+  type MainAction,
 } from "./parts";
 import { SeatedFigure } from "./seated-figure";
 
@@ -82,8 +82,10 @@ export function Rest({ api, Layout }: ToolProps) {
   let orb;
   let readout;
   let prompt;
-  let action: { label: string; run(): void };
-  let secondary = null;
+  let options = null;
+  let main: MainAction;
+  let onStop: (() => void) | undefined;
+  let onDone: (() => void) | undefined;
   if (phase === "idle") {
     orb = <SeatedFigure lit={lit} />;
     readout = (
@@ -92,7 +94,20 @@ export function Rest({ api, Layout }: ToolProps) {
         <p className="nv-tool-sub">{REST.idleBody}</p>
       </>
     );
-    action = { label: REST.start, run: start };
+    options = (
+      <ul className="nv-tool-ticks">
+        {REST.ticks.map(({ part, text }) => (
+          <li key={part}>
+            <label className="nv-tool-tick">
+              <input type="checkbox" checked={lit.has(part)} onChange={(e) => toggle(part, e.target.checked)} />
+              <span aria-hidden className="nv-tool-tick-box" />
+              <span>{text}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    );
+    main = { label: REST.start, run: start };
   } else if (phase === "done") {
     orb = <SeatedFigure lit={lit} />;
     readout = <p className="nv-tool-lead">{REST.doneTitle}</p>;
@@ -103,8 +118,8 @@ export function Rest({ api, Layout }: ToolProps) {
         ))}
       </div>
     );
-    action = { label: COMMON.again, run: start };
-    secondary = <QuietButton onClick={api.close}>{COMMON.done}</QuietButton>;
+    main = { label: COMMON.again, run: start };
+    onDone = api.close;
   } else {
     orb =
       phase === "leadin" ? (
@@ -121,8 +136,8 @@ export function Rest({ api, Layout }: ToolProps) {
           {s.pausedByVisibility ? COMMON.away : line}
         </PromptLine>
       );
-    action = phase === "paused" ? { label: COMMON.resume, run: s.togglePause } : { label: COMMON.pause, run: s.togglePause };
-    secondary = <QuietButton onClick={stop}>{COMMON.stop}</QuietButton>;
+    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause };
+    onStop = stop;
   }
 
   return (
@@ -130,33 +145,14 @@ export function Rest({ api, Layout }: ToolProps) {
       orb={<span className="nv-tool-orb">{orb}</span>}
       readout={<div className="nv-tool-readout">{readout}</div>}
       prompt={prompt}
-      controls={
-        <div className="nv-tool-controls">
-          {phase === "idle" ? (
-            <ul className="nv-tool-ticks">
-              {REST.ticks.map(({ part, text }) => (
-                <li key={part}>
-                  <label className="nv-tool-tick">
-                    <input type="checkbox" checked={lit.has(part)} onChange={(e) => toggle(part, e.target.checked)} />
-                    <span aria-hidden className="nv-tool-tick-box" />
-                    <span>{text}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <PrimaryButton ref={primary} onClick={action.run}>
-            {action.label}
-          </PrimaryButton>
-          {secondary}
-        </div>
-      }
+      options={options}
+      always={<SafetyLine emergency text={REST.always} />}
+      controls={<ToolControls main={main} mainRef={primary} onStop={onStop} onDone={onDone} />}
       fine={
         <p className="nv-tool-fine">
           <RichText parts={REST.sources} />
         </p>
       }
-      always={<Emergency text={REST.always} />}
     />
   );
 }

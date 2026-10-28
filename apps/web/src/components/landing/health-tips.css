@@ -1,5 +1,43 @@
 /* Small habits (health-tips.tsx, health-facts.tsx, tip-deck.tsx, take-a-minute-tile.tsx,
-   visit-checklist.tsx). Unlayered on purpose: the one reveal override below must beat landing.css. */
+   visit-checklist.tsx). Unlayered on purpose: the reveal override below must beat landing.css, and the
+   press and grid rules must beat Tailwind's utilities. Presses are 90 ms in and 180 ms out; under
+   reduced motion or the visitor's pause they are a tint only. */
+
+/* ---- The section's grid: one column below lg, then title tile / facts facts / tip notes / check notes,
+   7 to 5. Reading order is DOM order at every width. ---- */
+@media (width >= 64rem) {
+  .nv-habits-grid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas:
+      "title tile"
+      "facts facts"
+      "tip notes"
+      "check notes";
+    grid-template-rows: auto auto auto 1fr;
+    /* 24px: the drop-down rows bleed 8px past their column, and side by side they stay 8px apart. */
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+  .nv-habits-title {
+    grid-area: title;
+    align-self: center;
+  }
+  .nv-habits-tile-cell {
+    grid-area: tile;
+  }
+  .nv-habits-facts {
+    grid-area: facts;
+  }
+  .nv-habits-tipcell {
+    grid-area: tip;
+  }
+  .nv-habits-check-cell {
+    grid-area: check;
+  }
+  .nv-habits-notes {
+    grid-area: notes;
+  }
+}
 
 /* ---- Facts: figure and scope beside the picture on phones and tablets; picture first from lg ---- */
 .nv-habits-fact-head {
@@ -23,7 +61,7 @@
   grid-area: viz;
   align-self: center;
 }
-@media (min-width: 64rem) {
+@media (width >= 64rem) {
   .nv-habits-fact-head {
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
@@ -50,6 +88,121 @@ html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed
   transform: none;
 }
 
+/* ---- Take a minute tile: a still pearl in a pond. Nothing here animates but a press. ---- */
+.nv-habits-tile {
+  /* The glows stay faint enough to keep on-pine-2 copy at 4.5:1 or more over every part of the card. */
+  background:
+    radial-gradient(340px 300px at 100% 0%, rgb(142 211 224 / 0.12), transparent 70%),
+    radial-gradient(520px 360px at 100% 100%, rgb(1 106 128 / 0.22), transparent 65%),
+    linear-gradient(160deg, var(--jade) 0%, var(--pond-2) 52%, var(--pond) 100%);
+}
+/* The room the pearl takes: a float as tall as the title and the lede's first line, so the lede's second
+   line runs the full width. The pearl itself sits 16px from the corner, just over the padding. */
+.nv-habits-tile-room {
+  position: relative;
+  float: right;
+  width: 4.75rem;
+  height: 3.5rem;
+}
+.nv-habits-tile-pearl {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
+/* Whole-card launchers: glyph, then the name over the duration. */
+.nv-habits-launch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 4rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 1rem;
+  text-align: left;
+  color: var(--on-pine);
+  background-color: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    background-color 180ms var(--curve-standard),
+    scale 180ms var(--curve-standard);
+}
+.nv-habits-launch:focus-visible {
+  outline: 2px solid var(--ring-on-dark);
+  outline-offset: 2px;
+}
+.nv-habits-launch-icon {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--mint-glow);
+}
+.nv-habits-launch-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.nv-habits-launch-name {
+  font-size: 1rem;
+  line-height: 1.25;
+  font-weight: 600;
+}
+.nv-habits-launch-time {
+  margin-top: 1px;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--on-pine-2);
+  font-variant-numeric: tabular-nums;
+}
+.nv-habits-launch--first {
+  color: var(--ink);
+  background-color: var(--on-pine);
+  box-shadow: none;
+}
+.nv-habits-launch--first .nv-habits-launch-icon {
+  color: var(--jade);
+}
+.nv-habits-launch--first .nv-habits-launch-time {
+  color: var(--ink-3);
+}
+@media (hover: hover) and (pointer: fine) {
+  .nv-habits-launch:hover {
+    background-color: rgb(255 255 255 / 0.12);
+  }
+  .nv-habits-launch--first:hover {
+    background-color: #ffffff;
+  }
+}
+.nv-habits-launch:active {
+  background-color: rgb(255 255 255 / 0.16);
+  scale: 0.97;
+  transition-duration: 90ms;
+}
+.nv-habits-launch--first:active {
+  background-color: var(--aqua);
+}
+@media (forced-colors: active) {
+  .nv-habits-launch {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* The note and the failure line share one slot: while a launcher carries data-minute-failed (set by the
+   corner, spec §1.17, for 4 s) the failure words take the note's place. Without :has() the line never
+   shows, and the corner's status region still announces it. */
+.nv-tile-failed {
+  display: none;
+}
+.nv-habits-tile:has([data-minute-failed]) .nv-tile-failed {
+  display: block;
+}
+.nv-habits-tile:has([data-minute-failed]) .nv-tile-note {
+  display: none;
+}
+
 /* ---- Tip deck ---- */
 /* Follows the finger a little while a swipe is in progress (tip-deck.tsx writes the offset). */
 .nv-habits-tip-layer {
@@ -61,86 +214,31 @@ html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed
     transform 220ms var(--curve-standard),
     opacity 220ms var(--curve-standard);
 }
-/* "Copied": a small note above the Share button, in for 2 s. */
-.nv-habits-share-note {
-  opacity: 0;
-  transform: translateY(4px);
-  transition:
-    opacity 160ms var(--curve-exit),
-    transform 160ms var(--curve-exit);
-}
-.nv-habits-share-note[data-show] {
-  opacity: 1;
-  transform: none;
-  transition-duration: 240ms;
-  transition-timing-function: var(--curve-calm);
-}
-
-/* ---- Take a minute tile: a still pearl in a pond. Nothing here animates. ---- */
-.nv-habits-tile {
-  /* The glows stay faint enough to keep on-pine-2 copy at 4.5:1 or more over every part of the card. */
-  background:
-    radial-gradient(340px 300px at 100% 0%, rgb(142 211 224 / 0.12), transparent 70%),
-    radial-gradient(520px 360px at 100% 100%, rgb(1 106 128 / 0.22), transparent 65%),
-    linear-gradient(160deg, var(--jade) 0%, var(--pond-2) 52%, var(--pond) 100%);
-}
-/* The pearl floats right and the copy wraps around its circle; two faint still ripples ring it. */
-.nv-habits-tile-pearl {
-  position: relative;
-  float: right;
-  margin: 2px 0 8px 14px;
-  shape-outside: circle(50%);
-  shape-margin: 14px;
-}
-.nv-habits-tile-pearl::before,
-.nv-habits-tile-pearl::after {
-  content: "";
-  position: absolute;
-  border-radius: 9999px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  pointer-events: none;
-}
-.nv-habits-tile-pearl::before {
-  inset: -18px;
-}
-.nv-habits-tile-pearl::after {
-  inset: -44px;
-  border-color: rgb(255 255 255 / 0.06);
-}
-/* From lg the tile is as tall as the tip beside it: the pearl rests in the middle of the pond, a small
-   preview of the orb that opens, with the copy above and the launchers below. */
-@media (min-width: 64rem) {
-  .nv-habits-tile-copy {
-    display: contents;
-  }
-  .nv-habits-tile-copy > p {
-    padding-bottom: 28px;
-  }
-  .nv-habits-tile-pearl {
-    order: 1;
-    float: none;
-    align-self: center;
-    margin: auto 0;
-    shape-outside: none;
-  }
-  .nv-habits-tile-launch {
-    order: 2;
-    margin-top: 0;
-    padding-top: 40px;
-  }
+html[data-motion="paused"] .nv-habits-tip .tip-in {
+  animation: none;
 }
 
 /* ---- Visit checklist ---- */
-/* The whole row toggles: the label's overlay covers it; the box, source link and rest button sit above. */
+.nv-habits-checks > li + li {
+  border-top: 1px solid var(--border);
+}
+/* The drop-down clips its content while it grows (disclosure.css), which would also cut the boxes' 44px
+   targets where they reach into the gutter: clip only vertically here. A rule of its own, as every
+   ::details-content rule is. */
+#visit-prep::details-content {
+  overflow-x: visible;
+}
+/* The words toggle the box: the label's overlay covers the tick row (box and words), never the source
+   line or the rest button below it (the source line starts 4px under the row, where the overlay ends). */
 .nv-habits-check-label::before {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: 14px;
+  inset: -6px -8px -4px;
+  border-radius: 12px;
   transition: background-color 180ms var(--curve-standard);
 }
 .nv-habits-check-label:active::before {
-  background-color: rgb(1 76 94 / 0.05);
+  background-color: rgb(1 76 94 / 0.06);
   transition-duration: 90ms;
 }
 .nv-habits-box {
@@ -153,12 +251,6 @@ html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed
 .nv-habits-check input:active + .nv-habits-box {
   transform: scale(0.9);
   transition-duration: 90ms;
-}
-@media (prefers-reduced-motion: reduce) {
-  .nv-habits-check:has(.nv-habits-check-label:active) .nv-habits-box,
-  .nv-habits-check input:active + .nv-habits-box {
-    transform: none;
-  }
 }
 .nv-habits-box path {
   stroke-dasharray: 1;
@@ -180,4 +272,41 @@ html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed
 }
 .nv-habits-seg[data-on] > span {
   transform: none;
+}
+@media (forced-colors: active) {
+  .nv-habits-seg {
+    border: 1px solid CanvasText;
+  }
+  .nv-habits-seg > span {
+    forced-color-adjust: none;
+    background-color: Highlight;
+  }
+}
+
+/* ---- Reduced motion and the visitor's pause: presses tint only, ticks and segments simply appear. ---- */
+@media (prefers-reduced-motion: reduce) {
+  .nv-habits-launch:active,
+  .nv-habits-sos a:active {
+    scale: none;
+  }
+  .nv-habits-check:has(.nv-habits-check-label:active) .nv-habits-box,
+  .nv-habits-check input:active + .nv-habits-box {
+    transform: none;
+  }
+}
+html[data-motion="paused"] .nv-habits-launch:active,
+html[data-motion="paused"] .nv-habits-sos a:active,
+html[data-motion="paused"] .nv-habits-tip button:active,
+html[data-motion="paused"] .nv-habits-rest:active,
+html[data-motion="paused"] .nv-habits-check-cell button:active {
+  scale: none;
+}
+html[data-motion="paused"] .nv-habits-check:has(.nv-habits-check-label:active) .nv-habits-box,
+html[data-motion="paused"] .nv-habits-check input:active + .nv-habits-box {
+  transform: none;
+}
+html[data-motion="paused"] .nv-habits-box,
+html[data-motion="paused"] .nv-habits-box path,
+html[data-motion="paused"] .nv-habits-seg > span {
+  transition: none;
 }

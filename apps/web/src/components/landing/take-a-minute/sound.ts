@@ -45,14 +45,18 @@ class Sound {
    * (a deep link, Back, a touch before it lifts) it waits: browsers refuse to start audio then, and warn.
    */
   wake(): void {
-    if (!this.on || !(navigator.userActivation?.isActive ?? true) || !this.build()) return;
-    window.clearTimeout(this.suspendTimer);
-    const ctx = this.ctx!;
-    if (ctx.state !== "running") ctx.resume().catch(() => {});
-    this.ramp(1, 600);
+    if (this.on) this.start();
   }
 
-  /** Gain to 0, then suspend (closing the experience: 450 ms). */
+  /**
+   * Starts the context for cue() alone, leaving `on` (and so every chime and tick) as it is: the Eyes
+   * chime sounds with Sound off. Call it only inside a gesture, like wake().
+   */
+  prime(): void {
+    this.start();
+  }
+
+  /** Gain to 0, then suspend (closing the experience: over its close, 280 ms at ×1). */
   fadeOut(ms: number): void {
     if (!this.ctx) return;
     this.ramp(0, ms);
@@ -64,9 +68,13 @@ class Sound {
 
   chime(kind: Chime): void {
     const ctx = this.ready();
-    if (!ctx) return;
-    const at = ctx.currentTime + 0.02;
-    NOTES[kind].forEach((f, i) => this.voice(ctx, f, at + i * STEP[kind]));
+    if (ctx) this.strike(ctx, kind);
+  }
+
+  /** A chime that plays whenever the context runs (primed or woken), whatever `on` says. */
+  cue(kind: Chime): void {
+    const ctx = this.ctx;
+    if (ctx?.state === "running") this.strike(ctx, kind);
   }
 
   /** The Tap along tick: 30 ms of 880 Hz at gain .03. */
@@ -86,6 +94,19 @@ class Sound {
 
   private ready(): AudioContext | null {
     return this.on && this.ctx?.state === "running" ? this.ctx : null;
+  }
+
+  private start(): void {
+    if (!(navigator.userActivation?.isActive ?? true) || !this.build()) return;
+    window.clearTimeout(this.suspendTimer);
+    const ctx = this.ctx!;
+    if (ctx.state !== "running") ctx.resume().catch(() => {});
+    this.ramp(1, 600);
+  }
+
+  private strike(ctx: AudioContext, kind: Chime): void {
+    const at = ctx.currentTime + 0.02;
+    NOTES[kind].forEach((f, i) => this.voice(ctx, f, at + i * STEP[kind]));
   }
 
   private build(): boolean {

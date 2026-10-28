@@ -8,17 +8,24 @@
     position: fixed;
     right: max(1rem, calc(env(safe-area-inset-right) + 1rem));
     bottom: max(1rem, env(safe-area-inset-bottom));
-    z-index: 40;
+    z-index: var(--z-corner, 40);
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 12px;
     pointer-events: none;
   }
-  @media (min-width: 40rem) {
+  @media (width >= 40rem) {
     .nv-minute-cluster {
       right: max(1.5rem, calc(env(safe-area-inset-right) + 1rem));
       bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+  }
+  /* Phones have no corner (mobile spec D6): the bar, the menu and the page's launchers are the ways in.
+     The island stays mounted, as it hosts Take a minute (landing.css says the same). */
+  @media (width < 40rem) {
+    .nv-minute-cluster {
+      display: none;
     }
   }
 
@@ -86,7 +93,7 @@
   }
   /* 64–85rem: the page's gutter is narrower than the button, so it shrinks to 48px and sits closer to
      the edge (centred over a WhatsApp button, when there is one). */
-  @media (min-width: 64rem) and (max-width: 85rem) {
+  @media (64rem <= width <= 85rem) {
     .nv-minute-cluster {
       right: max(0.75rem, calc(env(safe-area-inset-right) + 0.75rem));
       bottom: max(0.75rem, env(safe-area-inset-bottom));
@@ -137,20 +144,21 @@
   .nv-minute-corner[data-failed] {
     --nv-note: 1;
   }
-  @media (min-width: 40rem) {
+  @media (width >= 40rem) {
     .nv-minute-corner:focus-visible:not([data-failed]) {
       --nv-name: 1;
     }
   }
-  @media (min-width: 40rem) and (hover: hover) and (pointer: fine) {
+  @media (width >= 40rem) and (hover: hover) and (pointer: fine) {
     .nv-minute-corner:hover:not([data-open], [data-failed]) {
       --nv-name: 1;
     }
   }
 
   /* The labels, revealed from under the disc by their clip (the words fade in as it opens), never by
-     layout: two of them, so the failure note never resizes one. While the name peeks, taps go through
-     it to the page; a label takes them only when hover, keyboard focus or the failure opened it. */
+     layout: two of them, so the failure note never resizes one. An open label takes the tap and opens
+     Take a minute (A3-02): the peek (which never opens over a control, and ends on the first scroll or
+     touch elsewhere), hover, keyboard focus and the failure note. */
   .nv-minute-corner-label {
     --nv-open: var(--nv-name);
     --nv-mine: calc(1 - var(--nv-note));
@@ -218,15 +226,16 @@
       0 0 0 calc((100% - var(--nv-corner) - 8px) * (1 - var(--nv-open))) round calc(var(--nv-corner) / 2 + 4px)
     );
   }
-  .nv-minute-corner[data-failed] > [data-note] > .nv-minute-corner-pill {
+  .nv-minute-corner[data-failed] > [data-note] > .nv-minute-corner-pill,
+  .nv-minute-corner[data-peek]:not([data-failed]) > .nv-minute-corner-label:not([data-note]) > .nv-minute-corner-pill {
     pointer-events: auto;
   }
-  @media (min-width: 40rem) {
+  @media (width >= 40rem) {
     .nv-minute-corner:focus-visible:not([data-failed]) > .nv-minute-corner-label:not([data-note]) > .nv-minute-corner-pill {
       pointer-events: auto;
     }
   }
-  @media (min-width: 40rem) and (hover: hover) and (pointer: fine) {
+  @media (width >= 40rem) and (hover: hover) and (pointer: fine) {
     .nv-minute-corner:hover:not([data-open], [data-failed]) > .nv-minute-corner-label:not([data-note]) > .nv-minute-corner-pill {
       pointer-events: auto;
     }
@@ -256,6 +265,37 @@
   }
   .nv-minute-corner[data-settle] .nv-minute-pearl {
     animation: nv-minute-corner-settle 320ms var(--curve-calm);
+  }
+
+  /* The launcher a visitor tapped (a tile button, the footer, checklist or success-state launcher, the
+     bar's Menu tab or the menu button), marked by corner.tsx while the chunk loads and after it fails
+     (mobile spec §1.17). Every page of the (site) layout loads this file through FloatingCluster. Its
+     cursor:progress is unlayered, at the end of this file. */
+  /* The pearl the orb will rise from inhales and waits, as the corner's does (existing keyframes).
+     The :has() rule stands alone, so a browser without :has() keeps the first one. */
+  [data-landing] [data-minute-loading] .nv-minute-pearl {
+    animation: nv-minute-corner-inhale 1.5s var(--curve-calm) forwards;
+  }
+  [data-landing] [data-minute-scope]:has([data-minute-loading]) [data-minute-origin] {
+    animation: nv-minute-corner-inhale 1.5s var(--curve-calm) forwards;
+  }
+  [data-landing] [data-minute-failed] {
+    outline: 2px solid var(--danger);
+    outline-offset: 2px;
+  }
+  /* The bar's Menu tab is a whole cell at the screen's edge: there the mark sits inside it, where the bar's
+     focus ring does (site-nav.css), rather than 2px out, cut by the edge and over the next tab. */
+  [data-landing] .nv-tabbar-cell[data-minute-failed] {
+    outline-offset: -2px;
+    border-radius: 14px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-landing] :is([data-minute-loading], [data-minute-scope]) :is(.nv-minute-pearl, [data-minute-origin]) {
+      animation: none !important;
+    }
+  }
+  html[data-motion="paused"] [data-landing] :is([data-minute-loading], [data-minute-scope]) :is(.nv-minute-pearl, [data-minute-origin]) {
+    animation: none !important;
   }
 
   /* A finished session: a 10px mint dot for 4 seconds. */
@@ -393,4 +433,9 @@
       transition: none;
     }
   }
+}
+
+/* Unlayered, so it beats Tailwind's cursor-pointer on the footer and success launchers (§1.17). */
+[data-landing] [data-minute-loading] {
+  cursor: progress;
 }

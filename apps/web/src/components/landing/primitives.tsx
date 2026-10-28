@@ -10,13 +10,14 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 /* Press (mobile addendum M2): scale .97 plus each variant's tint, 90ms in and 180ms out; tint only under
    reduced motion. Tailwind 4's scale and translate utilities set the `scale` and `translate` properties,
-   so those are the ones transitioned. */
+   so those are the ones transitioned. Forced colours drop every fill, so each button keeps a ButtonText
+   frame there (border-box, so the fixed heights don't move). */
 const BUTTON_BASE =
-  "relative inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap select-none transition-[background-color,border-color,color,translate,scale] duration-180 ease-standard active:scale-[0.97] active:duration-90 motion-reduce:active:scale-100 focus-ring disabled:pointer-events-none disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60 [&_svg]:size-4 [&_svg]:shrink-0";
+  "relative inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap select-none transition-[background-color,border-color,color,translate,scale] duration-180 ease-standard active:scale-[0.97] active:duration-90 motion-reduce:active:scale-100 focus-ring disabled:pointer-events-none disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60 [&_svg]:size-4 [&_svg]:shrink-0 forced-colors:border forced-colors:border-[ButtonText]";
 
 const BUTTON_SIZE: Record<ButtonSize, string> = {
-  /** 40px visual, 44px hit area. Nav only. */
-  sm: "h-10 px-4 text-sm before:absolute before:inset-x-0 before:-inset-y-0.5",
+  /** 40px visual, 44px hit area (forced colours' frame included). Nav only. */
+  sm: "h-10 px-4 text-sm before:absolute before:inset-x-0 before:-inset-y-0.5 forced-colors:before:-inset-y-[calc(0.125rem+1px)]",
   md: "h-11 px-5 text-[0.9375rem]",
   lg: "h-12 px-6 text-base",
 };
@@ -64,9 +65,21 @@ export function revealProps(i = 0) {
 /* Layout                                                                    */
 /* ------------------------------------------------------------------------- */
 
-/** Page-width container: 1200px content, 20px gutters on phones, 24px from sm. */
+/**
+ * Page-width container: 1200px content, 20px gutters on phones, 24px from sm. In landscape the gutters
+ * grow to clear the notch and the rounded corners (the page runs edge to edge, viewportFit "cover").
+ */
 export function Container({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("mx-auto w-full max-w-[1248px] px-5 sm:px-6", className)}>{children}</div>;
+  return (
+    <div
+      className={cn(
+        "mx-auto w-full max-w-[1248px] pr-[max(1.25rem,env(safe-area-inset-right))] pl-[max(1.25rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))]",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 export type SectionTone = "default" | "white" | "wash" | "sand" | "deep" | "aqua" | "warm" | "sky";

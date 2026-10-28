@@ -4,11 +4,11 @@ import type { Tone, ToolId } from "./types";
 
 export const TOOL_ORDER: readonly ToolId[] = ["breathe", "rest", "pulse", "eyes"];
 
-export const TOOL_LABEL: Readonly<Record<ToolId, string>> = {
-  breathe: "Breathe",
-  rest: "Rest",
-  pulse: "Pulse",
-  eyes: "Eyes",
+export const TOOL_LABEL: Readonly<Record<ToolId, string>> = { breathe: "Breathe", rest: "BP rest", pulse: "Pulse", eyes: "Eyes" };
+export const TOOL_DURATION: Readonly<Record<ToolId, string>> = { breathe: "1–5 min", rest: "5 min", pulse: "30 sec", eyes: "20 sec" };
+/** Spoken names for launchers and tabs (visible name and duration are aria-hidden beside these). */
+export const TOOL_SPOKEN: Readonly<Record<ToolId, string>> = {
+  breathe: "Breathe, 1 to 5 minutes", rest: "Blood pressure rest, 5 minutes", pulse: "Pulse, 30 seconds", eyes: "Eye break, 20 seconds",
 };
 
 export const TOOL_TONE: Readonly<Record<ToolId, Tone>> = {

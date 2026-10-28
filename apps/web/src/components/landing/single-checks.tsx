@@ -1,16 +1,7 @@
-import {
-  Activity,
-  ChevronRight,
-  Droplet,
-  Gauge,
-  HeartPulse,
-  Stethoscope,
-  Video,
-  Wind,
-  type LucideIcon,
-} from "lucide-react";
+import { Activity, Droplet, Gauge, HeartPulse, LayoutGrid, Stethoscope, Video, Wind, type LucideIcon } from "lucide-react";
 import type { Service } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Disclosure } from "./disclosure";
 import { inr } from "./primitives";
 import { CareCta } from "./whatsapp";
 
@@ -27,48 +18,50 @@ const CHECK_LOOK: Record<string, { icon: LucideIcon; tone: string }> = {
 const DEFAULT_LOOK = { icon: Activity, tone: "bg-aqua text-primary" };
 
 /**
- * The checks a nurse does on the spot, priced from the live catalogue: a closed disclosure holding a
- * real table and one call to action (spec §3.6). The video consult is not a check, so it is left out.
- * Native <details>, so it opens without JavaScript.
+ * The checks a nurse does on the spot, priced from the live catalogue: the last row of the check-up list
+ * (programmes.tsx), closed at every width, holding a real table and one call to action (spec U6). The
+ * closed row already says how many checks there are and the lowest price. The video consult is not a
+ * check, so it is left out. Below 640px the table's rows stack (check-ups.css), so its roles are explicit:
+ * Safari drops table semantics from a table whose display changes.
  */
-export function SingleChecks({ services, className }: { services: Service[]; className?: string }) {
+export function SingleChecks({ services }: { services: Service[] }) {
   const checks = services.filter((s) => s.code !== "CONSULT");
   if (checks.length === 0) return null;
+  const n = checks.length;
   const from = Math.min(...checks.map((s) => s.price));
 
   return (
-    <details id="lab-tests" className={cn("nv-chk-details scroll-mt-24 border-y border-border", className)}>
-      <summary className="nv-chk-summary flex min-h-11 items-center rounded-xl py-1.5 text-ink focus-ring">
-        <span className="nv-chk-sum-inner flex items-center gap-3 text-[1.0625rem] leading-snug font-semibold">
-          <span aria-hidden className="nv-chk-chev flex size-8 shrink-0 items-center justify-center rounded-full bg-aqua text-primary">
-            <ChevronRight className="size-4" strokeWidth={2.25} />
-          </span>
-          Single checks and their prices ({checks.length})
-        </span>
-      </summary>
-
-      <div className="nv-chk-body pt-2 pb-7">
-        <table className="w-full table-fixed border-collapse text-left">
+    <li className="nv-chk-single sm:col-span-full lg:max-w-[37rem]">
+      <Disclosure
+        id="lab-tests"
+        collapse="always"
+        leadSize="tile"
+        lead={<LayoutGrid className="size-5" strokeWidth={1.9} />}
+        title="Single checks"
+        meta={n === 1 ? `1 check, ${inr(from)}` : `${n} checks, from ${inr(from)}`}
+        bodyClassName="ps-0"
+      >
+        <table role="table" className="nv-chk-table w-full table-fixed border-collapse text-left">
           <caption className="sr-only">Single checks a nurse does at home, with prices</caption>
-          <thead>
-            <tr className="border-b border-border-strong text-caption text-ink-3">
-              <th scope="col" className="w-[34%] py-2.5 pr-3 font-medium sm:w-[32%]">
+          <thead role="rowgroup">
+            <tr role="row" className="border-b border-border-strong text-caption text-ink-3">
+              <th role="columnheader" scope="col" className="w-[32%] py-2.5 pr-3 font-medium">
                 Check
               </th>
-              <th scope="col" className="py-2.5 pr-3 font-medium">
+              <th role="columnheader" scope="col" className="py-2.5 pr-3 font-medium">
                 What the nurse does
               </th>
-              <th scope="col" className="w-[19%] py-2.5 text-right font-medium sm:w-[16%]">
+              <th role="columnheader" scope="col" className="w-[16%] py-2.5 text-right font-medium">
                 Price
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {checks.map((s) => {
               const look = CHECK_LOOK[s.icon] ?? DEFAULT_LOOK;
               return (
-                <tr key={s.code} className="border-b border-border align-top last:border-b-0">
-                  <th scope="row" className="py-3.5 pr-3 text-small font-semibold text-ink">
+                <tr key={s.code} role="row" className="border-b border-border align-top last:border-b-0">
+                  <th role="rowheader" scope="row" className="nv-chk-check text-small font-semibold text-ink sm:py-3.5 sm:pr-3">
                     <span className="flex items-start gap-3">
                       <span
                         aria-hidden
@@ -79,8 +72,13 @@ export function SingleChecks({ services, className }: { services: Service[]; cla
                       <span className="sm:pt-1">{s.name}</span>
                     </span>
                   </th>
-                  <td className="py-3.5 pr-3 text-small text-pretty text-ink-2 sm:pt-[1.125rem]">{s.description}</td>
-                  <td className="py-3.5 text-right text-small font-semibold text-ink tabular-nums sm:pt-[1.125rem]">
+                  <td role="cell" className="nv-chk-does text-small text-pretty text-ink-2 sm:py-3.5 sm:pt-[1.125rem] sm:pr-3">
+                    {s.description}
+                  </td>
+                  <td
+                    role="cell"
+                    className="nv-chk-cost text-right font-semibold text-ink tabular-nums sm:py-3.5 sm:pt-[1.125rem] sm:text-small"
+                  >
                     {inr(s.price)}
                   </td>
                 </tr>
@@ -96,9 +94,9 @@ export function SingleChecks({ services, className }: { services: Service[]; cla
           label="Ask about a single check"
           need="I'd like to book a single check at home."
           needLabel="A single check"
-          className="mt-5"
+          className="mt-4 sm:mt-5"
         />
-      </div>
-    </details>
+      </Disclosure>
+    </li>
   );
 }

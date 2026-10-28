@@ -1,85 +1,9 @@
-/* FAQ, Callback and Footer (faq.tsx, faq-section.tsx, callback-form.tsx, closing.tsx).
+/* Callback and Footer (callback-form.tsx, closing.tsx).
    Press states follow the mobile addendum (M2): a tint plus a slight scale, 90 ms in and 180 ms out,
    tint only under reduced motion. Hover stays behind (hover:hover) and (pointer:fine). Lifts fade a
    pseudo-element; no box-shadow is ever animated. In a layer, so Tailwind classes can still override. */
 
 @layer components {
-  /* ---- FAQ: one white card per question, a native <details name="faq"> ---- */
-  .nv-faq-item {
-    position: relative;
-    isolation: isolate;
-    border-radius: 1rem;
-    background-color: #ffffff;
-    box-shadow:
-      0 0 0 1px rgb(1 58 72 / 0.06),
-      0 1px 2px rgb(1 43 54 / 0.05);
-    -webkit-tap-highlight-color: transparent;
-    transition:
-      transform 180ms var(--curve-standard),
-      background-color 180ms var(--curve-standard);
-  }
-  .nv-faq-item::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    box-shadow: 0 18px 40px -28px rgb(1 43 54 / 0.5);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 300ms var(--curve-standard);
-  }
-  .nv-faq-item[open]::after {
-    opacity: 1;
-  }
-  .nv-faq-item:has(> summary:active) {
-    background-color: #f4f9fa;
-    transform: scale(0.985);
-    transition-duration: 90ms;
-  }
-  .nv-faq-item > summary {
-    color: var(--ink);
-    transition: color 160ms var(--curve-standard);
-  }
-  .nv-faq-item > summary::-webkit-details-marker {
-    display: none;
-  }
-  .nv-faq-item[open] > summary {
-    color: var(--primary);
-  }
-  .nv-faq-chev {
-    transition: rotate 240ms var(--curve-standard);
-  }
-  .nv-faq-item[open] .nv-faq-chev {
-    rotate: 180deg;
-  }
-  /* Opening and closing. Where the browser can interpolate the answer's box to `auto` (Chromium),
-     it grows and fades in, and shrinks away again; elsewhere it opens at once and the answer fades
-     and lifts in. */
-  @supports (interpolate-size: allow-keywords) and selector(::details-content) {
-    .nv-faq-item {
-      interpolate-size: allow-keywords;
-    }
-    .nv-faq-item::details-content {
-      block-size: 0;
-      overflow: clip;
-      opacity: 0;
-      transition:
-        block-size 320ms var(--curve-standard),
-        opacity 260ms var(--curve-standard),
-        content-visibility 320ms allow-discrete;
-    }
-    .nv-faq-item[open]::details-content {
-      block-size: auto;
-      opacity: 1;
-    }
-  }
-  @supports not ((interpolate-size: allow-keywords) and selector(::details-content)) {
-    .nv-faq-item[open] > .nv-faq-a {
-      animation: nv-faq-in 280ms var(--curve-calm) backwards;
-    }
-  }
-
   /* ---- Callback: "Asking about" chip and the Take a minute tile in the success state ---- */
   .nv-cb-chip {
     -webkit-tap-highlight-color: transparent;
@@ -149,6 +73,30 @@
     background-color: rgb(255 255 255 / 0.3);
   }
 
+  /* ---- Footer: the three link groups. Below 640px they are closed drop-downs in ul.nv-disc-group--dark
+     (disclosure.css); from 640px three columns under their own headings, as before, so the group's
+     hairlines and the open body's bottom padding go. These selectors outrank disclosure.css's (0,1,0,
+     0,1,2 and 0,1,0) without depending on bundle order. ---- */
+  @media (width >= 40rem) {
+    ul.nv-foot-groups {
+      border-block: 0;
+    }
+    .nv-foot-groups.nv-disc-group--dark > li + li {
+      border-top: 0;
+    }
+    .nv-foot-groups .nv-disc-body {
+      padding-bottom: 0;
+    }
+  }
+  /* Below 640px the open group clips its content while it grows (disclosure.css); the links bleed 10px
+     left (-mx-2.5), so clip only vertically, or their focus ring and the launcher's failure outline lose
+     their left edge. A rule of its own, as every ::details-content rule is (0,2,1 beats 0,1,1). */
+  @media (width < 40rem) {
+    .nv-foot-groups .nv-disc::details-content {
+      overflow-x: visible;
+    }
+  }
+
   /* ---- Footer: in-page links (and the Take a minute button) on the pond band ---- */
   .nv-foot-link {
     color: var(--on-pine-2);
@@ -189,40 +137,17 @@
     }
   }
 
-  /* Reduced motion: presses keep their tint but never scale, and answers open at once (the global
-     reduced-motion rule never reaches ::details-content). */
+  /* Reduced motion and the visitor's pause: presses keep their tint but never scale. */
   @media (prefers-reduced-motion: reduce) {
-    .nv-faq-item::details-content {
-      transition: none;
-    }
-    .nv-faq-item:has(> summary:active),
     .nv-cb-clear:active,
     .nv-cb-minute:active,
     .nv-foot-link:active {
       transform: none;
     }
   }
-  /* Apart from the chevron: browsers without ::details-content drop the whole rule it is in. */
-  html[data-motion="paused"] .nv-faq-item::details-content {
-    transition: none;
-  }
-  html[data-motion="paused"] .nv-faq-chev {
-    transition: none;
-  }
-  html[data-motion="paused"] .nv-faq-item[open] > .nv-faq-a {
-    animation: none;
-  }
-  html[data-motion="paused"] .nv-faq-item:has(> summary:active),
   html[data-motion="paused"] .nv-cb-clear:active,
   html[data-motion="paused"] .nv-cb-minute:active,
   html[data-motion="paused"] .nv-foot-link:active {
     transform: none;
-  }
-}
-
-@keyframes nv-faq-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
   }
 }

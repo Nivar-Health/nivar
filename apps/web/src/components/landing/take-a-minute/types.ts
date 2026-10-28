@@ -16,6 +16,8 @@ export type Prefs = {
   pulseMode: "count" | "tap";
   sound: boolean;
   vibration: boolean;
+  /** Eyes: a soft chime when it's time to look back, even with Sound off. Off by default. */
+  eyesChime: boolean;
   completed: number;
 };
 
@@ -75,7 +77,13 @@ export type ExperienceApi = {
   };
   ring: { setRemaining(f: number): void; refill(f: number, ms?: number): void };
   field: { setBreath(v: number): void; setDim(v: number): void; setMotes(on: boolean): void; brighten(): void };
-  sound: { enabled: boolean; chime(k: "in" | "out" | "prompt" | "done" | "look-back"): void; tick(): void };
+  sound: {
+    enabled: boolean;
+    chime(k: "in" | "out" | "prompt" | "done" | "look-back"): void;
+    tick(): void;
+    /** A cue that sounds when prefs.sound || prefs.eyesChime, whatever Sound says. */
+    cue(k: "look-back"): void;
+  };
   haptics: { supported: boolean; enabled: boolean; buzz(k: "in" | "out" | "tap" | "done"): void };
   /** Polite live region; phase words at least 5 s apart. */
   announce(text: string, o?: { force?: boolean }): void;
@@ -98,11 +106,16 @@ export type LayoutSlots = {
   orbButton?: { label: string; onPress(): void };
   readout?: ReactNode;
   prompt?: ReactNode;
-  controls: ReactNode;
-  /** Collapses into "About this exercise" when compactHeight. */
-  fine?: ReactNode;
-  /** Emergency lines: never collapse. */
+  /** Chips, mode radios, Rest's ticks and the Eyes chime switch. Leaves the layout during a session. */
+  options?: ReactNode;
+  /** Safety lines: never collapse, always directly above the controls. */
   always?: ReactNode;
+  /** Start, or Pause/Resume and Stop in one .nv-minute-row. Docked at the bottom on portrait phones. */
+  controls: ReactNode;
+  /** Links shown under the dock. */
+  after?: ReactNode;
+  /** Technique and sources: "About this exercise", closed on phones and when compactHeight. */
+  fine?: ReactNode;
 };
 
 export type ToolProps = { api: ExperienceApi; Layout: FC<LayoutSlots> };

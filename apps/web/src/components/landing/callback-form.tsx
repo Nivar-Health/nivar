@@ -10,10 +10,11 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { ChevronDown, CircleAlert, LoaderCircle, Lock, MapPin, X } from "lucide-react";
+import { ChevronDown, CircleAlert, LoaderCircle, Lock, MapPin, PhoneIncoming, X } from "lucide-react";
 import { ApiError, publicApi } from "@/lib/http";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
+import { Disclosure } from "./disclosure";
 import { LANGUAGES } from "./l10n";
 import { buttonClass } from "./primitives";
 import { Pearl } from "./take-a-minute/pearl";
@@ -205,10 +206,11 @@ const FIELD =
 /**
  * 44px pills; pressed: a tint and, with motion, a 0.98 scale (90 ms in, 180 ms out). In forced colours
  * the chosen pill keeps its own Highlight fill: without forced-color-adjust:none the browser would
- * paint a Canvas backplate behind HighlightText and the label would vanish.
+ * paint a Canvas backplate behind HighlightText and the label would vanish. In the two-by-two grid the sides
+ * are 12px, so "Someone else" keeps one line in a 128px cell at 360.
  */
 const RADIO_PILL =
-  "relative inline-flex h-11 cursor-pointer items-center rounded-full border border-border-strong bg-card px-4 text-[0.9375rem] font-medium text-foreground transition-[background-color,border-color,color,transform] duration-180 ease-standard select-none hover:bg-muted active:bg-aqua-2/60 active:duration-90 motion-safe:active:scale-[0.98] has-[:checked]:border-primary has-[:checked]:bg-aqua has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-ring forced-colors:has-[:checked]:border-[Highlight] forced-colors:has-[:checked]:bg-[Highlight] forced-colors:has-[:checked]:text-[HighlightText] forced-colors:has-[:checked]:forced-color-adjust-none forced-colors:has-[:checked]:outline-[CanvasText]";
+  "relative inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-border-strong bg-card px-4 min-[22.5rem]:max-[32rem]:px-3 text-[0.9375rem] font-medium text-foreground transition-[background-color,border-color,color,transform] duration-180 ease-standard select-none hover:bg-muted active:bg-aqua-2/60 active:duration-90 motion-safe:active:scale-[0.98] has-[:checked]:border-primary has-[:checked]:bg-aqua has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-solid has-[:focus-visible]:outline-ring forced-colors:has-[:checked]:border-[Highlight] forced-colors:has-[:checked]:bg-[Highlight] forced-colors:has-[:checked]:text-[HighlightText] forced-colors:has-[:checked]:forced-color-adjust-none forced-colors:has-[:checked]:outline-[CanvasText]";
 
 /**
  * Text button in the success state. Text flows inline; the outline hugs the text and ::before makes
@@ -236,6 +238,11 @@ export function CallbackForm() {
   const nameRef = useRef<HTMLInputElement>(null);
   const chipRef = useRef<HTMLDivElement>(null);
   const pillsRef = useRef<HTMLDivElement>(null);
+  /** The note-and-language row (id callback-more). */
+  const noteRef = useRef<HTMLDetailsElement>(null);
+  /** A prefill wrote the note while the success state showed: open the row once the form is back. */
+  const openNoteLater = useRef(false);
+  const [noteOpen, setNoteOpen] = useState(false);
   const refocusForm = useRef(false);
   const cancelJump = useRef<(() => void) | null>(null);
   const [formHeight, setFormHeight] = useState<number | null>(null);
@@ -248,13 +255,20 @@ export function CallbackForm() {
       headingRef.current?.focus({ preventScroll: true });
       const box = successRef.current?.getBoundingClientRect();
       if (!box) return;
-      const nav = document.querySelector("[data-landing] > header")?.getBoundingClientRect().bottom ?? 0;
+      const header = document.querySelector<HTMLElement>("[data-landing] > header");
+      const nav = header ? header.offsetTop + header.offsetHeight : 0; // the layout box: the typing state's translate may still be easing out
       const view = window.visualViewport?.height ?? window.innerHeight;
       const up = nav + 12 - box.top;
       const down = box.bottom - (view - 12);
       const by = up > 0 ? -up : down > 0 ? Math.min(down, box.top - nav - 12) : 0;
       if (by) window.scrollBy({ top: by, behavior: prefersReducedMotion() ? "instant" : "smooth" });
-    } else if (refocusForm.current) {
+      return;
+    }
+    if (openNoteLater.current && noteRef.current) {
+      openNoteLater.current = false;
+      noteRef.current.open = true;
+    }
+    if (refocusForm.current) {
       refocusForm.current = false;
       formRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
     }
@@ -267,6 +281,12 @@ export function CallbackForm() {
 
   const id = (k: string) => `${uid}-${k}`;
 
+  /** Opens the note-and-language row; from the success state, as soon as the form is back. */
+  const openNote = () => {
+    if (noteRef.current) noteRef.current.open = true;
+    else openNoteLater.current = true;
+  };
+
   const clearForm = () => {
     setFields(EMPTY);
     setWhoFor("");
@@ -276,6 +296,7 @@ export function CallbackForm() {
     setErrors({});
     setServerError(null);
     setDone(null);
+    setNoteOpen(false);
   };
 
   /**
@@ -294,6 +315,8 @@ export function CallbackForm() {
     if (fresh) clearForm();
     if (isWhoFor(forWho)) setWhoFor(forWho);
     if (need && untouched) {
+      // Open first, so the note it writes is in view (spec U10).
+      openNote();
       setFields((f) => ({ ...f, message: need }));
       setPrefilled(need);
       if (errors.message) setErrors((e) => ({ ...e, message: undefined }));
@@ -344,14 +367,18 @@ export function CallbackForm() {
     nameRef.current?.focus();
   };
 
-  /** Touch keyboards: "next" moves on and "send" submits (enterKeyHint, M7). Hardware keys keep their defaults. */
+  /**
+   * Touch keyboards (enterKeyHint, M7 as amended by U10): the name's "next" moves to the phone, and the
+   * phone's "send" submits, because every field after it is optional. Return in the note is a newline.
+   * Hardware keys keep their defaults.
+   */
   const enterMovesTo = (next: string) => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || e.nativeEvent.isComposing || !coarsePointer()) return;
     e.preventDefault();
     document.getElementById(id(next))?.focus();
   };
-  const enterSends = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing || !coarsePointer()) return;
+  const enterSends = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing || !coarsePointer()) return;
     e.preventDefault();
     formRef.current?.requestSubmit();
   };
@@ -364,6 +391,8 @@ export function CallbackForm() {
     setServerError(null);
     const first = FIELD_ORDER.find((k) => found[k]);
     if (first) {
+      // The note's error shows inside its row: open the row before focus can go there.
+      if (found.message) openNote();
       document.getElementById(id(first))?.focus();
       return;
     }
@@ -430,7 +459,9 @@ export function CallbackForm() {
             tabIndex={-1}
             className="font-display mt-5 text-[1.75rem] leading-tight font-medium tracking-[-0.02em] text-balance text-foreground outline-none"
           >
-            Thanks, {first}. We will call you soon.
+            {/* One line each, so "We" never ends the first line. The space keeps the text whole for copy and AT. */}
+            <span className="block">Thanks, {first}.</span>{" "}
+            <span className="block">We will call you soon.</span>
           </h3>
           <p className="mt-3 max-w-[38ch] text-body text-balance text-foreground-2">
             A Nivar care coordinator will call you on{" "}
@@ -463,13 +494,18 @@ export function CallbackForm() {
     [errors[k as keyof Fields] ? id(`${k}-error`) : null, hint ? id(`${k}-hint`) : null].filter(Boolean).join(" ") ||
     undefined;
 
+  /** On the closed row, what it will send: "Note added", the language, or both. */
+  const noteMeta = noteOpen
+    ? null
+    : [fields.message.trim() && "Note added", language].filter(Boolean).join(" \u00b7 ") || null;
+
   return (
     <form
       method="post"
       ref={formRef}
       noValidate
       onSubmit={onSubmit}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-5 sm:gap-6"
       aria-describedby={serverError ? id("server") : undefined}
     >
       <div className="flex flex-col">
@@ -505,7 +541,11 @@ export function CallbackForm() {
           <legend className="flex w-full items-baseline justify-between gap-x-1.5 text-[0.9375rem] font-medium text-balance text-foreground">
             Who is the visit for? <span className="text-caption font-normal text-muted-foreground">Optional</span>
           </legend>
-          <div ref={pillsRef} className="mt-2 flex flex-wrap gap-2">
+          {/* 360 to 511px: two by two, never 3 + 1. Narrower they wrap 2 + 2 anyway; wider all four fit one row. */}
+          <div
+            ref={pillsRef}
+            className="mt-2 flex flex-wrap gap-2 min-[22.5rem]:max-[32rem]:grid min-[22.5rem]:max-[32rem]:grid-cols-2"
+          >
             {WHO_FOR.map((v) => (
               <label key={v} className={RADIO_PILL}>
                 <input
@@ -566,7 +606,7 @@ export function CallbackForm() {
             type="tel"
             inputMode="numeric"
             autoComplete="tel-national"
-            enterKeyHint="next"
+            enterKeyHint="send"
             placeholder="98450 12345"
             value={fields.phone.length > 5 ? `${fields.phone.slice(0, 5)} ${fields.phone.slice(5)}` : fields.phone}
             onChange={(e) => {
@@ -575,7 +615,7 @@ export function CallbackForm() {
               if (digits.length > 10 && digits.startsWith("0")) digits = digits.slice(1);
               set("phone", digits.slice(0, 10));
             }}
-            onKeyDown={enterMovesTo("language")}
+            onKeyDown={enterSends}
             aria-invalid={!!errors.phone}
             aria-describedby={describe("phone", true)}
             className={cn(FIELD, "pl-[4.5rem] tabular-nums")}
@@ -583,68 +623,75 @@ export function CallbackForm() {
         </div>
       </Field>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-[0.9375rem] font-medium text-foreground">City</p>
-        <p className="flex min-h-13 items-center gap-2.5 rounded-xl border border-border bg-aqua px-4 py-2.5 text-base leading-snug text-foreground">
-          <MapPin aria-hidden className="size-4 shrink-0 text-primary" />
-          {CITY}
-        </p>
-      </div>
+      {/* The area, said once; the request still carries the city (CITY). */}
+      <p className="flex items-start gap-2 text-small text-pretty text-ink-2">
+        <MapPin aria-hidden className="mt-1 size-4 shrink-0 text-primary" />
+        <span>
+          We visit homes in {SITE.area}, {SITE.city}.
+        </span>
+      </p>
 
-      <Field
-        label="Preferred language for the call"
-        optional
-        htmlFor={id("language")}
-        hint="We'll match a coordinator who speaks it when we can."
-        hintId={id("language-hint")}
-      >
-        <div className="relative">
-          <select
-            id={id("language")}
-            name="language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as CallLanguage)}
-            // The closed select shows the chosen endonym: give it that lang so it renders in the Noto face.
-            lang={LANGUAGES.find((l) => l.english === language && l.lang !== "en-IN")?.lang}
-            aria-describedby={describe("language", true)}
-            className={cn(FIELD, "appearance-none pr-10")}
+      {/* Both optional, so they wait behind one row; its value says so, and while closed its meta says
+          what it will send. The row opens for a prefill and for the note's error (spec U10). */}
+      <div className="nv-disc-group">
+        <Disclosure
+          id="callback-more"
+          ref={noteRef}
+          title="Add a note or a language for the call"
+          meta={noteMeta}
+          value={<span className="text-caption font-medium text-ink-3">Optional</span>}
+          onToggle={(e) => setNoteOpen(e.currentTarget.open)}
+          bodyClassName="flex flex-col gap-6 pt-1"
+        >
+          <Field
+            label="Preferred language for the call"
+            htmlFor={id("language")}
+            hint="We'll match a coordinator who speaks it when we can."
+            hintId={id("language-hint")}
+            hintClassName="text-small"
           >
-            <option value="">No preference</option>
-            {LANGUAGES.map((l) => (
-              <option key={l.lang} value={l.english} lang={l.lang}>
-                {l.lang === "en-IN" ? l.endonym : `${l.endonym} (${l.english})`}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-primary"
-          />
-        </div>
-      </Field>
+            <div className="relative">
+              <select
+                id={id("language")}
+                name="language"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as CallLanguage)}
+                // The closed select shows the chosen endonym: give it that lang so it renders in the Noto face.
+                lang={LANGUAGES.find((l) => l.english === language && l.lang !== "en-IN")?.lang}
+                aria-describedby={describe("language", true)}
+                className={cn(FIELD, "appearance-none pr-10")}
+              >
+                <option value="">No preference</option>
+                {LANGUAGES.map((l) => (
+                  <option key={l.lang} value={l.english} lang={l.lang}>
+                    {l.lang === "en-IN" ? l.endonym : `${l.endonym} (${l.english})`}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-primary"
+              />
+            </div>
+          </Field>
 
-      <Field
-        label="Anything we should know?"
-        optional
-        htmlFor={id("message")}
-        error={errors.message}
-        errorId={id("message-error")}
-      >
-        <textarea
-          id={id("message")}
-          name="message"
-          rows={3}
-          enterKeyHint="send"
-          // No-break space: "2" never sits alone on the last line.
-          placeholder={"For example, a B12 injection for my mother in HSR Layout Sector 2"}
-          value={fields.message}
-          onChange={(e) => set("message", e.target.value)}
-          onKeyDown={enterSends}
-          aria-invalid={!!errors.message}
-          aria-describedby={describe("message")}
-          className={cn(FIELD, "h-auto min-h-28 resize-y py-3 leading-relaxed")}
-        />
-      </Field>
+          <Field label="Anything we should know?" htmlFor={id("message")} error={errors.message} errorId={id("message-error")}>
+            <textarea
+              id={id("message")}
+              name="message"
+              rows={3}
+              enterKeyHint="enter"
+              // No-break space: "2" never sits alone on the last line.
+              placeholder={"For example, a B12 injection for my mother in HSR Layout Sector 2"}
+              value={fields.message}
+              onChange={(e) => set("message", e.target.value)}
+              aria-invalid={!!errors.message}
+              aria-describedby={describe("message")}
+              className={cn(FIELD, "h-auto min-h-28 resize-y py-3 leading-relaxed")}
+            />
+          </Field>
+        </Disclosure>
+      </div>
 
       {serverError && (
         <div
@@ -677,10 +724,20 @@ export function CallbackForm() {
             "Request a callback"
           )}
         </button>
-        <p className="flex items-start gap-2 text-caption text-pretty text-muted-foreground">
-          <Lock aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-          We only use your number to call you about this request.
-        </p>
+        <div className="flex flex-col gap-2">
+          {/* Phones: the section's points are hidden, so the call-back promise sits under the button. */}
+          <p className="flex items-start gap-2 text-small text-pretty text-ink-2 sm:hidden">
+            <PhoneIncoming aria-hidden className="mt-1 size-4 shrink-0 text-primary" />
+            <span>
+              A call back within {units(SITE.callbackWithin)},{" "}
+              <span className="whitespace-nowrap">{SITE.hours.short}</span>.
+            </span>
+          </p>
+          <p className="flex items-start gap-2.5 text-caption text-pretty text-muted-foreground">
+            <Lock aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+            We only use your number to call you about this request.
+          </p>
+        </div>
       </div>
     </form>
   );
@@ -691,6 +748,7 @@ function Field({
   htmlFor,
   hint,
   hintId,
+  hintClassName,
   error,
   errorId,
   optional,
@@ -700,6 +758,8 @@ function Field({
   htmlFor: string;
   hint?: string;
   hintId?: string;
+  /** A hint that is a sentence to read (not meta) sets its own size here. */
+  hintClassName?: string;
   error?: string;
   errorId?: string;
   optional?: boolean;
@@ -715,7 +775,7 @@ function Field({
         {optional && <span className="text-caption font-normal text-muted-foreground">Optional</span>}
       </label>
       {hint && (
-        <p id={hintId} className="-mt-0.5 text-caption text-pretty text-muted-foreground">
+        <p id={hintId} className={cn("-mt-0.5 text-caption text-pretty text-muted-foreground", hintClassName)}>
           {hint}
         </p>
       )}
