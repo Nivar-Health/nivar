@@ -17,8 +17,20 @@ export const SITE = {
   area: "HSR Layout and nearby",
   /** Service area and hours in one phrase, for badges and footers. */
   areaAndHours: "HSR Layout and nearby, 7 AM to 8 PM",
-  hours: { short: "7 AM to 8 PM", range: "7 AM–8 PM", inSentence: "between 7 AM and 8 PM" },
+  hours: {
+    short: "7 AM to 8 PM",
+    range: "7 AM–8 PM",
+    inSentence: "between 7 AM and 8 PM",
+    /** The same hours as numbers, in India time (minutes after midnight), for copy that follows the clock. */
+    opensAt: 7 * 60,
+    closesAt: 20 * 60,
+    opensAtLabel: "7 AM",
+  },
   callbackWithin: "30 minutes",
+  /** The same promise as a number, for a clock time ("We will call you by 10:42 AM"). */
+  callbackWithinMinutes: 30,
+  /** Who makes the first call after a request. One phrase, used wherever the page says who calls. */
+  firstCall: { who: "a care coordinator", whoCapital: "A care coordinator" },
   report: {
     /** Check-up reports only; other visits get a short visit summary. */
     checkup: "usually within the hour",
@@ -27,7 +39,9 @@ export const SITE = {
   payment: {
     faq: "We tell you the full price before we confirm the visit, and our team shares the ways to pay on WhatsApp or on the call. If the nurse does not arrive, we refund you in full.",
   },
-  cancellation: "Free cancellation until the nurse sets off",
+  /** One cancellation rule for the site and the web app. `until` completes "…free of charge until …". */
+  cancellation: "Free cancellation until the nurse is on the way",
+  cancellationUntil: "the nurse is on the way",
   /** Set when a real number exists. UI hides phone entry points while null. */
   phone: null as { display: string; tel: string } | null,
   whatsapp: whatsappDigits ? { number: whatsappDigits } : null,

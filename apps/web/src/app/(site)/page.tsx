@@ -11,16 +11,20 @@ import { Services } from "@/components/landing/services";
 import { YourNurse } from "@/components/landing/your-nurse";
 
 export const metadata = pageMetadata({
-  title: "Nivar Health | Nurse at home in HSR Layout, Bengaluru",
+  // The service and the place first: that is what a stranger searches for, and what a shared link shows.
+  title: "Nurse at home in HSR Layout, Bengaluru | Nivar Health",
   absoluteTitle: true,
+  // 150 characters, so search results and share previews show the whole sentence, price promise included.
   description:
-    "A registered nurse at your home in HSR Layout, Bengaluru, for injections, IV drips, wound dressings, check-ups and blood tests. A Nivar doctor joins on video when needed, and we tell you the price before we confirm.",
+    "A registered nurse at your home in HSR Layout, Bengaluru, for injections, IV drips, dressings, blood tests and check-ups. We tell you the price first.",
   path: "/",
 });
 
 /**
- * One page, nurse first: what a nurse can do, how a visit works, who comes, the comparison, then the
- * check-ups, small habits, questions and the callback form. The ids are the nav's anchors.
+ * One page, nurse first. The decision path runs without a detour: what a nurse can do, how a visit
+ * works, who comes, the comparison, the check-ups, the questions, then the callback form. Small
+ * habits follows the form, for the wait and for anyone who came only to read. The ids are the nav's
+ * anchors.
  */
 export default async function HomePage() {
   const catalog = await getCatalog();
@@ -38,9 +42,9 @@ export default async function HomePage() {
       <YourNurse />
       <Comparison />
       <CheckUps packages={packages} services={services} />
-      <HealthTips />
       <FaqSection fromPrice={fromPrice} completePrice={completePrice} />
       <Callback />
+      <HealthTips />
     </>
   );
 }
