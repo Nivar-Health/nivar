@@ -68,9 +68,9 @@ export function compareVisits(a: Booking, b: Booking): number {
   return a.createdAt < b.createdAt ? -1 : 1;
 }
 
-/** "9:00 AM" for the start of a slot, or "Express". */
+/** "9:00 AM" for the start of a slot, or "Earliest" for a same-day visit (no time is promised). */
 export function slotStart(slot: string): string {
-  if (slot === EXPRESS_SLOT) return "Express";
+  if (slot === EXPRESS_SLOT) return "Earliest";
   const m = /^(\d{1,2}):(\d{2})/.exec(slot);
   if (!m) return slot;
   const h = Number(m[1]);

@@ -81,7 +81,7 @@ export function CancelDialog({
                 type="button"
                 onClick={() => setReason(r)}
                 className={cn(
-                  "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                  "rounded-full border px-2.5 py-1 text-xs transition-colors outline-none focus-ring pointer-coarse:min-h-11 pointer-coarse:px-3.5 pointer-coarse:text-sm",
                   reason === r
                     ? "border-foreground bg-muted text-foreground"
                     : "border-border bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground",

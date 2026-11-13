@@ -71,7 +71,7 @@ export function MedicalReport({ id }: { id: string }) {
       <div className="mb-4 flex items-center justify-between gap-3 print:hidden">
         <Link
           href={`/app/bookings/${booking.id}`}
-          className="-ml-2 inline-flex h-11 items-center gap-1 rounded-full pr-3 pl-2 text-small font-medium text-foreground-2 transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="-ml-2 inline-flex h-11 items-center gap-1 rounded-full pr-3 pl-2 text-small font-medium text-foreground-2 transition-colors outline-none hover:bg-muted hover:text-foreground focus-ring"
         >
           <ChevronLeft className="size-4" aria-hidden /> Back to visit
         </Link>

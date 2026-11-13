@@ -132,7 +132,7 @@ function PriceCell({ service, onSaved }: { service: Service; onSaved: (s: Servic
           setValue(String(service.price));
           setEditing(true);
         }}
-        className="group inline-flex h-8 items-center gap-2 rounded-md px-2 text-sm font-semibold tabular outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="group nv-touch inline-flex h-8 items-center gap-2 rounded-md px-2 text-sm font-semibold tabular outline-none hover:bg-muted focus-ring"
         aria-label={`Edit price of ${service.name}`}
       >
         {formatINR(service.price)}

@@ -116,7 +116,7 @@ export function VisitRow({ booking, showDay = false }: { booking: Booking; showD
   return (
     <Link
       href={`/nurse/visits/${booking.id}`}
-      className="group flex items-stretch gap-3.5 rounded-2xl border border-border bg-card p-3.5 shadow-soft transition-colors outline-none hover:border-foreground/40 focus-visible:ring-3 focus-visible:ring-ring/40 active:bg-muted/40"
+      className="group flex items-stretch gap-3.5 rounded-2xl border border-border bg-card p-3.5 shadow-soft transition-colors outline-none hover:border-foreground/40 focus-ring active:bg-muted/40"
     >
       <div className="flex w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-muted/70 px-1 py-2 text-center">
         {showDay && (
@@ -125,14 +125,14 @@ export function VisitRow({ booking, showDay = false }: { booking: Booking; showD
           </span>
         )}
         {express ? (
-          <Zap className="size-4 fill-current text-foreground" aria-label="Express" />
+          <Zap className="size-4 fill-current text-foreground" aria-label="Earliest" />
         ) : (
           <span className="text-sm leading-tight font-semibold tabular-nums">
             {slotStart(booking.slot).split(" ")[0]}
           </span>
         )}
         <span className="text-[11px] leading-tight text-muted-foreground">
-          {express ? "Express" : slotStart(booking.slot).split(" ")[1]}
+          {express ? "Earliest" : slotStart(booking.slot).split(" ")[1]}
         </span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">

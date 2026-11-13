@@ -232,7 +232,7 @@ export function CheckoutDialog({
               {!busy && (
                 <DialogPrimitive.Close
                   aria-label="Close checkout"
-                  className="-mt-1.5 -mr-2.5 grid size-11 shrink-0 place-items-center rounded-full text-primary-foreground/85 transition-colors outline-none hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary-foreground/60"
+                  className="-mt-1.5 -mr-2.5 grid size-11 shrink-0 place-items-center rounded-full text-primary-foreground/85 transition-colors outline-none hover:bg-primary-foreground/10 hover:text-primary-foreground focus-ring [--ring:var(--ring-on-dark)]"
                 >
                   <X className="size-5" aria-hidden />
                 </DialogPrimitive.Close>
@@ -270,7 +270,7 @@ export function CheckoutDialog({
                       aria-selected={method === m.id}
                       onClick={() => choose(m.id)}
                       className={cn(
-                        "inline-flex h-11 items-center justify-center gap-1.5 rounded-xl text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                        "inline-flex h-11 items-center justify-center gap-1.5 rounded-xl text-sm font-medium transition-colors outline-none focus-ring forced-colors:aria-selected:bg-[Highlight] forced-colors:aria-selected:text-[HighlightText]",
                         method === m.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                       )}
                     >
@@ -299,7 +299,7 @@ export function CheckoutDialog({
                               }}
                               aria-pressed={upiApp === app.id}
                               className={cn(
-                                "flex flex-col items-center gap-1.5 rounded-xl border bg-card px-2 py-3 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                                "flex flex-col items-center gap-1.5 rounded-xl border bg-card px-2 py-3 text-sm font-medium transition-colors outline-none focus-ring forced-colors:aria-pressed:border-[Highlight] forced-colors:aria-pressed:bg-[Highlight] forced-colors:aria-pressed:text-[HighlightText]",
                                 upiApp === app.id ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/40",
                               )}
                             >
@@ -419,7 +419,7 @@ export function CheckoutDialog({
                           aria-checked={bank === b}
                           onClick={() => setBank(b)}
                           className={cn(
-                            "flex h-12 items-center gap-3 rounded-xl border bg-card px-3.5 text-left text-small font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                            "flex h-12 items-center gap-3 rounded-xl border bg-card px-3.5 text-left text-small font-medium transition-colors outline-none focus-ring forced-colors:aria-checked:border-[Highlight] forced-colors:aria-checked:bg-[Highlight] forced-colors:aria-checked:text-[HighlightText]",
                             bank === b ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/40",
                           )}
                         >

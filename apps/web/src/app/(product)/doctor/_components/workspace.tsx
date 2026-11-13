@@ -36,7 +36,7 @@ function ConsultClock({ booking }: { booking: Booking }) {
       <a
         href="#video-consult"
         aria-label={`In consult, ${formatElapsed(now - start)}. Go to the video consult`}
-        className="inline-flex h-8 items-center gap-2 rounded-full bg-primary pr-3 pl-2.5 text-[13px] font-medium text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="inline-flex h-8 items-center gap-2 rounded-full bg-primary pr-3 pl-2.5 text-[13px] font-medium text-primary-foreground outline-none hover:bg-primary-hover focus-ring"
       >
         <Video className="size-3.5" aria-hidden />
         <span className="hidden sm:inline" aria-hidden>
@@ -82,7 +82,7 @@ function WorkspaceHeader({ booking, live, loading }: { booking: Booking | null; 
       <div className="flex h-16 items-center gap-3 px-4 lg:px-6">
         <Link
           href="/doctor"
-          className="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-ring"
         >
           <ChevronLeft className="size-4" />
           <LogoMark className="size-7" />
@@ -262,7 +262,7 @@ export function ConsultWorkspace({ bookingId }: { bookingId: string }) {
                 ? "This visit is assigned to another doctor."
                 : errorStatus === 404
                   ? "It may have been cancelled or reassigned."
-                  : (error ?? "Please try again in a moment.")}
+                  : (error ?? "Try again in a moment.")}
             </p>
             <div className="mt-2 flex flex-wrap justify-center gap-2">
               {errorStatus !== 403 && errorStatus !== 404 && (

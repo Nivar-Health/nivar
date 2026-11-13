@@ -338,7 +338,7 @@ export function StatusBreakdown({
               <button
                 type="button"
                 onClick={() => onPick?.(s)}
-                className="group grid w-full grid-cols-[minmax(0,8.5rem)_1fr_1.75rem] items-center gap-3 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="group grid w-full grid-cols-[minmax(0,8.5rem)_1fr_1.75rem] items-center gap-3 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted/60 focus-ring pointer-coarse:min-h-11"
                 aria-label={`${meta.staffLabel}: ${n}`}
               >
                 <span className="flex min-w-0 items-center gap-2 text-[13px]">

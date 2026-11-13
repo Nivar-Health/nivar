@@ -99,7 +99,7 @@ function BookingCard({ booking: b, flashing }: { booking: Booking; flashing: boo
       <Link
         href={`/admin/bookings/${b.id}`}
         className={cn(
-          "flex min-h-18 flex-col gap-1 px-4 py-3.5 transition-colors duration-700 outline-none hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset",
+          "flex min-h-18 flex-col gap-1 px-4 py-3.5 transition-colors duration-700 outline-none hover:bg-muted/40 focus-visible:bg-muted/40 focus-ring focus-visible:-outline-offset-2",
           flashing && "bg-muted duration-150",
         )}
       >
@@ -116,7 +116,7 @@ function BookingCard({ booking: b, flashing }: { booking: Booking; flashing: boo
         </span>
         <span className="flex items-center gap-1 text-[13px] text-muted-foreground tabular">
           {b.slot === EXPRESS_SLOT && <Zap className="size-3 fill-current text-foreground" aria-hidden />}
-          {dayLabel(b.scheduledDate)}, {b.slot === EXPRESS_SLOT ? "Express" : slotLabel(b.slot)} · {b.address.area}
+          {dayLabel(b.scheduledDate)}, {b.slot === EXPRESS_SLOT ? "Earliest" : slotLabel(b.slot)} · {b.address.area}
         </span>
         <span className="flex items-baseline justify-between gap-3 text-[13px]">
           <span className={cn("min-w-0 truncate", team ? "text-foreground" : "text-saffron")}>
@@ -353,7 +353,7 @@ export function BookingsList() {
                       )}
                     >
                       <TableCell className="py-3 pl-5">
-                        <Link href={href} className="outline-none hover:underline focus-visible:underline">
+                        <Link href={href} className="rounded-sm outline-none hover:underline focus-visible:underline focus-ring">
                           <BookingCode code={b.code} />
                         </Link>
                         <div className="mt-0.5 text-xs text-muted-foreground">{b.address.area}</div>
@@ -376,7 +376,7 @@ export function BookingsList() {
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground tabular">
                           {b.slot === EXPRESS_SLOT && <Zap className="size-3 fill-current text-foreground" />}
-                          {b.slot === EXPRESS_SLOT ? "Express" : slotLabel(b.slot)}
+                          {b.slot === EXPRESS_SLOT ? "Earliest" : slotLabel(b.slot)}
                         </div>
                       </TableCell>
                       <TableCell className="py-3">

@@ -101,7 +101,7 @@ export function StaffLoginForm({ next }: { next: string | null }) {
                   aria-pressed={selected}
                   title={`${acc.name} (${acc.email})`}
                   className={cn(
-                    "group flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-card p-2.5 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
+                    "group flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-card p-2.5 text-left transition-colors outline-none focus-ring",
                     selected ? "border-foreground" : "border-border hover:border-foreground/40",
                   )}
                 >
@@ -162,13 +162,13 @@ export function StaffLoginForm({ next }: { next: string | null }) {
               }}
               aria-invalid={Boolean(error)}
               aria-describedby={error ? "staff-error" : undefined}
-              className="h-12 rounded-xl bg-card pr-11 pl-3.5 text-base md:text-[15px]"
+              className="h-12 rounded-xl bg-card pr-12 pl-3.5 text-base md:text-[15px]"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="absolute top-1/2 right-0.5 grid size-11 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-ring focus-visible:-outline-offset-2"
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>

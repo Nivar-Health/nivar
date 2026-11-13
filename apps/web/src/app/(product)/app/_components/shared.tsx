@@ -424,12 +424,13 @@ function CallbackNote() {
 }
 
 const HELP_ROW =
-  "flex min-h-16 items-center gap-3.5 px-4 py-3 transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset";
+  "@container flex min-h-16 items-center gap-3.5 px-4 py-3 transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-ring focus-visible:-outline-offset-2";
 
 function HelpRow({ icon: Icon, title, note }: { icon: LucideIcon; title: string; note?: ReactNode }) {
   return (
     <>
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary">
+      {/* With large text the words need the room more than the decoration does. */}
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary @max-[16rem]:hidden">
         <Icon className="size-[18px]" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">

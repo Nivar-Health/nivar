@@ -20,7 +20,7 @@ export function BookingCard({ booking, catalog, past }: { booking: Booking; cata
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-colors hover:border-primary/40">
       <Link
         href={`/app/bookings/${booking.id}`}
-        className="group flex items-stretch gap-3 p-4 outline-none focus-visible:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset"
+        className="group flex items-stretch gap-3 p-4 outline-none focus-visible:bg-muted/60 focus-ring focus-visible:-outline-offset-2"
       >
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
@@ -51,7 +51,7 @@ export function BookingCard({ booking, catalog, past }: { booking: Booking; cata
         <Link
           href={bookAgainHref(booking, { onDate: !!user })}
           onClick={user ? () => saveDraftFromVisit(booking, user) : undefined}
-          className="flex min-h-11 items-center gap-2 border-t border-border px-4 text-sm font-semibold text-primary transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset"
+          className="flex min-h-11 items-center gap-2 border-t border-border px-4 text-sm font-semibold text-primary transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-ring focus-visible:-outline-offset-2"
         >
           <RotateCcw className="size-4 shrink-0" aria-hidden />
           Book again

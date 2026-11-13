@@ -164,7 +164,7 @@ export function ActivityFeed({ items, loading, className }: { items: FeedItem[];
                 </span>
                 <Link
                   href={`/admin/bookings/${item.bookingId}`}
-                  className="group -mx-1.5 mb-1 min-w-0 flex-1 rounded-md px-1.5 pt-1 pb-2.5 outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="group -mx-1.5 mb-1 min-w-0 flex-1 rounded-md px-1.5 pt-1 pb-2.5 outline-none hover:bg-muted/60 focus-ring"
                 >
                   <p className="text-[13px] leading-snug text-foreground/90">
                     <span className="mr-1.5 font-mono text-[11.5px] font-semibold text-foreground">{item.code}</span>

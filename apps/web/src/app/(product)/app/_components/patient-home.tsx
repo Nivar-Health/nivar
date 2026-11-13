@@ -98,7 +98,7 @@ export function PatientHome() {
           {active.length > 1 && (
             <Link
               href="/app/bookings"
-              className="flex min-h-12 items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-small font-medium transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="flex min-h-12 items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-small font-medium transition-colors outline-none hover:bg-muted/50 focus-ring"
             >
               <span>
                 {active.length - 1} more upcoming visit{active.length - 1 === 1 ? "" : "s"}
@@ -190,7 +190,7 @@ function ActiveHero({ booking, catalog }: { booking: Booking; catalog: Catalog |
   return (
     <Link
       href={`/app/bookings/${booking.id}`}
-      className="relative block overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="relative block overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground outline-none focus-ring"
     >
       {meta.live && (
         <EcgLine
@@ -253,7 +253,7 @@ function BookCta({ compact }: { compact: boolean }) {
     return (
       <Link
         href="/app/book"
-        className="flex items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-soft transition-colors outline-none hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="flex items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-soft transition-colors outline-none hover:border-primary/40 focus-ring"
       >
         <span className="min-w-0 flex-1">
           <span className="block font-display text-lg leading-tight font-semibold">
@@ -270,7 +270,7 @@ function BookCta({ compact }: { compact: boolean }) {
   return (
     <Link
       href="/app/book"
-      className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft transition-colors outline-none hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/40 sm:flex-row sm:items-center sm:gap-6"
+      className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft transition-colors outline-none hover:border-primary/40 focus-ring sm:flex-row sm:items-center sm:gap-6"
     >
       <span className="min-w-0 flex-1">
         <span className="block font-display text-2xl leading-tight font-semibold">
@@ -301,7 +301,7 @@ function PackagePicks({ catalog }: { catalog: Catalog }) {
           <Link
             key={p.id}
             href={`/app/book?package=${p.id}`}
-            className="flex flex-col rounded-2xl border border-border bg-card p-3.5 shadow-soft transition-colors outline-none hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="flex flex-col rounded-2xl border border-border bg-card p-3.5 shadow-soft transition-colors outline-none hover:border-primary/40 focus-ring"
           >
             <span className="grid size-10 place-items-center rounded-xl border border-border bg-card text-primary">
               <Icon className="size-[18px]" aria-hidden />
@@ -324,7 +324,7 @@ function ReportRow({ booking, catalog }: { booking: Booking; catalog: Catalog | 
   return (
     <Link
       href={`/app/bookings/${booking.id}/report`}
-      className="flex items-center gap-3.5 px-4 py-3.5 transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset"
+      className="flex items-center gap-3.5 px-4 py-3.5 transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-ring focus-visible:-outline-offset-2"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary">
         <FileHeart className="size-[18px]" aria-hidden />

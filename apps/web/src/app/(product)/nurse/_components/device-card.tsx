@@ -415,7 +415,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
                 aria-pressed={findings === f}
                 onClick={() => void saveFindings(f)}
                 className={cn(
-                  "min-h-11 rounded-full border px-3.5 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                  "min-h-11 rounded-full border px-3.5 py-2 text-left text-sm transition-colors outline-none focus-ring",
                   findings === f
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background hover:bg-muted",

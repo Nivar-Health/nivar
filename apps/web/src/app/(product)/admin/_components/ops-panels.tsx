@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Radar, UserPlus, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Radar, UserPlus } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +37,7 @@ function RowsSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
-/** "18:00-19:00" -> { time: "6:00", period: "PM" }; null for express. */
+/** "18:00-19:00" -> { time: "6:00", period: "PM" }; null for the earliest (same-day) visit. */
 function slotStart(slot: string): { time: string; period: string } | null {
   const m = /^(\d{1,2}):(\d{2})/.exec(slot);
   if (slot === EXPRESS_SLOT || !m) return null;
@@ -66,10 +66,8 @@ function WhenBlock({ date, slot }: { date: string; slot: string }) {
             <span className="ml-0.5 text-[10px] font-medium text-muted-foreground">{start.period}</span>
           </>
         ) : (
-          <span className="inline-flex items-center gap-0.5">
-            <Zap className="size-3 fill-current text-foreground" />
-            60 min
-          </span>
+          // A same-day visit promises no arrival time, so it reads as the patient sees it.
+          "Earliest"
         )}
       </span>
     </div>

@@ -54,7 +54,7 @@ function sameLocalDay(ms: number | null, ref: Date): boolean {
 }
 
 function slotStart(b: Booking): string {
-  if (b.slot === "express") return "Express";
+  if (b.slot === "express") return "Earliest";
   return slotLabel(b.slot.split("-")[0]);
 }
 
@@ -321,7 +321,7 @@ function UpcomingRow({ booking }: { booking: Booking }) {
     <li>
       <Link
         href={workspaceHref(booking)}
-        className="group/row flex items-start gap-3 rounded-xl px-3 py-3 transition-colors outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="group/row flex items-start gap-3 rounded-xl px-3 py-3 transition-colors outline-none hover:bg-muted/70 focus-ring"
       >
         <div className="flex w-[64px] shrink-0 flex-col pt-px">
           <span className="text-[13px] font-semibold whitespace-nowrap tabular-nums">{slotStart(booking)}</span>
@@ -381,7 +381,7 @@ function CompletedRow({ booking }: { booking: Booking }) {
     <li>
       <Link
         href={workspaceHref(booking)}
-        className="group/row flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="group/row flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors outline-none hover:bg-muted/70 focus-ring"
       >
         <CheckCircle2 className="size-4 shrink-0 text-success" />
         <div className="min-w-0 flex-1">

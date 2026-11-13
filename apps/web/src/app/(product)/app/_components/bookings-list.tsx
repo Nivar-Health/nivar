@@ -58,8 +58,8 @@ export function BookingsList() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-[1.75rem] leading-tight font-semibold md:text-3xl">My bookings</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="min-w-0 font-display text-[1.75rem] leading-tight font-semibold md:text-3xl">My bookings</h1>
         <Link href="/app/book" className={cn(buttonVariants(), "h-11 rounded-full px-4 text-sm font-semibold")}>
           <CalendarPlus aria-hidden /> Book
         </Link>
@@ -87,7 +87,7 @@ export function BookingsList() {
               tabIndex={selected ? 0 : -1}
               onClick={() => selectTab(t.id)}
               className={cn(
-                "inline-flex h-11 items-center justify-center gap-2 rounded-full text-small font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                "inline-flex min-h-11 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-full px-2 py-1 text-small font-semibold transition-colors outline-none focus-ring",
                 selected ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >

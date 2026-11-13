@@ -28,7 +28,7 @@ import { GENDER_LABEL, HelpCard, PersonAvatar, SectionTitle, Surface, ageFromDob
 const iconButton = "size-11 shrink-0 rounded-full";
 
 const addressAction =
-  "flex min-h-11 items-center justify-center gap-2 text-sm font-semibold text-foreground-2 transition-colors outline-none hover:bg-muted/50 hover:text-foreground focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset";
+  "flex min-h-11 items-center justify-center gap-2 text-sm font-semibold text-foreground-2 transition-colors outline-none hover:bg-muted/50 hover:text-foreground focus-visible:bg-muted focus-ring focus-visible:-outline-offset-2";
 
 export function ProfileView() {
   const { user, setUser, logout } = useAuth();
@@ -150,9 +150,10 @@ export function ProfileView() {
             </div>
           </form>
         ) : (
-          <div className="flex items-center gap-4">
+          // Wraps only with large text, where the name and number need the card's full width.
+          <div className="flex flex-wrap items-center gap-4">
             <PersonAvatar name={user.name || "?"} size="lg" />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 basis-36">
               <p className="truncate text-lg font-semibold">{user.name || "Add your name"}</p>
               <p className="mt-0.5 flex items-center gap-1.5 text-small text-foreground-2">
                 <Phone className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -200,11 +201,11 @@ export function ProfileView() {
               </Surface>
             ) : (
               <Surface key={a.id} className="overflow-hidden">
-                <div className="flex items-start gap-3.5 p-4">
+                <div className="flex flex-wrap items-start gap-3.5 p-4">
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary">
                     <House className="size-[18px]" aria-hidden />
                   </span>
-                  <div className="min-w-0 flex-1 text-small">
+                  <div className="min-w-0 flex-1 basis-36 text-small break-words">
                     <p className="font-semibold">{a.label || "Home"}</p>
                     <p className="mt-0.5 text-foreground-2">{a.line1}</p>
                     <p className="text-foreground-2">{[a.area, a.city, a.pincode].filter(Boolean).join(", ")}</p>
@@ -251,7 +252,7 @@ export function ProfileView() {
             <button
               type="button"
               onClick={() => setAddressForm("new")}
-              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-input p-4 text-left text-small font-semibold text-foreground transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-input p-4 text-left text-small font-semibold text-foreground transition-colors outline-none hover:bg-muted focus-ring"
             >
               <span className="grid size-10 place-items-center rounded-xl border border-border bg-card text-primary">
                 <Plus className="size-[18px]" aria-hidden />
@@ -412,7 +413,7 @@ function DetailsCard({ user, onSaved }: { user: User; onSaved: (user: User) => v
                     className={cn(
                       "flex h-12 cursor-pointer items-center justify-center rounded-full border border-input bg-card text-small font-medium transition-colors",
                       "has-checked:border-primary has-checked:bg-accent has-checked:font-semibold has-checked:text-primary",
-                      "has-focus-visible:ring-3 has-focus-visible:ring-ring/40",
+                      "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring",
                     )}
                   >
                     <input
@@ -456,8 +457,8 @@ function DetailsCard({ user, onSaved }: { user: User; onSaved: (user: User) => v
             </div>
           </form>
         ) : (
-          <div className="flex items-start gap-4">
-            <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="min-w-0 flex-1 basis-36 space-y-2.5">
               <dl className="space-y-2.5 text-small">
                 <div>
                   <dt className="text-sm text-muted-foreground">Date of birth</dt>

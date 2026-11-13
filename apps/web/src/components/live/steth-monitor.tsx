@@ -479,7 +479,7 @@ export function StethMonitor({
           <MonitorOverlay show={overlay !== null}>{overlay}</MonitorOverlay>
         </div>
 
-        <div className="flex w-[92px] shrink-0 flex-col justify-between gap-2 border-l border-white/5 bg-[#0A221E] px-3 py-2.5 sm:w-[124px]">
+        <div className="flex w-[92px] shrink-0 flex-col justify-between gap-2 border-l border-white/5 bg-pond px-3 py-2.5 sm:w-[124px]">
           <div className="flex flex-col">
             <span className={cn("font-semibold tracking-[0.14em] text-[#E6E6E1]", landing ? "text-xs" : "text-[10px]")}>HR</span>
             <span
@@ -500,11 +500,11 @@ export function StethMonitor({
                 aria-pressed={listening}
                 disabled={listenDisabled}
                 className={cn(
-                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#E6E6E1]/60 disabled:pointer-events-none disabled:opacity-50",
+                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold transition-colors outline-none focus-ring [--ring:var(--ring-on-dark)] disabled:pointer-events-none disabled:opacity-50",
                   // A 44px target around the 32px button, so the monitor keeps its height.
                   landing && "relative before:absolute before:inset-x-0 before:-inset-y-1.5",
                   listening
-                    ? "border-[#E6E6E1] bg-[#E6E6E1] text-[#132321] hover:bg-[#FFFFFF]"
+                    ? "border-[#E6E6E1] bg-[#E6E6E1] text-ink hover:bg-[#FFFFFF]"
                     : "border-[#E6E6E1]/40 bg-transparent text-[#F7D88E] hover:bg-[#E6E6E1]/10",
                 )}
               >

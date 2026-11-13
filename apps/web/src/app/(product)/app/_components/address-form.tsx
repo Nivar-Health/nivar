@@ -37,7 +37,7 @@ export async function saveEditedAddress(user: User, id: string, draft: AddressDr
 
 // 16px text: a smaller field makes iPhones zoom the page on focus and leave it zoomed.
 export const selectClass =
-  "h-12 w-full appearance-none rounded-xl border border-input bg-card pr-10 pl-3.5 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "h-12 w-full appearance-none rounded-xl border border-input bg-card pr-10 pl-3.5 text-base outline-none transition-colors focus-visible:border-ring focus-ring";
 
 export const inputClass = "h-12 rounded-xl bg-card px-3.5 text-base md:text-base";
 
@@ -198,7 +198,7 @@ export function AddressForm({
           <button
             type="button"
             onClick={() => setCoords(null)}
-            className="-mr-1.5 inline-flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-foreground underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="-mr-1.5 inline-flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-foreground underline underline-offset-4 outline-none focus-ring"
           >
             Remove
           </button>
@@ -208,7 +208,7 @@ export function AddressForm({
           type="button"
           onClick={useLocation}
           disabled={locating}
-          className="flex w-full items-center gap-3 rounded-xl border border-dashed border-input bg-card px-3.5 py-3 text-left transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="flex w-full items-center gap-3 rounded-xl border border-dashed border-input bg-card px-3.5 py-3 text-left transition-colors outline-none hover:bg-muted focus-ring"
         >
           <span className="grid size-9 shrink-0 place-items-center rounded-full border border-border bg-card text-foreground">
             {locating ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <LocateFixed className="size-4" aria-hidden />}
@@ -241,7 +241,7 @@ export function AddressForm({
               onClick={() => setLabel(l)}
               aria-pressed={label === l}
               className={cn(
-                "h-11 rounded-full border px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                "h-11 rounded-full border px-4 text-sm font-medium transition-colors outline-none focus-ring",
                 label === l
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-foreground hover:border-primary/40",

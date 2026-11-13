@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarPlus, CircleHelp, ClipboardList, House, UserRound } from "lucide-react";
@@ -59,6 +59,27 @@ export function useScrollPadding(edge: "top" | "bottom") {
 }
 
 /**
+ * True while a tab's label no longer fits its cell on one line (large text, narrow phone). Each label
+ * is set, hidden, in a copy of the bar's grid at the current tab's weight; a resize of any of them
+ * (font size, width) checks again. The bar then shows its icons alone and keeps the words as names.
+ */
+function useCompactTabs() {
+  const probe = useRef<HTMLDivElement>(null);
+  const [compact, setCompact] = useState(false);
+  useLayoutEffect(() => {
+    const box = probe.current;
+    if (!box) return;
+    const words = Array.from(box.children) as HTMLElement[];
+    const check = () => setCompact(words.some((el) => el.scrollWidth > el.clientWidth + 0.5));
+    const observer = new ResizeObserver(check);
+    for (const el of words) observer.observe(el);
+    check();
+    return () => observer.disconnect();
+  }, []);
+  return [probe, compact] as const;
+}
+
+/**
  * Patient shell. Mobile: top bar + bottom tab bar. Desktop: top bar with
  * inline nav and a centred content column.
  *
@@ -78,6 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useNotifications();
   const headerRef = useScrollPadding("top");
   const tabBarRef = useScrollPadding("bottom");
+  const [tabProbe, compactTabs] = useCompactTabs();
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -102,7 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={tab.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                    "inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors outline-none focus-ring",
                     isActive
                       ? "bg-accent font-semibold text-primary"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -142,7 +164,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           aria-label="Main"
           className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-card/95 pb-safe backdrop-blur-md md:hidden print:hidden"
         >
-          <ul className="mx-auto grid h-16 max-w-md grid-cols-4">
+          <div ref={tabProbe} aria-hidden className="invisible absolute inset-x-0 top-0 mx-auto grid h-0 max-w-md grid-cols-4 overflow-hidden">
+            {TABS.map((tab) => (
+              <span key={tab.href} className="mx-1 block overflow-hidden text-sm font-semibold whitespace-nowrap">
+                {tab.label}
+              </span>
+            ))}
+          </div>
+          <ul className={cn("mx-auto grid max-w-md grid-cols-4", compactTabs ? "h-14" : "h-16")}>
             {TABS.map((tab) => {
               const isActive = active === tab.href;
               return (
@@ -151,19 +180,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                     href={tab.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex h-full flex-col items-center justify-center gap-0.5 rounded-xl text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset",
+                      "flex h-full flex-col items-center justify-center gap-0.5 rounded-xl text-sm transition-colors outline-none focus-ring focus-visible:-outline-offset-2",
                       isActive ? "font-semibold text-primary" : "font-medium text-muted-foreground active:text-foreground",
                     )}
                   >
                     <span
                       className={cn(
-                        "grid h-7 w-14 place-items-center rounded-full transition-colors",
+                        "grid h-7 w-14 max-w-full place-items-center rounded-full transition-colors",
                         isActive && "bg-accent",
                       )}
                     >
                       <tab.icon className="size-5" strokeWidth={isActive ? 2.25 : 2} aria-hidden />
                     </span>
-                    {tab.label}
+                    <span className={cn(compactTabs && "sr-only")}>{tab.label}</span>
                   </Link>
                 </li>
               );

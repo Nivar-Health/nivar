@@ -88,7 +88,7 @@ function Chip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+        "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors outline-none focus-ring pointer-coarse:h-11 pointer-coarse:px-3.5 pointer-coarse:text-sm",
         active
           ? "border-primary bg-primary text-primary-foreground"
           : suggested
@@ -133,7 +133,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
 }
 
 const selectClass =
-  "h-9 w-full min-w-0 appearance-none rounded-lg border border-input bg-card pr-7 pl-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "nv-touch h-9 w-full min-w-0 appearance-none rounded-lg border border-input bg-card pr-7 pl-2.5 text-base outline-none focus-visible:border-ring focus-ring md:text-sm";
 
 const inputClass = "h-9 bg-card";
 
@@ -244,7 +244,7 @@ function RxEditor({ rows, onChange, listId }: { rows: RxRow[]; onChange: (rows: 
         <button
           type="button"
           onClick={add}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-input py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/40 hover:bg-muted hover:text-foreground"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-input py-4 text-sm font-medium text-muted-foreground transition-colors outline-none hover:border-foreground/40 hover:bg-muted hover:text-foreground focus-ring"
         >
           <Plus className="size-4" /> Add a medicine
         </button>
@@ -286,7 +286,7 @@ function AdviceEditor({ advice, onChange }: { advice: string[]; onChange: (a: st
                 type="button"
                 aria-label={`Remove "${a}"`}
                 onClick={() => onChange(advice.filter((_, j) => j !== i))}
-                className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                className="nv-touch-square grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-destructive focus-ring"
               >
                 <X className="size-3.5" />
               </button>
@@ -409,7 +409,8 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
         )}
       </div>
 
-      <div className="grid gap-x-8 gap-y-6 px-5 py-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      {/* Fields stop clear of the sticky action bar below when they take focus (two rows on phones). */}
+      <div className="grid gap-x-8 gap-y-6 px-5 py-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] [&_:is(input,select,textarea,button)]:scroll-mb-36 sm:[&_:is(input,select,textarea,button)]:scroll-mb-24">
         {/* Left: diagnosis + summary */}
         <div className="flex min-w-0 flex-col gap-5">
           <div>
@@ -427,7 +428,7 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
                 const value = e.target.value;
                 setDraft((d) => ({ ...d, diagnosis: value }));
               }}
-              className="h-10 bg-card text-[15px] font-medium"
+              className="h-10 bg-card text-base font-medium md:text-[15px]"
             />
             {diagnosisError && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs text-destructive">

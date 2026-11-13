@@ -190,8 +190,8 @@ export function CustomerLoginForm({ next, signedOut = false }: { next: string | 
             <Label htmlFor="phone">Mobile number</Label>
             <div
               className={cn(
-                "flex h-14 items-center overflow-hidden rounded-xl border border-input bg-card transition-[box-shadow,border-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25 sm:h-12",
-                phoneError && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
+                "flex h-14 items-center overflow-hidden rounded-xl border border-input bg-card transition-colors focus-within:border-ring focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring sm:h-12",
+                phoneError && "border-destructive focus-within:border-destructive",
               )}
             >
               <span className="flex h-full items-center border-r border-input bg-muted/60 px-3.5 text-base font-medium text-foreground/80">
@@ -377,8 +377,8 @@ export function CustomerLoginForm({ next, signedOut = false }: { next: string | 
                 aria-invalid={otpError ? true : undefined}
                 aria-describedby={otpError ? "otp-error" : undefined}
                 className={cn(
-                  "tabular h-14 w-full min-w-0 rounded-xl border border-input bg-card text-center text-[1.375rem] font-semibold text-foreground caret-primary transition-[box-shadow,border-color] outline-none focus:border-ring focus:ring-3 focus:ring-ring/25",
-                  otpError && "border-destructive focus:border-destructive focus:ring-destructive/20",
+                  "tabular h-14 w-full min-w-0 rounded-xl border border-input bg-card text-center text-[1.375rem] font-semibold text-foreground caret-primary transition-colors outline-none focus-ring focus-visible:border-ring",
+                  otpError && "border-destructive focus-visible:border-destructive",
                 )}
               />
             ))}

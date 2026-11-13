@@ -199,12 +199,12 @@ export function StaffPage() {
             <TabsTrigger value="nurse" className="px-3">
               <UserRound />
               Nurses
-              <span className="ml-0.5 rounded-full bg-foreground/8 px-1.5 text-[11px] tabular">{counts.nurse}</span>
+              <span className="ml-0.5 rounded-full bg-foreground/8 px-1.5 text-[11px] text-foreground-2 tabular">{counts.nurse}</span>
             </TabsTrigger>
             <TabsTrigger value="doctor" className="px-3">
               <Stethoscope />
               Doctors
-              <span className="ml-0.5 rounded-full bg-foreground/8 px-1.5 text-[11px] tabular">{counts.doctor}</span>
+              <span className="ml-0.5 rounded-full bg-foreground/8 px-1.5 text-[11px] text-foreground-2 tabular">{counts.doctor}</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>

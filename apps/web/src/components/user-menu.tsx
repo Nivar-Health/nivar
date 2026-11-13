@@ -76,7 +76,7 @@ export function UserMenu({
         // The name a screen reader hears includes the name on screen; the initials are decoration.
         aria-label={user.name ? `Account menu, ${user.name}` : "Account menu"}
         className={cn(
-          "relative flex items-center gap-2 rounded-full p-0.5 outline-none pointer-coarse:p-1.5 transition-colors before:absolute before:-inset-1 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 data-popup-open:bg-muted",
+          "relative flex items-center gap-2 rounded-full p-0.5 outline-none pointer-coarse:p-1.5 transition-colors before:absolute before:-inset-1 hover:bg-muted focus-ring data-popup-open:bg-muted",
           showName && "pr-2 pointer-coarse:pr-2",
           className,
         )}

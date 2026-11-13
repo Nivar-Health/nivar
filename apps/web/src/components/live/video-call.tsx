@@ -277,7 +277,7 @@ export function VideoCall(props: VideoCallProps) {
             setSession((s) => s + 1);
             setLeft(false);
           }}
-          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-small font-semibold text-ink outline-none hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white/60"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-small font-semibold text-ink outline-none hover:bg-white/90 focus-ring [--ring:var(--ring-on-dark)]"
         >
           <RotateCcw className="size-4" aria-hidden /> Rejoin
         </button>
@@ -618,7 +618,7 @@ function CallSession({
         : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
 
   const controlBtn =
-    "inline-flex items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40";
+    "inline-flex items-center justify-center rounded-full transition-colors outline-none focus-ring [--ring:var(--ring-on-dark)] disabled:cursor-not-allowed disabled:opacity-40";
   // The side-panel layout is denser with a mouse; a finger still gets 44px.
   const btnSize = compact ? "size-10 pointer-coarse:size-11" : "size-11";
 
@@ -715,7 +715,7 @@ function CallSession({
               <button
                 type="button"
                 onClick={onRetry}
-                className="ml-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-ink outline-none hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white/60"
+                className="ml-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-ink outline-none hover:bg-white/90 focus-ring [--ring:var(--ring-on-dark)]"
               >
                 <RotateCcw className="size-4" aria-hidden /> Try again
               </button>

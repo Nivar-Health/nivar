@@ -13,7 +13,7 @@ export const MONITOR = {
   steth: "#E6E6E1",
   stethRgb: "230, 230, 225",
   text: "#F2F2EE",
-  /** 6.09:1 on bg, 5.12:1 on the HR panel (#0A221E). */
+  /** 6.09:1 on bg, 4.61:1 on the HR panel (pond, #012B36). */
   dim: "#8F8F89",
 } as const;
 

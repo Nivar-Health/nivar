@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu } from "lucide-react";
-import { activeHref } from "@/components/app-shell";
+import { activeHref, useScrollPadding } from "@/components/app-shell";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -41,7 +41,7 @@ function NavList({
               onClick={onNavigate}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "group/nav relative flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40 [&_svg]:size-[18px] [&_svg]:shrink-0",
+                "group/nav relative flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors outline-none focus-ring [&_svg]:size-[18px] [&_svg]:shrink-0",
                 isActive
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -195,6 +195,8 @@ export function StaffShell({
 
   const homeHref = nav[0]?.href ?? "/";
   const useBottomNav = mobileNav === "bottom" && nav.length > 1;
+  // The phone header stays on screen: a control reached with Tab must not stop under it.
+  const headerRef = useScrollPadding("top");
   const useMenu = !useBottomNav && nav.length > 1;
 
   return (
@@ -202,7 +204,7 @@ export function StaffShell({
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <div className="flex h-16 items-center justify-between gap-2 px-5">
-          <Link href={homeHref} className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+          <Link href={homeHref} className="rounded-md outline-none focus-ring">
             <Logo size="sm" />
           </Link>
           <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
@@ -220,7 +222,7 @@ export function StaffShell({
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
         {/* Mobile / tablet top bar */}
-        <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md lg:hidden">
+        <header ref={headerRef} className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md lg:hidden">
           <div className="flex h-14 items-center justify-between gap-3 px-4">
             <div className="flex min-w-0 items-center gap-2">
               {useMenu && (
@@ -250,7 +252,7 @@ export function StaffShell({
               )}
               <Link
                 href={homeHref}
-                className="inline-flex h-11 items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="inline-flex h-11 items-center rounded-md outline-none focus-ring"
               >
                 <Logo size="sm" />
               </Link>

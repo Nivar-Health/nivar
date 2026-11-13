@@ -171,7 +171,7 @@ export function PackageDialog({
                       aria-checked={on}
                       onClick={() => toggleCode(s.code)}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                        "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors outline-none focus-ring",
                         on ? "border-foreground bg-muted" : "border-border hover:border-foreground/40",
                       )}
                     >
@@ -184,7 +184,7 @@ export function PackageDialog({
                         {on && <Check className="size-3" strokeWidth={3} />}
                       </span>
                       <span className="min-w-0 flex-1 leading-tight">
-                        <span className="block truncate text-[13px] font-medium">{s.name}</span>
+                        <span className="block text-[13px] font-medium break-words">{s.name}</span>
                         <span className="text-[11px] text-muted-foreground tabular">{formatINR(s.price)}</span>
                       </span>
                     </button>

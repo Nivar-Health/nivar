@@ -52,14 +52,15 @@ function StaffOption({ option, tag }: { option: Option; tag?: string }) {
       <UserAvatar name={option.member.name} size="sm" className="[&_[data-slot=avatar-fallback]]:text-[10px]" />
       <span className="min-w-0 flex-1 leading-tight">
         <span className="flex items-center gap-1.5">
-          <span className="truncate text-[13px] font-medium">{option.member.name}</span>
+          {/* Names wrap rather than truncate: on a 320px phone "Kavya Reddy" became "Kavy...". */}
+          <span className="min-w-0 text-[13px] font-medium break-words">{option.member.name}</span>
           {tag && (
-            <span className="rounded bg-muted px-1 text-[10px] font-medium text-muted-foreground">
+            <span className="shrink-0 rounded bg-muted px-1 text-[10px] font-medium text-muted-foreground">
               {tag}
             </span>
           )}
         </span>
-        <span className="block truncate text-xs text-muted-foreground">{option.detail}</span>
+        <span className="block text-xs break-words text-muted-foreground">{option.detail}</span>
       </span>
       <LoadPill n={option.member.activeBookings} />
     </span>

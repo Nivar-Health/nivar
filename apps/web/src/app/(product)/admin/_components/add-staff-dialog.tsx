@@ -176,7 +176,7 @@ export function AddStaffDialog({
                   aria-checked={role === r}
                   onClick={() => setRole(r)}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                    "flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors outline-none focus-ring",
                     role === r ? "border-foreground bg-muted text-foreground" : "border-border text-muted-foreground hover:border-foreground/40",
                   )}
                 >

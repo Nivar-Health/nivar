@@ -690,7 +690,7 @@ function Wizard({
           <button
             type="button"
             onClick={startAgain}
-            className="inline-flex min-h-11 items-center rounded-md px-1 font-semibold text-foreground underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="inline-flex min-h-11 items-center rounded-md px-1 font-semibold text-foreground underline underline-offset-4 outline-none focus-ring"
           >
             Start again
           </button>
@@ -896,7 +896,7 @@ function WizardHeader({
           type="button"
           onClick={onBack}
           aria-label={step === 0 ? "Close booking" : editing ? "Back to review" : `Back to ${STEPS[step - 1].short}`}
-          className="-ml-2.5 grid size-11 shrink-0 place-items-center rounded-full text-foreground transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="-ml-2.5 grid size-11 shrink-0 place-items-center rounded-full text-foreground transition-colors outline-none hover:bg-muted focus-ring"
         >
           <ChevronLeft className="size-5" aria-hidden />
         </button>
@@ -962,7 +962,7 @@ function TestsSkeleton() {
 }
 
 const CHOICE_CARD =
-  "rounded-2xl border bg-card text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40";
+  "rounded-2xl border bg-card text-left transition-colors outline-none focus-ring";
 const chosen = (on: boolean) => (on ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/40");
 const tile = (on: boolean) => (on ? "bg-primary text-primary-foreground" : "border border-border bg-card text-foreground");
 
@@ -1050,7 +1050,7 @@ function TestsStep({
                 aria-disabled={inPkg}
                 onClick={() => !inPkg && onToggleTest(s.code)}
                 className={cn(
-                  "flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors outline-none focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset",
+                  "flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors outline-none focus-visible:bg-muted focus-ring focus-visible:-outline-offset-2",
                   inPkg ? "cursor-default" : "hover:bg-muted/50",
                 )}
               >
@@ -1128,7 +1128,7 @@ function ChoiceChips<T extends string>({
             aria-checked={value === o.value}
             onClick={() => onChange(o.value)}
             className={cn(
-              "h-12 rounded-full border px-5 text-small font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+              "h-12 rounded-full border px-5 text-small font-medium transition-colors outline-none focus-ring",
               value === o.value
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-card hover:border-primary/40",
@@ -1457,7 +1457,7 @@ function AddressStep({
           <button
             type="button"
             onClick={onAdd}
-            className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-input p-4 text-left text-small font-semibold text-foreground transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-input p-4 text-left text-small font-semibold text-foreground transition-colors outline-none hover:bg-muted focus-ring"
           >
             <span className="grid size-10 place-items-center rounded-xl border border-border bg-card text-foreground">
               <Plus className="size-[1.125rem]" aria-hidden />
@@ -1558,7 +1558,7 @@ function ScheduleStep({
                   aria-checked={selected}
                   onClick={() => onDate(d.iso)}
                   className={cn(
-                    "flex h-16 w-[5.25rem] shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40 md:w-auto md:min-w-0 md:flex-1",
+                    "flex h-16 w-[5.25rem] shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-colors outline-none focus-ring md:w-auto md:min-w-0 md:flex-1",
                     selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-primary/40",
                   )}
                 >
@@ -1663,7 +1663,7 @@ function ScheduleStep({
                             onClick={() => onSlot(s.slot)}
                             title={s.available ? slotLabel(s.slot) : "Unavailable"}
                             className={cn(
-                              "tabular h-12 rounded-xl border text-small font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                              "tabular h-12 rounded-xl border text-small font-medium transition-colors outline-none focus-ring",
                               selected
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : s.available
@@ -1824,7 +1824,7 @@ function ReviewCard({
           type="button"
           onClick={onEdit}
           aria-label={`Edit ${title.toLowerCase()}`}
-          className="-mr-2 inline-flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-foreground underline underline-offset-4 transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="-mr-2 inline-flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-foreground underline underline-offset-4 transition-colors outline-none hover:bg-muted focus-ring"
         >
           Edit
         </button>

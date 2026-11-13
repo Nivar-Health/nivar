@@ -254,7 +254,7 @@ function BackLink({ past = false }: { past?: boolean }) {
     <Link
       // A finished visit is listed under Past, so going back lands where it came from.
       href={past ? "/app/bookings?tab=past" : "/app/bookings"}
-      className="-ml-2 inline-flex h-11 items-center gap-1 rounded-full pr-3 pl-2 text-small font-medium text-foreground-2 transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+      className="-ml-2 inline-flex h-11 items-center gap-1 rounded-full pr-3 pl-2 text-small font-medium text-foreground-2 transition-colors outline-none hover:bg-muted hover:text-foreground focus-ring"
     >
       <ChevronLeft className="size-4" aria-hidden /> My bookings
     </Link>
@@ -679,14 +679,14 @@ function ConsultPanel({ booking, doctor }: { booking: Booking; doctor: UserSumma
                   ref={stayRef}
                   type="button"
                   onClick={() => setConfirmLeave(false)}
-                  className="h-11 rounded-full bg-white px-5 text-small font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  className="h-11 rounded-full bg-white px-5 text-small font-semibold text-foreground outline-none focus-ring [--ring:var(--ring-on-dark)]"
                 >
                   Stay
                 </button>
                 <button
                   type="button"
                   onClick={leave}
-                  className="h-11 rounded-full bg-white/10 px-5 text-small font-semibold text-white outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/70"
+                  className="h-11 rounded-full bg-white/10 px-5 text-small font-semibold text-white outline-none hover:bg-white/15 focus-ring [--ring:var(--ring-on-dark)]"
                 >
                   Leave call
                 </button>
@@ -857,7 +857,7 @@ function RatingCard({ booking, setBooking }: { booking: Booking; setBooking: (b:
               aria-label={`${i} star${i === 1 ? "" : "s"}, ${LABELS[i]}`}
               onClick={() => setScore(i)}
               onMouseEnter={() => setHover(i)}
-              className="grid size-11 place-items-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="grid size-11 place-items-center rounded-full outline-none focus-ring"
             >
               <Star
                 className={cn("size-7 transition-colors", i <= shown ? "fill-foreground text-foreground" : "text-input")}
@@ -1121,7 +1121,7 @@ function CancelBooking({ booking, setBooking }: { booking: Booking; setBooking: 
                     aria-checked={choice === r}
                     onClick={() => setChoice(choice === r ? null : r)}
                     className={cn(
-                      "h-11 rounded-full border px-4 text-small font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                      "h-11 rounded-full border px-4 text-small font-medium transition-colors outline-none focus-ring",
                       choice === r ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-primary/40",
                     )}
                   >

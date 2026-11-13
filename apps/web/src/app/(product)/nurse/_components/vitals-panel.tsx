@@ -413,7 +413,7 @@ function VitalCard({
                       if (timer.current) schedule(0);
                     }}
                     className={cn(
-                      "h-14 w-full min-w-0 scroll-mb-40 rounded-xl border bg-background pr-14 pl-3.5 text-2xl font-semibold tabular-nums transition-colors outline-none placeholder:font-normal placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30",
+                      "h-14 w-full min-w-0 scroll-mb-40 rounded-xl border bg-background pr-14 pl-3.5 text-2xl font-semibold tabular-nums transition-colors outline-none placeholder:font-normal placeholder:text-muted-foreground/60 focus-visible:border-ring focus-ring",
                       error ? "border-danger ring-3 ring-danger/15" : "border-input",
                     )}
                   />
@@ -463,7 +463,7 @@ function VitalCard({
               onClick={() => pickSugarType(t)}
               onKeyDown={(e) => onSugarKey(e, i)}
               className={cn(
-                "h-11 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                "h-11 rounded-lg text-sm font-medium transition-colors outline-none focus-ring",
                 sugarType === t ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground",
               )}
             >

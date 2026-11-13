@@ -26,6 +26,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useScrollPadding } from "@/components/app-shell";
 import { LiveMap, VideoCall, etaMinutes, formatDistance, haversineKm } from "@/components/live";
 import { StatusBadge } from "@/components/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -163,8 +164,10 @@ function SectionHeading({ children, aside }: { children: ReactNode; aside?: Reac
 
 /** Fixed bottom bar holding the step's single primary action. */
 function ActionBar({ hint, step, children }: { hint?: ReactNode; step: string; children: ReactNode }) {
+  // A control reached with Tab stops above the bar, never under it.
+  const padBelow = useScrollPadding("bottom");
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/90 backdrop-blur-md lg:left-64">
+    <div ref={padBelow} className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/90 backdrop-blur-md lg:left-64">
       {/* Keyed by step so the new action fades in rather than swapping under the thumb. */}
       <div
         key={step}
@@ -203,7 +206,7 @@ function VisitHeader({ booking, headingRef }: { booking: Booking; headingRef: Re
       <div className="flex items-center justify-between gap-3">
         <Link
           href="/nurse"
-          className="-ml-2 inline-flex h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="-ml-2 inline-flex h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-ring"
         >
           <ArrowLeft className="size-4" /> Today
         </Link>
@@ -535,7 +538,7 @@ function ArrivedPanel({ booking }: { booking: Booking }) {
                       return next;
                     })
                   }
-                  className="flex min-h-11 w-full items-center gap-3 rounded-lg px-1 py-1.5 text-left text-sm transition-colors outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+                  className="flex min-h-11 w-full items-center gap-3 rounded-lg px-1 py-1.5 text-left text-sm transition-colors outline-none hover:bg-muted/60 focus-ring"
                 >
                   <span
                     className={cn(
@@ -646,7 +649,7 @@ function AddReadings({ booking, devices, children }: { booking: Booking; devices
         aria-expanded={open}
         aria-controls="add-readings"
         onClick={() => setOpen((o) => !o)}
-        className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-input bg-card px-4 py-3 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-input bg-card px-4 py-3 text-left transition-colors outline-none hover:bg-muted/50 focus-ring"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
           <Plus className="size-[18px]" aria-hidden />

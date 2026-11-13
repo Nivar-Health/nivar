@@ -171,7 +171,7 @@ export function customerNotice(status: BookingStatus, booking: Booking): { title
     case "arrived":
       return { title: "Nurse has arrived", body: `${nurse} is at your door.` };
     case "consult":
-      return { title: "Doctor consult starting", body: `${doctor} is ready. Tap to join the video consult.` };
+      return { title: "Your doctor's video call is starting", body: `${doctor} is ready. Open your visit to join the video call.` };
     case "completed":
       return { title: "Your report is ready", body: `${doctor} has published your report and prescription.` };
     case "cancelled":

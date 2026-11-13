@@ -429,7 +429,7 @@ export function EcgMonitor({
           <MonitorOverlay show={overlay !== null}>{overlay}</MonitorOverlay>
         </div>
 
-        <div className="flex w-[92px] shrink-0 flex-col justify-between border-l border-white/5 bg-[#0A221E] px-3 py-2.5 sm:w-[124px]">
+        <div className="flex w-[92px] shrink-0 flex-col justify-between border-l border-white/5 bg-pond px-3 py-2.5 sm:w-[124px]">
           <div
             className={cn(
               "flex items-center justify-between font-semibold tracking-[0.14em] text-[#19C37D]",

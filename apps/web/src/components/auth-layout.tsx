@@ -36,7 +36,7 @@ export function AuthLayout({
         <div aria-hidden className="absolute inset-0 bg-ecg-grid-dark" />
 
         <div className="relative flex flex-1 flex-col px-12 py-10 xl:px-16">
-          <Link href="/" className="w-fit rounded-md focus-ring">
+          <Link href="/" className="inline-flex min-h-11 w-fit items-center rounded-md focus-ring">
             <Logo size="md" variant="light" />
           </Link>
 
