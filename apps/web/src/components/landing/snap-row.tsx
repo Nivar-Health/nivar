@@ -21,8 +21,6 @@ export type SnapRowProps = {
   children: ReactNode[];
   /** Item width on the row, e.g. "basis-[85%] sm:basis-[46%]". */
   itemClassName?: string;
-  /** The row is a plain grid from md, the one breakpoint in use; the prop only names it at the call site. */
-  gridFrom?: "md";
   /** Grid columns and gap once it is a grid, e.g. "md:grid-cols-2 lg:grid-cols-4". */
   gridClassName?: string;
   className?: string;

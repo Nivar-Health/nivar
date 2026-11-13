@@ -29,7 +29,7 @@ export function CheckUps({ packages, services }: { packages: Package[]; services
           />
           <p className="mt-5 max-w-[46ch] text-small text-pretty text-ink-2 lg:col-span-5 lg:mt-0 lg:justify-self-end lg:pb-[3px] lg:text-right">
             <span className="font-semibold text-ink lg:block">Prices include the home visit and the report.</span> No surge
-            pricing, no hidden consultation fee.
+            pricing, no hidden doctor&apos;s fee.
           </p>
         </div>
 

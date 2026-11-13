@@ -707,14 +707,51 @@
       inline-size: 100%;
       block-size: 100%;
     }
+    /* 2px past each side of the cell: at 360 the current tab's 600 weight makes "Check-ups" 72.5px in a
+       72px cell, and a wrap there would make the whole bar 18px taller as the mark arrives. */
     .nv-tabbar-label {
-      max-inline-size: 100%;
+      max-inline-size: calc(100% + 0.25rem);
+      margin-inline: -0.125rem;
       margin-top: 0.25rem;
-      font-size: 0.8125rem;
-      line-height: 1rem;
+      font-size: 0.875rem;
+      line-height: 1.125rem;
       font-weight: 500;
       text-align: center;
       text-wrap: balance;
+    }
+    /* The fit check (bottom-bar.tsx useCompact): each label in a key-wide cell, at the current tab's
+       weight, free to overflow rather than break a word. Hidden; out of the flow. */
+    .nv-tabbar-probe {
+      position: absolute;
+      inset: 0 env(safe-area-inset-right, 0px) auto env(safe-area-inset-left, 0px);
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .nv-tabbar-probe > .nv-tabbar-label {
+      display: block;
+      margin: 0 4px;
+      font-weight: 600;
+      overflow-wrap: normal;
+    }
+    /* Compact: when a label would break inside a word, the bar shows its glyphs alone. The words stay as
+       each tab's accessible name. */
+    .nv-tabbar[data-compact] .nv-tabbar-cell {
+      justify-content: center;
+      padding-bottom: 0.5rem;
+    }
+    .nv-tabbar[data-compact] .nv-tabbar-glyph {
+      margin-top: 0;
+    }
+    .nv-tabbar[data-compact] :is(.nv-tabbar-cell, .nv-tabbar-key) > .nv-tabbar-label {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      margin: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
     /* The current tab: filled glyph, ink label at 600, the jade mark. The fill covers its line glyph

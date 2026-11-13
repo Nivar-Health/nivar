@@ -942,6 +942,10 @@ export function CallbackForm() {
               </label>
             ))}
           </div>
+          {/* The parents panel's promises, in its words; the region stays in the DOM so the line is read when it appears. */}
+          <p aria-live="polite" className={cn("text-small text-pretty text-ink-2", whoFor === "A parent" && "mt-2.5")}>
+            {whoFor === "A parent" && `${SITE.forFamily.updates} ${SITE.forFamily.report}`}
+          </p>
         </fieldset>
       </div>
 

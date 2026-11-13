@@ -542,7 +542,8 @@ function RequestScene() {
         <p className="font-semibold text-ink">Preferred language for the call</p>
         <p className="mt-2 flex h-9 items-center justify-between rounded-xl border border-border-strong bg-white px-3 text-ink">
           <span>
-            <span lang={kannada.lang}>{kannada.endonym}</span> ({kannada.english})
+            {/* The English name only: the script would be under its 16px floor at this scale. */}
+            {kannada.english}
           </span>
           <ChevronDown className="size-3.5 text-primary" />
         </p>

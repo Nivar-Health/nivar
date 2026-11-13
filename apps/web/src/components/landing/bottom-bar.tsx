@@ -2,7 +2,7 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { PhoneIncoming } from "lucide-react";
-import type { JSX, MouseEvent as ReactMouseEvent } from "react";
+import { useLayoutEffect, useRef, useState, type JSX, type MouseEvent as ReactMouseEvent } from "react";
 import { TabGlyph, type GlyphKind } from "./bar-icons";
 import { WhatsAppIcon, whatsappHref } from "./whatsapp";
 
@@ -36,6 +36,41 @@ export function barMark(section: string | null): TabId | "menu" | null {
   return tab !== "menu" && BAR_SLOTS.includes(tab) ? tab : "menu";
 }
 
+/** The visible words of the five slots, for the fit check (useCompact). */
+function slotLabels(wa: boolean): string[] {
+  return BAR_SLOTS.map((slot) =>
+    slot === "menu" ? "Menu" : slot === "key" ? (wa ? "Chat" : "Callback") : TABS[slot].label,
+  );
+}
+
+/**
+ * True while a label would break inside a word or run past two lines (large text, narrow screens). Each
+ * label is set, hidden, in a copy of the grid at the key's width and the current tab's weight; a resize of
+ * any of them (font size, width) checks again. The bar then shows its glyphs alone, names kept.
+ */
+function useCompact() {
+  const probe = useRef<HTMLDivElement>(null);
+  const [compact, setCompact] = useState(false);
+  useLayoutEffect(() => {
+    const box = probe.current;
+    if (!box) return;
+    const words = Array.from(box.children) as HTMLElement[];
+    const check = () => {
+      setCompact(
+        words.some((el) => {
+          const line = parseFloat(getComputedStyle(el).lineHeight) || 16;
+          return el.scrollWidth > el.clientWidth + 0.5 || el.offsetHeight > line * 2.5;
+        }),
+      );
+    };
+    const ro = new ResizeObserver(check);
+    for (const el of words) ro.observe(el);
+    check();
+    return () => ro.disconnect();
+  }, []);
+  return [probe, compact] as const;
+}
+
 /** A click that opens a new tab or window, or isn't the main button: the browser's, not ours. */
 export const modified = (e: MouseEvent | ReactMouseEvent) =>
   e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
@@ -57,6 +92,7 @@ export function BottomBar({
 }): JSX.Element {
   const mark = barMark(current);
   const wa = whatsappHref();
+  const [probe, compact] = useCompact();
 
   const onJump = (e: ReactMouseEvent<HTMLAnchorElement>) => {
     if (modified(e)) return;
@@ -112,12 +148,19 @@ export function BottomBar({
   };
 
   return (
-    <nav aria-label="Primary" className="nv-tabbar">
+    <nav aria-label="Primary" className="nv-tabbar" data-compact={compact ? "" : undefined}>
       <ul role="list" className="nv-tabbar-list">
         {BAR_SLOTS.map((slot) => (
           <li key={slot}>{cell(slot)}</li>
         ))}
       </ul>
+      <div ref={probe} aria-hidden className="nv-tabbar-probe">
+        {slotLabels(Boolean(wa)).map((label) => (
+          <span key={label} className="nv-tabbar-label">
+            {label}
+          </span>
+        ))}
+      </div>
     </nav>
   );
 }

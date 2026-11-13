@@ -59,14 +59,14 @@ export function Hero() {
           <div className="@container">
             {/* One line down to 360px (tighter under 380px); if it ever wraps, the radius keeps it a soft card. */}
             <p
-              className="hero-in inline-flex max-w-full items-center gap-2 rounded-[1.25rem] border border-white bg-white/80 py-1 pr-3 pl-1 text-[0.8125rem] font-medium text-balance text-ink-2 shadow-[0_6px_18px_-12px_rgb(1_43_54/0.4)] max-[379px]:gap-1.5 max-[379px]:pr-2.5 sm:gap-2.5 sm:py-1.5 sm:pr-4 sm:pl-2 sm:text-sm"
+              className="hero-in inline-flex max-w-full items-center gap-2 rounded-[1.25rem] border border-white bg-white/80 py-1 pr-3 pl-1 text-note font-medium text-balance text-ink-2 shadow-[0_6px_18px_-12px_rgb(1_43_54/0.4)] max-[379px]:gap-1.5 max-[379px]:pr-2.5 sm:gap-2.5 sm:py-1.5 sm:pr-4 sm:pl-2"
               style={delay(0)}
             >
               {/* A place, so a pin. Still: a pulsing dot would say "live", which the sentence does not. */}
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-aqua text-primary sm:size-6">
                 <MapPin aria-hidden className="size-3 sm:size-3.5" strokeWidth={2.25} />
               </span>
-              Now visiting homes in {SITE.area}
+              Visiting homes in {SITE.area}
             </p>
 
             {/* Focusable by script only: Take a minute returns focus here when its opener is gone. */}
@@ -104,7 +104,7 @@ export function Hero() {
               style={delay(300)}
             >
               {CHIPS.map(({ key, icon: Icon, text }) => (
-                <li key={key} className="flex items-center gap-2 text-[0.875rem] leading-snug font-medium text-ink-2 sm:gap-3 sm:text-small">
+                <li key={key} className="flex items-center gap-2 text-small leading-snug font-medium text-ink-2 sm:gap-3">
                   <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-[0_4px_12px_-6px_rgb(1_43_54/0.35)] ring-1 ring-aqua-2 sm:size-9">
                     <Icon aria-hidden className="size-3.5 sm:size-4" strokeWidth={2.25} />
                   </span>
@@ -168,7 +168,7 @@ function HeroPhoto() {
               <Gauge className="size-4 shrink-0 text-rose" strokeWidth={2.25} />
               118/76
             </span>
-            <span className="flex items-center gap-1.5 text-[0.8125rem] leading-4 font-semibold text-primary">
+            <span className="flex items-center gap-1.5 text-note leading-4 font-semibold text-primary">
               <span className="flex size-4 shrink-0 items-center justify-center">
                 <span className="size-1.5 rounded-full bg-signal" />
               </span>
@@ -178,7 +178,7 @@ function HeroPhoto() {
         </div>
 
         <FloatCard
-          position="top-[54%] -right-[8%] hidden w-[220px] sm:block md:max-lg:hidden lg:-right-[2%] xl:-right-[12%]"
+          position="top-[54%] -right-[8%] hidden w-[244px] sm:block md:max-lg:hidden lg:-right-[2%] xl:-right-[12%]"
           className="px-4 py-3"
           enter={500}
           float="7.5s"
@@ -196,7 +196,7 @@ function HeroPhoto() {
         </FloatCard>
       </div>
 
-      <figcaption className="absolute right-3 bottom-3 rounded-full bg-white/85 px-2.5 py-0.5 text-caption text-ink-2 sm:static sm:mt-6 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-center">
+      <figcaption className="absolute right-3 bottom-3 rounded-full bg-white/85 px-2.5 py-0.5 text-note text-ink-2 sm:static sm:mt-6 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-center">
         <span className="sm:hidden">
           Illustrative<span className="sr-only"> photo and reading</span>
         </span>
@@ -257,7 +257,7 @@ function StatusCard({ icon: Icon, title, sub, online = false }: { icon: LucideIc
       </span>
       <span className="leading-snug">
         <span className="block text-[0.9375rem] font-semibold whitespace-nowrap text-ink">{title}</span>
-        <span className="block text-caption whitespace-nowrap text-ink-3">{sub}</span>
+        <span className="block text-note whitespace-nowrap text-ink-3">{sub}</span>
       </span>
     </div>
   );
@@ -267,19 +267,19 @@ function StatusCard({ icon: Icon, title, sub, online = false }: { icon: LucideIc
 function BpCard() {
   return (
     <>
-      <div className="flex items-center justify-between gap-2 text-[0.8125rem]">
-        <span className="flex items-center gap-1.5 font-semibold text-ink">
+      <div className="flex items-center justify-between gap-2 text-note">
+        <span className="flex items-center gap-1.5 font-semibold whitespace-nowrap text-ink">
           <Gauge className="size-4 text-rose" strokeWidth={2.25} />
           Blood pressure
         </span>
-        <span className="text-xs text-ink-3">Just now</span>
+        <span className="text-note whitespace-nowrap text-ink-3">Just now</span>
       </div>
       <div className="mt-2 flex items-baseline justify-between gap-2">
         <span className="flex items-baseline gap-1">
           <span className="text-xl font-semibold tracking-tight text-ink tabular-nums">118/76</span>
-          <span className="text-xs font-medium text-ink-3">mmHg</span>
+          <span className="text-note font-medium text-ink-3">mmHg</span>
         </span>
-        <span className="rounded-full bg-aqua px-2 py-0.5 text-xs font-semibold text-primary">Normal</span>
+        <span className="rounded-full bg-aqua px-2 py-0.5 text-note font-semibold text-primary">Normal</span>
       </div>
       <BpScale />
     </>

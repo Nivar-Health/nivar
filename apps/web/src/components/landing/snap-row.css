@@ -78,7 +78,8 @@
     scroll-snap-stop: always;
   }
 
-  /* Phones: dots. The active one is a 16px jade pill. */
+  /* Phones: dots. The active one is a 16px jade pill; the resting ones take the field-edge colour
+     (3:1 or more on white, the wash and aqua), so "four cards" reads outdoors. */
   .nv-snap-dots {
     display: flex;
     justify-content: center;
@@ -89,7 +90,7 @@
     width: 6px;
     height: 6px;
     border-radius: 9999px;
-    background: var(--aqua-2);
+    background: var(--input-line);
     transition:
       width 200ms var(--curve-standard),
       background-color 200ms var(--curve-standard);

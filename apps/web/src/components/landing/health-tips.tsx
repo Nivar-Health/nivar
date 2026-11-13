@@ -13,7 +13,8 @@ import {
   VISIT_CHECKLIST,
   tipOfTheDayIndex,
 } from "./health-content";
-import { ExternalLink, FactsRow, HealthDisclaimer } from "./health-facts";
+import { ExternalLink } from "./external-link";
+import { FactsRow, HealthDisclaimer } from "./health-facts";
 import { Container, Section, SectionTitle } from "./primitives";
 import { TakeAMinuteTile } from "./take-a-minute-tile";
 import { TipDeck } from "./tip-deck";
@@ -103,7 +104,7 @@ function AllSources({ className }: { className?: string }) {
         <ul className="flex flex-col text-sm text-pretty text-ink-3">
           {ALL_SOURCES.map((s) => (
             <li key={s.url}>
-              <ExternalLink href={s.url} className="flex min-h-11 w-fit items-center py-1.5">
+              <ExternalLink href={s.url} className="flex min-h-11 w-fit items-center py-1.5 before:inset-y-0">
                 {s.label}
               </ExternalLink>
             </li>
@@ -115,19 +116,20 @@ function AllSources({ className }: { className?: string }) {
 }
 
 /**
- * A quiet morning walk: a band under the tip on phones, and from md a picture beside it, as tall as the
- * tip's card (health-tips.css), cropped to the couple.
+ * A quiet morning walk, from md: a picture beside the tip, as tall as its card (health-tips.css), cropped
+ * to the couple. Narrower screens leave it out: in one column it was only a band between two blocks, and
+ * sized 0px there it is never fetched.
  */
 function WalkPhoto({ className }: { className?: string }) {
   return (
-    <div className={cn("nv-habits-walk relative aspect-[3/1] overflow-hidden rounded-[1.25rem] bg-aqua", className)}>
+    <div className={cn("nv-habits-walk relative overflow-hidden rounded-[1.25rem] bg-aqua max-md:hidden", className)}>
       <Image
         src="/img/elder-walk.jpg"
         alt="An older couple walking and talking on a tree-lined park path in the early morning"
         fill
-        // From md the picture fills a tall cell, so it is drawn wider than the cell it is cropped to.
-        sizes="(min-width: 48rem) 560px, calc(100vw - 40px)"
-        className="object-cover object-[50%_20%] md:object-[62%_30%]"
+        // The picture fills a tall cell, so it is drawn wider than the cell it is cropped to.
+        sizes="(min-width: 48rem) 560px, 0px"
+        className="object-cover object-[62%_30%]"
       />
     </div>
   );
@@ -138,7 +140,7 @@ function WalkPhoto({ className }: { className?: string }) {
  * know (the tip of the day, then the four facts), something to prepare (the visit checklist with its
  * fasting warning), then the safety net (one emergency note, the disclaimer and every source). A gift
  * with no booking CTA anywhere in it. One grid, in reading order at every width: a column on phones,
- * two columns from md with the walk beside the tip, and from lg the tile beside the title and the
+ * two columns from md with the walk beside the tip (phones skip the walk), and from lg the tile beside the title and the
  * emergency note beside the checklist (health-tips.css).
  */
 export async function HealthTips() {
@@ -171,7 +173,7 @@ export async function HealthTips() {
             dateLabel={dateLabel}
             className="nv-habits-tipcell mt-4 sm:mt-5 md:mt-6 lg:mt-16"
           />
-          <WalkPhoto className="mt-4 sm:mt-5 md:mt-6 lg:mt-16" />
+          <WalkPhoto className="md:mt-6 lg:mt-16" />
 
           <section
             id="health-facts"

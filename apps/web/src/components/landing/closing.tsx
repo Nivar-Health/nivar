@@ -51,7 +51,7 @@ export function Callback() {
     <section
       id="callback"
       aria-labelledby="callback-title"
-      className="scroll-mt-8 py-16 sm:scroll-mt-4 sm:py-20 lg:scroll-mt-0 lg:py-28"
+      className="scroll-mt-8 py-14 sm:scroll-mt-4 sm:py-20 lg:scroll-mt-0 lg:py-28"
     >
       <Container>
         {/* overflow-clip, not hidden: it clips the glows without becoming a scroll container. */}
@@ -77,7 +77,7 @@ export function Callback() {
                 <span className="nv-cb-sent">We will call you.</span>
               </h2>
               {/* on-pine, not on-pine-2: over the top-left glow on-pine-2 falls under 4.5:1 on phones. */}
-              <p className="mt-4 max-w-[46ch] text-lede text-pretty text-on-pine sm:mt-5">
+              <p className="mt-5 max-w-[46ch] text-lede text-pretty text-on-pine">
                 Leave your number. {SITE.firstCall.whoCapital} calls you back and tells you the price before anything
                 is booked.
               </p>
@@ -245,7 +245,7 @@ export function SiteFooter() {
   return (
     <footer className="theme-pine band-pond relative isolate overflow-hidden">
       <h2 className="sr-only">Site footer</h2>
-      <Container className="pt-16 pb-8 sm:pt-20 lg:pt-28">
+      <Container className="pt-14 pb-8 sm:pt-20 lg:pt-28">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-12">
           <div className="lg:col-span-5">
             <p className="text-cta max-w-[15ch] text-balance text-white">Nursing care at home.</p>

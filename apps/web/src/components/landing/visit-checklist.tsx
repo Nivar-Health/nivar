@@ -5,7 +5,8 @@ import { useId, useRef, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { Disclosure } from "./disclosure";
 import type { ChecklistItem } from "./health-content";
-import { ExternalLink, MinuteLauncher } from "./tip-deck";
+import { ExternalLink } from "./external-link";
+import { MinuteLauncher } from "./tip-deck";
 import "./health-tips.css";
 
 /* Ticks live for the IST calendar day: { day: "YYYY-MM-DD", done: ids }. Storage can be missing or

@@ -45,6 +45,11 @@ export const SITE = {
     checkup: "usually within the hour",
     channel: "on WhatsApp",
   },
+  /** What a family booking for a parent is promised: the parents panel and the form's "A parent" line. */
+  forFamily: {
+    updates: "We update you when the nurse is on the way, arrives and finishes.",
+    report: "The visit report comes to you on WhatsApp, as well as to them.",
+  },
   payment: {
     faq: "We tell you the full price before we confirm the visit, and our team shares the ways to pay on WhatsApp or on the call. If the nurse does not arrive, we refund you in full.",
   },
@@ -55,7 +60,7 @@ export const SITE = {
   phone: null as { display: string; tel: string } | null,
   whatsapp: whatsappDigits ? { number: whatsappDigits } : null,
   /**
-   * The Medical Lead, shown in "Safe hands, at home" with their permission. The card stays hidden
+   * The Medical Lead, shown first in "Who comes to your home" with their permission. The row stays hidden
    * while null. `photo` is a path under /public, ideally a 4:5 portrait.
    */
   medicalLead: null as {

@@ -360,11 +360,11 @@ function Flag({ flag, compact = false, className }: { flag: "Normal" | "Elevated
     );
   }
   return elevated ? (
-    <Pill className={cn("bg-amber-on-dark/14 text-[0.875rem] text-amber-on-dark ring-1 ring-amber-on-dark/35", className)}>
+    <Pill className={cn("bg-amber-on-dark/14 text-amber-on-dark ring-1 ring-amber-on-dark/35", className)}>
       Elevated
     </Pill>
   ) : (
-    <Pill tone="inverse" className={cn("text-[0.875rem]", className)}>
+    <Pill tone="inverse" className={className}>
       Normal
     </Pill>
   );

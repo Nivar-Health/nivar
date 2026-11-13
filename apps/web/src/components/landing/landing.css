@@ -174,115 +174,7 @@
   animation: settle 1200ms var(--curve-calm) backwards;
 }
 
-/* ---- 4. Multilingual line (health-words.tsx): cycles on its own ---- */
-.hw-cell {
-  display: grid;
-}
-/* Opacity and transform only (mobile addendum M8: no blur filters). The leaving line is gone (300ms)
-   before the next one starts (320ms): two scripts never sit on one baseline. EXIT_MS matches. */
-.hw-item {
-  grid-area: 1 / 1;
-  align-self: center;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(0.3em);
-  transition:
-    opacity 300ms var(--curve-exit),
-    transform 300ms var(--curve-exit),
-    visibility 0s linear 300ms;
-}
-.hw-item[data-state="active"] {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition:
-    opacity 800ms var(--curve-calm) 320ms,
-    transform 800ms var(--curve-calm) 320ms,
-    visibility 0s;
-}
-.hw-item[data-state="leaving"] {
-  visibility: visible;
-  transform: translateY(-0.3em);
-}
-.hw-beat path {
-  stroke-dasharray: 1;
-}
-.hw-beat[data-draw] path {
-  animation: draw 1000ms var(--curve-calm) both;
-}
-/* Its Pause (WCAG 2.2.2): a quiet ring, 32px on phones so even the Kannada line keeps to one line
-   beside it, 36px from sm; the target is 44px either way. Nothing moves under reduced motion or the
-   page-wide pause, so it goes then. */
-.hw-toggle {
-  position: relative;
-  display: inline-flex;
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 9999px;
-  color: var(--muted-foreground);
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.hw-toggle::before {
-  content: "";
-  position: absolute;
-  inset: -0.375rem;
-  border-radius: inherit;
-}
-@media (min-width: 40rem) {
-  .hw-toggle {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-  .hw-toggle::before {
-    inset: -0.25rem;
-  }
-}
-.hw-toggle > span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  border: 1px solid var(--border-strong);
-  border-radius: 9999px;
-  background: var(--background);
-  transition:
-    transform 180ms var(--curve-standard),
-    background-color 180ms var(--curve-standard),
-    color 180ms var(--curve-standard);
-}
-.hw-toggle svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-.hw-toggle:focus-visible > span {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-.hw-toggle:active > span {
-  background-color: var(--aqua);
-  color: var(--foreground);
-  transform: scale(0.97);
-  transition-duration: 90ms;
-}
-@media (hover: hover) and (pointer: fine) {
-  .hw-toggle:hover > span {
-    background-color: var(--aqua);
-    color: var(--foreground);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hw-toggle {
-    display: none;
-  }
-}
-html[data-motion="paused"] .hw-toggle {
-  display: none;
-}
-
-/* ---- 5. Programme glyphs (programme-glyphs.tsx): once on reveal, unless the visitor paused animations;
+/* ---- 4. Programme glyphs (programme-glyphs.tsx): once on reveal, unless the visitor paused animations;
    check-ups.css replays them on hover ---- */
 .pg-glyph .pg-heart,
 .pg-glyph .pg-heart-h,
@@ -306,7 +198,7 @@ html:not([data-motion="paused"]) [data-nv-revealed] .pg-arc {
 }
 html:not([data-motion="paused"]) [data-nv-revealed] .pg-needle { --from: -70deg; animation: needle-in 900ms var(--curve-calm) 250ms backwards; }
 
-/* ---- 6. How it works: the visit story (visit-journey.tsx). Each scene remounts when it becomes
+/* ---- 5. How it works: the visit story (visit-journey.tsx). Each scene remounts when it becomes
    active, so its one-shot animations replay; --d staggers them. Under reduced motion every
    duration and delay collapses (globals.css), so each scene simply shows its finished state. ---- */
 @keyframes jn-scene {
@@ -328,10 +220,6 @@ html:not([data-motion="paused"]) [data-nv-revealed] .pg-needle { --from: -70deg;
   from { transform: scaleX(0); }
   to { transform: none; }
 }
-@keyframes jn-travel {
-  from { offset-distance: 0%; }
-  to { offset-distance: 100%; }
-}
 @keyframes jn-ripple {
   0% { transform: scale(1); opacity: 0.6; }
   100% { transform: scale(2.4); opacity: 0; }
@@ -348,15 +236,6 @@ html:not([data-motion="paused"]) [data-nv-revealed] .pg-needle { --from: -70deg;
 .jn-drop { animation: jn-drop 600ms var(--curve-calm) var(--d, 0ms) backwards; }
 .jn-out { animation: jn-out 300ms var(--curve-exit) var(--d, 0ms) forwards; }
 .jn-grow { transform-origin: left center; animation: jn-grow 700ms var(--curve-calm) var(--d, 0ms) backwards; }
-.jn-draw {
-  stroke-dasharray: 1;
-  animation: draw var(--dur, 1200ms) var(--curve-calm) var(--d, 0ms) backwards;
-}
-.jn-travel {
-  offset-rotate: 0deg;
-  offset-distance: 100%;
-  animation: jn-travel 2600ms var(--curve-calm) var(--d, 0ms) backwards;
-}
 .jn-ripple {
   transform-box: fill-box;
   transform-origin: center;
@@ -368,7 +247,7 @@ html:not([data-motion="paused"]) [data-nv-revealed] .pg-needle { --from: -70deg;
 }
 .jn-progress[data-paused] { animation-play-state: paused; }
 
-/* ---- 6b. Health facts: each picture plays once when its card scrolls in (not while paused) ---- */
+/* ---- 6. Health facts: each picture plays once when its card scrolls in (not while paused) ---- */
 @keyframes ring-fill {
   from { stroke-dashoffset: var(--pct, 50); }
   to { stroke-dashoffset: 0; }

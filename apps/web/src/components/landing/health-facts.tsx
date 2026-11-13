@@ -1,31 +1,10 @@
 import { Info } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "./external-link";
 import { HEALTH_DISCLAIMER, HEALTH_FACTS, type HealthFact, type HealthSource } from "./health-content";
 import { SnapRow } from "./snap-row";
 import "./health-tips.css";
-
-/**
- * Underlined source link that opens in a new tab (server-rendered; no client JS). Its client twin is in
- * tip-deck.tsx: keep the two recipes the same. Inline, so its press is a tint only: transforms don't
- * apply to inline boxes.
- */
-export function ExternalLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        "rounded-sm underline decoration-current/40 underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
-        className,
-      )}
-    >
-      {children}
-      <span className="sr-only"> (opens in a new tab)</span>
-    </a>
-  );
-}
 
 /** "Source: a; b" as new-tab links, with the cards' short labels ("All sources" keeps the full ones). */
 export function SourceLinks({ sources, className }: { sources: readonly HealthSource[]; className?: string }) {
@@ -114,7 +93,6 @@ export function FactsRow({ className }: { className?: string }) {
       label="Health facts"
       className={className}
       itemClassName="basis-[85%] sm:basis-[46%]"
-      gridFrom="md"
       gridClassName="md:grid-cols-2 md:gap-4 lg:grid-cols-4 lg:gap-5"
     >
       {facts.map((f) => (

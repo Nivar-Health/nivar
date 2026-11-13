@@ -121,7 +121,7 @@
   @media (width < 40rem) {
     .nv-care-rxcard {
       padding: 4px 16px 14px;
-      border-radius: 18px;
+      border-radius: 20px;
       background: var(--aqua);
     }
     .nv-care-rule {
@@ -193,7 +193,7 @@
   .nv-care-rxrow-meta {
     margin-top: 2px;
     color: var(--ink-2);
-    font-size: 0.875rem;
+    font-size: var(--text-small);
     font-weight: 500;
     line-height: 1.35;
   }
@@ -400,7 +400,7 @@
     }
     .nv-care-media {
       aspect-ratio: 1;
-      border-radius: 18px;
+      border-radius: 20px;
     }
     .nv-care-photo {
       object-position: 50% 50%;

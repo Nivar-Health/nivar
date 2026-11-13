@@ -229,6 +229,8 @@ function useCurrentSection(): { current: string | null; jumpTo: (hash: `#${strin
 
 /** The links' inline padding: the bar spans the label, not the pill. */
 const LINK_PAD = 14;
+/** Where the desktop links show (lg:block below). */
+const DESKTOP_LINKS = "(min-width: 64rem)";
 
 /**
  * Moves the one indicator under `id`'s link, or fades it out. Coming back from hidden, or after a
@@ -258,6 +260,9 @@ function DesktopLinks({ active }: { active: string | null }) {
 
   useLayoutEffect(() => {
     activeRef.current = active;
+    // Below lg the links are not displayed: measuring them would only force a style and layout pass on
+    // every section change while a phone scrolls. The ResizeObserver places the bar when they appear.
+    if (!window.matchMedia(DESKTOP_LINKS).matches) return;
     if (navRef.current && barRef.current) placeIndicator(navRef.current, barRef.current, active, false);
   }, [active]);
 

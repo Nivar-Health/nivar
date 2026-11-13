@@ -22,6 +22,8 @@ const KEYBOARD_PX = 80;
 const DIRECTION_PX = 8;
 /** Where the pill follows the scroll direction (site-nav.css): a phone held sideways. */
 const SHORT_LANDSCAPE = "(width >= 40rem) and (max-height: 32.5rem)";
+/** Where the pill leaves mid-page and the bar takes over (site-nav.css). */
+const PHONE = "(width < 40rem)";
 /** The pill's bottom edge when it cannot be measured. */
 const PILL_EDGE_PX = 76;
 const KEYBOARD_FIELD =
@@ -82,9 +84,11 @@ function attach(): () => void {
   // CTA is above it; still in view, one read of the silent CTA settles its side.
   const hero = cta?.closest("section") ?? null;
   // The hero's button counts as in view only below the pill: under it nobody can see or tap it, so the
-  // hand-off to the bar (or back to the pill) happens at the pill's lower edge, not the screen's.
+  // hand-off to the bar (or back to the pill) happens at the pill's lower edge, not the screen's. Phones
+  // are the exception: there the pill leaves with the hand-off and would uncover the button beside the
+  // bar's own, so the edge is the screen's.
   const pill = document.querySelector("[data-landing] > header .nv-nav-bar")?.getBoundingClientRect().bottom;
-  const edge = Math.round(pill && pill > 0 ? pill : PILL_EDGE_PX);
+  const edge = window.matchMedia(PHONE).matches ? 0 : Math.round(pill && pill > 0 ? pill : PILL_EDGE_PX);
   let heroCta: HeroCta | null = cta ? null : "above"; // null until the first report
   let formOn = false;
   let footerOn = false;
@@ -259,9 +263,27 @@ function attach(): () => void {
   };
 }
 
+/**
+ * attach(), and again when the screen crosses the phone width (a phone turned sideways): the hero
+ * button's hand-off edge is read once per attach, and it differs on each side.
+ */
+function attachAcrossWidths(): () => void {
+  let stop = attach();
+  const phone = window.matchMedia(PHONE);
+  const again = () => {
+    stop();
+    stop = attach();
+  };
+  phone.addEventListener("change", again);
+  return () => {
+    phone.removeEventListener("change", again);
+    stop();
+  };
+}
+
 function subscribe(notify: () => void) {
   listeners.add(notify);
-  detach ??= attach();
+  detach ??= attachAcrossWidths();
   return () => {
     listeners.delete(notify);
     if (listeners.size === 0 && detach) {

@@ -21,6 +21,36 @@
   .nv-chk-list .nv-disc-sum > .nv-disc-chev {
     margin-block-start: 1px;
   }
+  /* The contents run on under the price and the chevron, so they take two lines at 360, not four.
+     Phones only: from 640px the package cards replace these rows (their summary is hidden there). */
+  @media (width < 40rem) {
+    .nv-chk-list .nv-disc-sum:has(> .nv-disc-text > .nv-disc-meta) {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        "lead title value chev"
+        "lead meta meta meta";
+      gap: 0 0.75rem;
+    }
+    .nv-chk-list .nv-disc-sum > .nv-disc-text:has(> .nv-disc-meta) {
+      display: contents;
+    }
+    .nv-chk-list .nv-disc-sum > .nv-disc-lead {
+      grid-area: lead;
+    }
+    .nv-chk-list .nv-disc-text > .nv-disc-title {
+      grid-area: title;
+    }
+    .nv-chk-list .nv-disc-text > .nv-disc-meta {
+      grid-area: meta;
+    }
+    .nv-chk-list .nv-disc-sum > .nv-disc-value {
+      grid-area: value;
+    }
+    .nv-chk-list .nv-disc-sum > .nv-disc-chev {
+      grid-area: chev;
+    }
+  }
   /* What a package includes is a fact to decide on, so it reads at the body's size and ink, not as a
      caption. */
   .nv-chk-list .nv-disc-meta {

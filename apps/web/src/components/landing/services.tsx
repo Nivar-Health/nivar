@@ -54,7 +54,7 @@ export type CareCategory = {
 };
 
 /**
- * Every service, in the order the page lists them. Check-up, ECG and consult prices come from the
+ * Every service, in the order the page lists them. Check-up, ECG and doctor's video call prices come from the
  * live catalogue (so an admin price edit shows up here); the nursing services show no number
  * because the price depends on the prescription.
  * The four procedure photos render in every build. A registered Nivar nurse checks them before the PR
@@ -148,8 +148,8 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
     {
       id: "doctor-consult",
       tier: "also",
-      name: "Doctor consult",
-      ask: "a doctor consult",
+      name: "Doctor's video call",
+      ask: "a doctor's video call",
       line: "A Nivar doctor on video, with your nurse at your side.",
       icon: Video,
       from: servicePrice("CONSULT"),
@@ -174,7 +174,7 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
 const PROMISES: { icon: LucideIcon; text: string }[] = [
   { icon: House, text: "No travel charge" },
   { icon: IndianRupee, text: "No surge pricing" },
-  { icon: ReceiptText, text: "No hidden consultation fee" },
+  { icon: ReceiptText, text: "No hidden doctor's fee" },
   { icon: RotateCcw, text: SITE.cancellation },
 ];
 
@@ -198,7 +198,7 @@ function PriceTag({ from, exact = false, compact = false }: { from: number | nul
   return (
     <p className={cn("nv-care-price flex items-baseline", compact ? "gap-1 md:gap-1.5" : "gap-1.5")}>
       {!exact && (
-        <span className={cn("font-medium text-ink-3", compact ? "text-[0.875rem] md:text-small" : "text-small")}>from</span>
+        <span className="text-small font-medium text-ink-2">from</span>
       )}
       <span
         className={cn(
@@ -377,7 +377,7 @@ function NursingCard({ c }: { c: CareCategory }) {
         {/* Only once a nursing price reaches `from` (spec Q10): the price over "Request this visit". */}
         {c.from !== null && (
           <p className="nv-care-act-price">
-            {!c.exact && <span className="text-[0.875rem] font-medium text-ink-3">from </span>}
+            {!c.exact && <span className="text-small font-medium text-ink-2">from </span>}
             {inr(c.from)}
           </p>
         )}

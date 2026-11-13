@@ -27,9 +27,9 @@ import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "./external-link";
 import type { HealthSource, HealthTip, TipCategory } from "./health-content";
 import { buttonClass } from "./primitives";
 import { Pearl } from "./take-a-minute/pearl";
@@ -62,6 +62,13 @@ const SWIPE_MIN = 48;
 const FOLLOW = 0.35;
 /** How long Share shows "Copied" (K4). */
 const NOTE_MS = 2000;
+/** The first block after `el` that is displayed (the walk photo is not, on phones). */
+function nextShown(el: Element | null): Element | null {
+  let next = el?.nextElementSibling ?? null;
+  while (next && next.getClientRects().length === 0) next = next.nextElementSibling;
+  return next;
+}
+
 /** The blocks under the card glide to their new place for this long (health-tips.css), plus a margin. */
 const GLIDE_MS = 260;
 /** Pressed state (mobile addendum M2): a tint and scale .97, 90 ms in and 180 ms out; tint only when reduced. */
@@ -124,27 +131,6 @@ async function shareTip(tip: HealthTip): Promise<ShareNote | null> {
   } catch {
     return "Couldn't copy";
   }
-}
-
-/**
- * Underlined source link that opens in a new tab. Client twin of the one in health-facts.tsx (keep the
- * two recipes the same). Inline, so its press is a tint only.
- */
-export function ExternalLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        "rounded-sm underline decoration-current/40 underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
-        className,
-      )}
-    >
-      {children}
-      <span className="sr-only"> (opens in a new tab)</span>
-    </a>
-  );
 }
 
 const MINUTE_LABEL = { breathe: "Breathe with a guide", rest: "Use the 5-minute rest timer" } as const;
@@ -275,7 +261,7 @@ export function TipDeck({
     stepFrom.current = null;
     const card = cardRef.current;
     const grid = card?.parentElement;
-    const below = card?.nextElementSibling;
+    const below = nextShown(card);
     if (from === null || !grid || !below) return;
     grid.removeAttribute("data-tip-glide");
     const shift = from - below.getBoundingClientRect().top;
@@ -290,7 +276,7 @@ export function TipDeck({
 
   const go = (step: 1 | -1) => {
     const next = (index + step + count) % count;
-    const below = cardRef.current?.nextElementSibling;
+    const below = nextShown(cardRef.current);
     stepFrom.current = below && !motionPaused() ? below.getBoundingClientRect().top : null;
     setDir(step);
     setTouched(true);

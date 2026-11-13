@@ -354,7 +354,7 @@ export const VISIT_CHECKLIST: ChecklistItem[] = [
   },
   {
     id: "papers",
-    text: "Keep your medicines and recent reports handy for the doctor's video call.",
+    text: "Keep your medicines and recent reports ready for the doctor's video call.",
     source: { label: "Nivar visit tip" },
   },
 ];

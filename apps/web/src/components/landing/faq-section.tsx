@@ -102,7 +102,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
   const wa = Boolean(SITE.whatsapp);
   const channel = wa ? "on WhatsApp or when we call you" : "when we call you";
   const prices = checkupPrices(fromPrice, completePrice);
-  // In the order a family decides: what, where, how soon, what it costs, then who comes and what follows.
+  // In the order a family decides: what, where, how quickly, what it costs, then who comes and what follows.
   const items: FaqItem[] = [
     {
       id: "faq-services",
@@ -132,9 +132,9 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
       ),
     },
     {
-      // Only promises the page already makes: who calls, how soon, the hours, and a visit at the agreed slot.
+      // Only promises the page already makes: who calls, how quickly, the hours, and a visit at the agreed slot.
       id: "faq-soon",
-      q: "How soon can a nurse come?",
+      q: "How quickly can a nurse come?",
       a: (
         <>
           <p>
@@ -155,7 +155,7 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
             {prices
               ? `${prices} For injections, drips, dressings and blood tests, we tell you the full price ${channel}, before we confirm.`
               : `We tell you the full price ${channel}, before we confirm.`}{" "}
-            There is no travel charge, no surge pricing and no hidden consultation fee.
+            There is no travel charge, no surge pricing and no hidden doctor&apos;s fee.
           </p>
           <More href="#check-ups">See check-up prices</More>
         </>

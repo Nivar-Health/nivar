@@ -77,8 +77,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    color: var(--ink-3);
-    font-size: 0.875rem;
+    color: var(--ink-2);
+    font-size: var(--text-small);
     font-weight: 500;
   }
 

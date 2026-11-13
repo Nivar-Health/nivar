@@ -34,7 +34,6 @@
   .nv-habits-walk {
     grid-area: walk;
     align-self: stretch;
-    aspect-ratio: auto;
     min-height: 16rem;
   }
   .nv-habits-facts {
@@ -107,12 +106,6 @@
     height: 64px;
     align-items: center;
   }
-}
-
-/* The resting dots under the facts on phones: the row's default tint all but vanishes on this band, so
-   they take the field-edge colour (3:1), enough to see "four cards" outdoors. */
-.nv-habits-facts .nv-snap-dots > span:not([data-active]) {
-  background: var(--input-line);
 }
 
 /* The fact cards carry data-nv-reveal only to start their pictures ([data-nv-revealed], landing.css §6b).

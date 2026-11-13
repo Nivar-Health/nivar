@@ -91,9 +91,10 @@ const KIT_ALT =
 const PARENT_POINTS: { icon: LucideIcon; text: string }[] = [
   SITE.whatsapp
     ? { icon: MessageCircle, text: `Message us from wherever you live. We visit their home in ${SITE.area}.` }
-    : { icon: PhoneCall, text: `Ask us to call you, wherever you live. We visit their home in ${SITE.area}.` },
-  { icon: Bell, text: "We update you when the nurse is on the way, arrives and finishes." },
-  { icon: FileText, text: "The visit report comes to you on WhatsApp, as well as to them." },
+    : // The form takes Indian mobile numbers only.
+      { icon: PhoneCall, text: `Ask us to call you from any city in India. We visit their home in ${SITE.area}.` },
+  { icon: Bell, text: SITE.forFamily.updates },
+  { icon: FileText, text: SITE.forFamily.report },
 ];
 
 const ALSO_FOR: { icon: LucideIcon; text: ReactNode }[] = [
@@ -156,7 +157,7 @@ export function YourNurse() {
               </h3>
               <div className="nv-nurse-kit mt-3 sm:mt-4">
                 {/* Below lg only: beside the copy on a desktop the door photo is the picture. */}
-                <div className="relative aspect-[3/2] overflow-hidden rounded-[1.25rem] bg-aqua md:max-lg:aspect-auto lg:hidden">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem] bg-aqua md:max-lg:aspect-auto lg:hidden">
                   <Image
                     src="/img/kit-flatlay.jpg"
                     alt={KIT_ALT}
@@ -282,10 +283,10 @@ function ParentsPanel() {
       {...revealProps(0)}
       className="grid scroll-mt-24 grid-cols-1 overflow-hidden rounded-[2rem] bg-aqua p-3 sm:p-6 md:grid-cols-12 md:gap-8 lg:gap-12 lg:p-10"
     >
-      {/* 4:3 on phones, the whole frame with all three faces. From md the photo sits beside the copy: a
+      {/* 16:10 below md, like the door photo above; all three faces stay in frame. From md the photo sits beside the copy: a
           centred square up to 1099px, which keeps the nurse's face whole, then the full height of the copy.
           The 1100px step is in rem so it sorts after lg: in the built CSS (a px step lands before it). */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[1.25rem] bg-aqua-2 sm:aspect-[16/10] md:col-span-6 md:aspect-square md:self-center lg:min-h-[22rem] lg:rounded-[1.5rem] min-[68.75rem]:aspect-auto min-[68.75rem]:self-stretch xl:col-span-7">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-[1.25rem] bg-aqua-2 md:col-span-6 md:aspect-square md:self-center lg:min-h-[22rem] lg:rounded-[1.5rem] min-[68.75rem]:aspect-auto min-[68.75rem]:self-stretch xl:col-span-7">
         <Image
           src="/img/nurse-family-call.jpg"
           alt="A Nivar nurse takes notes while an older couple on their sofa video-call their son"
@@ -322,8 +323,6 @@ function ParentsPanel() {
           buttonClassName="w-full sm:w-auto"
           message="Hi Nivar, I'd like to book a home visit for my parent."
           forWho="A parent"
-          need="I'd like to book a home visit for my parent."
-          needLabel="A visit for a parent"
         />
       </div>
     </article>
