@@ -62,6 +62,8 @@ These are deliberately simulated for the MVP and isolated so they can be swapped
 - Maps: Leaflet + OpenStreetMap tiles.
 - Video: peer-to-peer WebRTC with Supabase Realtime signalling (later a managed provider for production NAT traversal).
 
+The on-screen demo aids (the demo accounts on the sign-in pages, the demo OTP, the nurse's simulated drive, the prefilled test card) show while `NEXT_PUBLIC_DEMO_MODE` is unset. Set it to `false` at launch to hide them from patients and staff.
+
 ## Tests
 
 ```bash
