@@ -47,6 +47,49 @@
     transition-duration: 90ms;
   }
 
+  /* ---- Callback: the heading answers its own question once a request is sent (data-sent, set by the
+     form to the promise's state). Both phrases are in the HTML; only one is ever displayed, so only one
+     is read. Out of hours the confirmation names the emergency numbers itself. ---- */
+  .nv-cb-sent,
+  #callback[data-sent] .nv-cb-ask {
+    display: none;
+  }
+  #callback[data-sent] .nv-cb-sent {
+    display: inline;
+  }
+  #callback:is([data-sent="closed"], [data-sent="closing"]) .nv-cb-emergency {
+    display: none;
+  }
+
+  /* ---- Callback: the optional row, quieter than the fields it follows. One 15px line in teal, a 48px
+     row; the shared drop-down is untouched. Each selector outranks its disclosure.css counterpart. ---- */
+  .nv-disc--quiet > .nv-disc-sum {
+    min-block-size: 3rem;
+    padding-block: 0.5rem;
+  }
+  .nv-disc--quiet .nv-disc-title,
+  .nv-disc.nv-disc--quiet[open] > .nv-disc-sum .nv-disc-title {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--primary);
+  }
+
+  /* ---- Callback: the success state arrives with a short rise; a fade alone without motion ---- */
+  .nv-cb-success {
+    animation: nv-cb-arrive 200ms var(--curve-standard) both;
+  }
+  @keyframes nv-cb-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes nv-cb-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
   /* ---- Footer: "Stay healthy · ಆರೋಗ್ಯವಾಗಿರಿ · स्वस्थ रहिए". Each phrase carries its dot out in the gap
      before it, and the row clips its left edge, so a phrase that wraps to a new line (360px) never
      leaves a dot dangling at a line end or leading the next one. ---- */
@@ -144,6 +187,12 @@
     .nv-foot-link:active {
       transform: none;
     }
+    .nv-cb-success {
+      animation-name: nv-cb-fade;
+    }
+  }
+  html[data-motion="paused"] .nv-cb-success {
+    animation-name: nv-cb-fade;
   }
   html[data-motion="paused"] .nv-cb-clear:active,
   html[data-motion="paused"] .nv-cb-minute:active,

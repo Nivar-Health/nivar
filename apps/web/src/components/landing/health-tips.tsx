@@ -29,16 +29,17 @@ const TEL_BUTTON =
 
 /**
  * The one emergency note in this section (the footer keeps its own line): a plain card with a red edge,
- * never a red box, so it reads as a safety net and not as an alarm. Always visible, named so it can be
- * found by landmark or heading, and its sentence is the reviewed one, word for word. From md to lg it
- * spans the section, so the calls sit beside the sentence.
+ * never a red box, so it reads as a safety net and not as an alarm. The edge is a straight bar the card's
+ * corners clip (the padding keeps the buttons' focus rings clear of the clip). Always visible, named so
+ * it can be found by landmark or heading, and its sentence is the reviewed one, word for word. From md
+ * to lg it spans the section, so the calls sit beside the sentence.
  */
 function EmergencyNote({ className }: { className?: string }) {
   return (
     <aside
       aria-labelledby="habits-sos-title"
       className={cn(
-        "nv-habits-sos rounded-2xl bg-card p-4 shadow-[inset_3px_0_0_var(--danger),0_0_0_1px_var(--border-strong)] forced-colors:border forced-colors:border-[CanvasText] sm:p-5 md:max-lg:flex md:max-lg:items-center md:max-lg:gap-6",
+        "nv-habits-sos relative overflow-hidden rounded-2xl bg-card p-4 pl-5 ring-1 ring-border-strong ring-inset before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-danger forced-colors:border forced-colors:border-[CanvasText] sm:p-5 sm:pl-6 md:max-lg:flex md:max-lg:items-center md:max-lg:gap-6",
         className,
       )}
     >
@@ -48,7 +49,8 @@ function EmergencyNote({ className }: { className?: string }) {
           In an emergency
         </h3>
         <p className="mt-1.5 text-small/[1.5] text-pretty text-ink">
-          {EMERGENCY_NOTE.lead} Call 112 (or 108 for an ambulance) now. {EMERGENCY_NOTE.tail}
+          {/* The verb stays with its number when the line wraps. */}
+          {EMERGENCY_NOTE.lead} Call{" "}112 (or 108 for an ambulance) now. {EMERGENCY_NOTE.tail}
         </p>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 md:max-lg:mt-0 md:max-lg:flex-none">
@@ -149,7 +151,9 @@ export async function HealthTips() {
   );
 
   return (
-    <Section id="health-tips" titleId="health-tips-title" divider="top">
+    // A sage band of its own: it sets the coda apart from the callback's light band above, and the dark
+    // footer follows without a seam to draw.
+    <Section id="health-tips" tone="wash" titleId="health-tips-title">
       <Container>
         <div className="nv-habits-grid grid grid-cols-1">
           <SectionTitle

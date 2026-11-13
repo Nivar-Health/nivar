@@ -1,11 +1,20 @@
+import { istParts } from "@/server/time";
+
 /**
  * The WhatsApp number, with country code (91...). Set NEXT_PUBLIC_WHATSAPP_NUMBER; a bare 10-digit
- * Indian mobile gets the 91 prefix. While it is unset the site hides WhatsApp entry points and its
- * WhatsApp CTAs fall back to the callback form.
+ * Indian mobile gets the 91 prefix, as does one written with a trunk 0. While it is unset the site
+ * hides WhatsApp entry points and its WhatsApp CTAs fall back to the callback form. A value that is
+ * not an Indian mobile counts as unset: a wa.me link to a wrong number would sit on every button.
  */
 const whatsappDigits = (() => {
-  const d = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, "");
-  return d.length === 10 ? `91${d}` : d;
+  const raw = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
+  const d = raw.replace(/\D/g, "").replace(/^0+/, "");
+  const full = d.length === 10 ? `91${d}` : d;
+  if (!full || /^91[6-9]\d{9}$/.test(full)) return full;
+  if (typeof window === "undefined") {
+    console.warn(`NEXT_PUBLIC_WHATSAPP_NUMBER "${raw}" is not an Indian mobile number; WhatsApp stays hidden.`);
+  }
+  return "";
 })();
 
 /** Operational facts shown to patients. Change them here only. */
@@ -61,3 +70,36 @@ export const SITE = {
     full: "Nivar is not an emergency service. In an emergency, call 112 (or 108 for an ambulance).",
   },
 } as const;
+
+/** "10:42 AM", or "7 AM" on the hour, for minutes after midnight. */
+export function clockLabel(minutes: number): string {
+  const m = ((minutes % 1440) + 1440) % 1440;
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  const h12 = h % 12 || 12;
+  return `${h12}${min ? `:${String(min).padStart(2, "0")}` : ""} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/**
+ * What a callback request sent at `at` can be promised, in India time. `open`: a call by a clock time.
+ * `closing`: inside the last stretch before closing, so the call may come before then or after opening.
+ * `closed`: the call comes after opening. Never names a day: the working days are not confirmed.
+ */
+export type CallbackPromise =
+  | { state: "open"; by: string }
+  | { state: "closing"; closesAt: string; opensAt: string }
+  | { state: "closed"; opensAt: string };
+
+export function callbackPromiseAt(at: Date = new Date()): CallbackPromise {
+  return callbackPromiseFor(istParts(at).minutes);
+}
+
+/** The same, for minutes after midnight in India. */
+export function callbackPromiseFor(minutes: number): CallbackPromise {
+  const { opensAt, closesAt } = SITE.hours;
+  const within = SITE.callbackWithinMinutes;
+  const opens = clockLabel(opensAt);
+  if (minutes >= opensAt && minutes + within <= closesAt) return { state: "open", by: clockLabel(minutes + within) };
+  if (minutes >= opensAt && minutes < closesAt) return { state: "closing", closesAt: clockLabel(closesAt), opensAt: opens };
+  return { state: "closed", opensAt: opens };
+}

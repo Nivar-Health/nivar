@@ -109,6 +109,12 @@
   }
 }
 
+/* The resting dots under the facts on phones: the row's default tint all but vanishes on this band, so
+   they take the field-edge colour (3:1), enough to see "four cards" outdoors. */
+.nv-habits-facts .nv-snap-dots > span:not([data-active]) {
+  background: var(--input-line);
+}
+
 /* The fact cards carry data-nv-reveal only to start their pictures ([data-nv-revealed], landing.css §6b).
    The row already has its own entrance (SnapRow), so the usual fade-up stays off. */
 html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed]) {
@@ -179,11 +185,17 @@ html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed
 }
 .nv-habits-launch-time {
   margin-top: 1px;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.35;
   font-weight: 500;
   color: var(--on-pine-2);
   font-variant-numeric: tabular-nums;
+}
+/* Under 320px (a zoomed phone) two launchers share a row only without their glyphs. */
+@media (width < 20rem) {
+  .nv-habits-launch-icon {
+    display: none;
+  }
 }
 .nv-habits-launch--first {
   color: var(--ink);

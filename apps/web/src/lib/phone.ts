@@ -18,11 +18,28 @@ const KEEP = 12;
  * being typed. Digits past ten are kept (up to twelve): the check below says what is wrong.
  */
 export function phoneDigits(input: string): string {
+  return readDigits(input).digits;
+}
+
+/**
+ * phoneDigits, and where a caret at `caret` in `input` lands among the digits it returns, so a field
+ * that regroups the number on every keystroke can put the caret back where the visitor was typing.
+ */
+export function phoneDigitsAt(input: string, caret: number): { digits: string; caret: number } {
+  const { skip, digits } = readDigits(input);
+  const before = input.slice(0, caret).replace(/\D/g, "").length;
+  return { digits, caret: Math.min(Math.max(before - skip, 0), digits.length) };
+}
+
+/** The digits kept, and how many leading digits were a prefix. */
+function readDigits(input: string): { skip: number; digits: string } {
   const plus = /^\s*\+/.test(input);
+  const all = input.replace(/\D/g, "");
   // No mobile number starts with 0, so leading zeros are always a prefix ("0…", "0091…").
-  let d = input.replace(/\D/g, "").replace(/^0+/, "");
-  if (d.startsWith("91") && (plus || d.length === 12)) d = d.slice(2);
-  return d.slice(0, KEEP);
+  let skip = all.length - all.replace(/^0+/, "").length;
+  const rest = all.slice(skip);
+  if (rest.startsWith("91") && (plus || rest.length === 12)) skip += 2;
+  return { skip, digits: all.slice(skip, skip + KEEP) };
 }
 
 /** "98450 12345", grouped as it is typed. */

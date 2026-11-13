@@ -300,6 +300,15 @@
     visibility: hidden;
     transition: visibility 0s linear 500ms;
   }
+  /* Under reduced motion the visitor starts the demo with Play: a short fade, and the still leaves with it. */
+  @media (prefers-reduced-motion: reduce) {
+    .nv-chk-dash {
+      animation-duration: 200ms;
+    }
+    .nv-chk-mon:has(> .nv-chk-dash) > .nv-chk-still {
+      transition-delay: 200ms;
+    }
+  }
 
   /* A still frame's plot, drawn as its monitor's canvas draws it: the same millimetre grid (4px a
      millimetre, 5px once the plot is 480px wide; hairlines one device pixel thick) and the same trace

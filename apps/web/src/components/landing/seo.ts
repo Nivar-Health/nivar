@@ -5,7 +5,8 @@ const SHARE_IMAGE = {
   url: "/img/og-home.jpg",
   width: 1200,
   height: 630,
-  alt: "A Nivar nurse checking an older woman's blood pressure at home",
+  // The photo is illustrative, so the description does not say the people are Nivar's.
+  alt: "A nurse checks an older woman's blood pressure at home",
 };
 
 /**
@@ -38,5 +39,7 @@ export function pageMetadata({
       images: [SHARE_IMAGE],
     },
     twitter: { card: "summary_large_image", title, description, images: [SHARE_IMAGE.url] },
+    // iOS would turn any run of digits (the confirmed number, 112, a price) into a call link of its own.
+    formatDetection: { telephone: false },
   };
 }

@@ -79,7 +79,7 @@ function StillUnsure({ className, phone = false }: { className?: string; phone?:
           </WhatsAppLink>
         ) : (
           <a href={CALLBACK_HREF} className={buttonClass("secondary", "mt-3 max-w-full")}>
-            Ask us to call you
+            Request a callback
           </a>
         )}
       </div>
@@ -211,8 +211,8 @@ export function FaqSection({ fromPrice, completePrice }: { fromPrice: number | n
           The doctor sees it as it is recorded and will usually ask the nurse to repeat the measurement. If something
           needs urgent attention, the doctor tells you directly on the video call and explains the next step, including
           a hospital referral if you need one.{" "}
-          {/* SITE's own sentence, with "straight away" before its full stop. */}
-          {withCallLinks(SITE.emergency.short.replace(/\.$/, ""))} straight away.
+          {/* The site's one emergency sentence, as it reads everywhere else. */}
+          {withCallLinks(SITE.emergency.short)}
         </p>
       ),
     },

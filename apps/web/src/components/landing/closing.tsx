@@ -6,11 +6,11 @@ import { EcgLine } from "@/components/brand/ecg-line";
 import { bookingEnabled } from "@/lib/features";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
-import { CallbackForm } from "./callback-form";
+import { CallbackForm, CallbackPromiseText, EmergencyText } from "./callback-form";
 import { Disclosure } from "./disclosure";
 import { STAY_HEALTHY } from "./l10n";
 import { MotionToggle } from "./motion-toggle";
-import { Container, revealProps } from "./primitives";
+import { CALLBACK_HREF, Container, revealProps } from "./primitives";
 import { Pearl } from "./take-a-minute/pearl";
 import { WhatsAppLink, whatsappHref } from "./whatsapp";
 import "./closing.css";
@@ -18,30 +18,24 @@ import "./closing.css";
 /** Short phrases (the hours) that should never break, e.g. "9 / pm" on a narrow phone. */
 const nowrap = (s: string) => <span className="whitespace-nowrap">{s}</span>;
 
-// Each promise is made once in this section: the number's privacy lives under the form's button.
+// Each promise is made once in this section: what the number is for sits at the phone field. The call's
+// time follows the clock (open, closing, closed) in India time.
 const CALLBACK_POINTS: { key: string; icon: LucideIcon; text: ReactNode }[] = [
   {
     key: "call",
     icon: Phone,
     text: (
       <span>
-        A call back within {SITE.callbackWithin}, {nowrap(SITE.hours.short)}
+        <CallbackPromiseText />
       </span>
     ),
   },
-  { key: "help", icon: Stethoscope, text: "Help working out what care you need" },
+  { key: "help", icon: Stethoscope, text: "We help you work out what care is needed." },
 ];
 
 /** Inline text link with a 44px hit area that does not change the line box. */
 const INLINE_LINK =
   "relative rounded-sm font-semibold underline underline-offset-2 focus-ring before:absolute before:-inset-x-3 before:-inset-y-3.5";
-/**
- * The 112 and 108 links: 47px tall hit areas that reach 44px wide on their outer sides, so 8px stays
- * free between the two (the links sit 25px apart). Pressed: a tint on the digits, 90 ms in, 180 out.
- */
-const TEL_LINK =
-  "relative rounded-sm font-semibold underline underline-offset-2 transition-colors duration-180 ease-standard focus-ring before:absolute before:-inset-y-3.5 active:bg-white/12 active:duration-90";
-
 const POINT_ICON =
   "flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-mint-glow ring-1 ring-white/15";
 
@@ -60,8 +54,7 @@ export function Callback() {
       className="scroll-mt-8 py-16 sm:scroll-mt-4 sm:py-20 lg:scroll-mt-0 lg:py-28"
     >
       <Container>
-        {/* overflow-clip, not hidden: it clips the glows without becoming a scroll container, so the
-            success message can stay sticky inside the card. */}
+        {/* overflow-clip, not hidden: it clips the glows without becoming a scroll container. */}
         <div className="theme-pine relative isolate overflow-clip rounded-[2rem] bg-[linear-gradient(150deg,var(--jade)_0%,var(--pond-2)_50%,var(--pond)_100%)] px-3 pt-9 pb-6 sm:p-10 lg:p-14">
           <div
             aria-hidden
@@ -77,13 +70,16 @@ export function Callback() {
               leaves, so the photo never makes the section taller than the form. */}
           <div className="grid gap-7 sm:gap-8 lg:grid-cols-12 lg:grid-rows-[auto_1fr_auto] lg:gap-x-12 lg:gap-y-8">
             <div className="px-1 sm:px-0 lg:col-span-5 lg:pt-4">
+              {/* Once a request is sent the form sets data-sent on the section, and the heading answers its
+                  own question (closing.css). */}
               <h2 id="callback-title" className="text-h2 text-balance text-white">
-                Want us to call you?
+                <span className="nv-cb-ask">Want us to call you?</span>
+                <span className="nv-cb-sent">We will call you.</span>
               </h2>
               {/* on-pine, not on-pine-2: over the top-left glow on-pine-2 falls under 4.5:1 on phones. */}
               <p className="mt-4 max-w-[46ch] text-lede text-pretty text-on-pine sm:mt-5">
-                Tell us who the visit is for and what they need. A care coordinator calls you back and tells you the
-                price before anything is booked.
+                Leave your number. {SITE.firstCall.whoCapital} calls you back and tells you the price before anything
+                is booked.
               </p>
             </div>
             {/* lg only, and lazy: hidden below that and sized 0px, so it is never fetched. 4:3 at the full height
@@ -97,16 +93,21 @@ export function Callback() {
             >
               <Image
                 src="/img/care-coordinator.jpg"
-                alt="A Nivar care coordinator wearing a headset takes notes at a desk"
+                alt="A care coordinator wearing a headset takes notes at a desk"
                 fill
                 sizes="(min-width: 1024px) 400px, 0px"
                 className="object-cover"
               />
             </div>
-            <div {...revealProps(1)} className="lg:col-span-7 lg:col-start-6 lg:row-span-3 lg:row-start-1">
+            {/* No reveal here: a form that fades in can be typed into while it is still faint. The emergency
+                line sits under the card, away from its button. */}
+            <div className="flex flex-col gap-5 lg:col-span-7 lg:col-start-6 lg:row-span-3 lg:row-start-1">
               <div className="theme-light rounded-3xl bg-white p-5 text-ink shadow-[0_40px_80px_-40px_rgb(0_0_0/0.55)] max-sm:px-4 sm:p-8">
                 <CallbackForm />
               </div>
+              <p className="nv-cb-emergency px-1 text-small text-pretty text-on-pine sm:px-0">
+                <EmergencyText tone="dark" />
+              </p>
             </div>
             {/* Below sm the points leave (the side note carries the call back); a WhatsApp or phone line stays. */}
             <ul
@@ -164,17 +165,23 @@ export function Callback() {
 /** An in-page anchor, another route (sign-in only), or the Take a minute launcher. */
 type FooterItem = { label: string; href: `#${string}` } | { label: string; route: string } | { label: string; minute: true };
 
-/** Spec §2.3. Plain `#id` links, so they work without JS and scroll natively. */
+/**
+ * Three groups in the page's order, with the names the nav and the menu use. Plain `#id` links, so
+ * they work without JS and scroll natively. The form is not the last section, so the footer keeps one
+ * quiet way to it.
+ */
 const FOOTER_COLUMNS: { id: `foot-${string}`; heading: string; items: FooterItem[] }[] = [
   {
-    id: "foot-nivar",
-    heading: "Nivar",
+    id: "foot-explore",
+    heading: "Explore",
     items: [
       { label: "Services", href: "#services" },
       { label: "How it works", href: "#how-it-works" },
       { label: "Your nurse", href: "#nurses" },
-      { label: "Compare", href: "#compare" },
+      { label: "How we compare", href: "#compare" },
       { label: "Check-ups", href: "#check-ups" },
+      { label: "Health tips", href: "#health-tips" },
+      { label: "Take a minute", minute: true },
     ],
   },
   {
@@ -190,13 +197,12 @@ const FOOTER_COLUMNS: { id: `foot-${string}`; heading: string; items: FooterItem
   },
   {
     id: "foot-help",
-    heading: "Help",
+    heading: "Get help",
     items: [
-      { label: "Health tips", href: "#health-tips" },
-      { label: "Take a minute", minute: true },
       { label: "Questions", href: "#faq" },
-      { label: "Request a callback", href: "#callback" },
-      // Staff reach /staff/login directly: the public footer doesn't advertise the console (spec Q8).
+      { label: "For your parents", href: "#for-parents" },
+      { label: "Request a callback", href: CALLBACK_HREF },
+      // Staff reach /staff/login directly: the public footer does not advertise the console.
       ...(bookingEnabled ? [{ label: "Log in", route: "/login" }] : []),
     ],
   },
@@ -242,9 +248,9 @@ export function SiteFooter() {
       <Container className="pt-16 pb-8 sm:pt-20 lg:pt-28">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-12">
           <div className="lg:col-span-5">
-            <p className="text-cta max-w-[15ch] text-balance text-white">Your OPD, at home.</p>
+            <p className="text-cta max-w-[15ch] text-balance text-white">Nursing care at home.</p>
             <p className="mt-4 max-w-[34ch] text-lede text-pretty text-on-pine-2 sm:mt-5">
-              Nurses at your door in {SITE.area}, {nowrap(SITE.hours.short)}.
+              A registered nurse comes to your home in {SITE.area}, {nowrap(SITE.hours.short)}.
             </p>
             <p className="nv-foot-hello mt-4 text-body font-medium text-mint-glow sm:mt-5">
               {STAY_HEALTHY.map((p) => (
@@ -254,8 +260,8 @@ export function SiteFooter() {
               ))}
             </p>
           </div>
-          {/* Phones: three closed drop-downs, so the footer stops repeating the menu. From sm the three
-              columns as before, each heading rendered once as its drop-down's head (spec §1.10). */}
+          {/* Phones: three closed drop-downs, so the footer stops repeating the menu. From sm three
+              columns, each heading rendered once as its drop-down's head. */}
           <nav aria-label="Footer" className="lg:col-span-7 lg:pt-2">
             <ul role="list" className="nv-disc-group--dark nv-foot-groups sm:grid sm:grid-cols-3 sm:gap-x-4">
               {FOOTER_COLUMNS.map((col) => (
@@ -291,18 +297,10 @@ export function SiteFooter() {
           <p className="flex w-fit items-start gap-2.5 rounded-2xl bg-white/8 px-4 py-3 text-small text-pretty text-white ring-1 ring-white/12">
             <Phone aria-hidden className="mt-0.5 size-4 shrink-0 text-mint-glow" />
             <span>
-              Nivar is not an emergency service. In an emergency, call{" "}
-              <a href="tel:112" className={`${TEL_LINK} text-mint-glow before:-right-2 before:-left-5`}>
-                112
-              </a>{" "}
-              (or{" "}
-              <a href="tel:108" className={`${TEL_LINK} text-mint-glow before:-right-3.5 before:-left-2`}>
-                108
-              </a>{" "}
-              for an ambulance).
+              <EmergencyText text={SITE.emergency.full} tone="dark" />
             </span>
           </p>
-          <div className="flex flex-col gap-1.5 text-caption text-on-pine-3 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+          <div className="flex flex-col gap-1.5 text-sm text-on-pine-3 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
             <p className="text-pretty">
               Health information on this page is general guidance, not a diagnosis.{" "}
               <span className="whitespace-nowrap">Photographs are illustrative.</span>

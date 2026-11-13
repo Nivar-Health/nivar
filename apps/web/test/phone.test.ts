@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkPhone, formatPhone, phoneDigits } from "../src/lib/phone.ts";
+import { checkPhone, formatPhone, phoneDigits, phoneDigitsAt } from "../src/lib/phone.ts";
 
 test("phoneDigits reads the ways people write an Indian mobile number", () => {
   for (const written of [
@@ -57,4 +57,15 @@ test("checkPhone says what is wrong and how to fix it", () => {
 
   const start = checkPhone("5845012345");
   assert.equal(!start.ok && start.problem, "start");
+});
+
+test("phoneDigitsAt keeps the caret among the same digits after a prefix is removed", () => {
+  // Typing "7" after "984" in "98450 12345" (the field reads "9847450 12345", caret after the 7).
+  assert.deepEqual(phoneDigitsAt("98474501 2345", 4), { digits: "984745012345", caret: 4 });
+  // A pasted "+91 98450 12345" with the caret at the end.
+  assert.deepEqual(phoneDigitsAt("+91 98450 12345", 15), { digits: "9845012345", caret: 10 });
+  // A caret inside the removed prefix lands at the start.
+  assert.deepEqual(phoneDigitsAt("0 98450 12345", 1), { digits: "9845012345", caret: 0 });
+  // Spaces do not count.
+  assert.deepEqual(phoneDigitsAt("98450 12345", 6), { digits: "9845012345", caret: 5 });
 });
