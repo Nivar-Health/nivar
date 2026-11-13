@@ -88,6 +88,8 @@ export interface RequestOptions {
   /** Skip attaching the bearer token. */
   anonymous?: boolean;
   headers?: Record<string, string>;
+  /** Give up after this long instead of the default (an upload may need longer). 0 waits for ever. */
+  timeoutMs?: number;
 }
 
 async function request<T>(
@@ -99,7 +101,7 @@ async function request<T>(
   const token = options.anonymous ? null : await currentAccessToken();
   const headers = token ? { ...options.headers, Authorization: `Bearer ${token}` } : options.headers;
   try {
-    return await requestJson<T>(method, path, body, { signal: options.signal, headers });
+    return await requestJson<T>(method, path, body, { signal: options.signal, headers, timeoutMs: options.timeoutMs });
   } catch (err) {
     // An authenticated call that comes back 401 means our session is no longer valid.
     if (err instanceof ApiError && err.status === 401 && token && tokenStore.get() !== null) {

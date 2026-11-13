@@ -37,11 +37,31 @@ export class ApiError extends Error {
   }
 }
 
-/** Human readable message for anything thrown by `api.*` (or elsewhere). */
-export function errorMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
+/** Shown for any failure that did not come with Nivar's own wording. */
+export const GENERIC_ERROR = "Something went wrong. Try again.";
+export const TIMEOUT_ERROR = "That took too long. Check your connection and try again.";
+export const OFFLINE_ERROR = "Can't reach Nivar right now. Check your connection and try again.";
+
+/**
+ * Human readable message for anything thrown by `api.*` (or elsewhere). Only an ApiError carries
+ * wording meant for people; any other error (a browser or library message) gives the fallback.
+ */
+export function errorMessage(err: unknown, fallback = GENERIC_ERROR): string {
   if (err instanceof ApiError) return err.message || fallback;
-  if (err instanceof Error && err.message) return err.message;
   return fallback;
+}
+
+/**
+ * The sentence for a failed response. The API's own message passes through only when the API wrote
+ * it (its errors always carry a code); a proxy, a rate limiter or a provider never reaches the screen.
+ */
+function failureMessage(status: number, errObj: { message?: string; code?: string } | undefined): string {
+  if (errObj?.code && errObj.message) return errObj.message;
+  if (status === 401) return "Your session has ended. Sign in again.";
+  if (status === 403) return "You don't have access to this.";
+  if (status === 404) return "We couldn't find that.";
+  if (status === 429) return "Too many tries. Wait a minute, then try again.";
+  return GENERIC_ERROR;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,9 +73,17 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export interface HttpOptions {
   signal?: AbortSignal;
   headers?: Record<string, string>;
+  /** Give up after this many milliseconds (default 15 s; 0 waits for ever). */
+  timeoutMs?: number;
 }
 
-/** Sends one JSON request to the API and returns the parsed body; anything but a 2xx throws ApiError. */
+export const DEFAULT_TIMEOUT_MS = 15_000;
+
+/**
+ * Sends one JSON request to the API and returns the parsed body; anything but a 2xx throws ApiError.
+ * A request that takes longer than the timeout (body included) throws ApiError(0, TIMEOUT_ERROR,
+ * "timeout"); the caller's own abort still throws the browser's AbortError, as before.
+ */
 export async function requestJson<T>(
   method: HttpMethod,
   path: string,
@@ -66,21 +94,43 @@ export async function requestJson<T>(
   const headers: Record<string, string> = { Accept: "application/json", ...options.headers };
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
+  // One controller for both the caller's signal and the timeout. A plain timer rather than
+  // AbortSignal.timeout / AbortSignal.any, which older iPhones do not have.
+  const controller = new AbortController();
+  const callerSignal = options.signal;
+  const forward = () => controller.abort(callerSignal?.reason);
+  if (callerSignal?.aborted) forward();
+  else callerSignal?.addEventListener("abort", forward, { once: true });
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  let timedOut = false;
+  const timer =
+    timeoutMs > 0
+      ? setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs)
+      : undefined;
+
   let res: Response;
+  let text: string;
   try {
     res = await fetch(url, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: options.signal,
+      signal: controller.signal,
       cache: "no-store",
     });
+    text = await res.text();
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") throw err;
-    throw new ApiError(0, "Can't reach Nivar right now. Check your connection and try again.");
+    if (timedOut) throw new ApiError(0, TIMEOUT_ERROR, "timeout");
+    if (callerSignal?.aborted) throw err;
+    throw new ApiError(0, OFFLINE_ERROR);
+  } finally {
+    clearTimeout(timer);
+    callerSignal?.removeEventListener("abort", forward);
   }
 
-  const text = await res.text();
   let data: unknown = undefined;
   if (text) {
     try {
@@ -95,16 +145,7 @@ export async function requestJson<T>(
       data && typeof data === "object" && "error" in data
         ? (data as { error?: { message?: string; code?: string } }).error
         : undefined;
-    const message =
-      errObj?.message ||
-      (res.status === 401
-        ? "Your session has expired. Please sign in again."
-        : res.status === 403
-          ? "You don't have access to this."
-          : res.status === 404
-            ? "Not found."
-            : `Request failed (${res.status}).`);
-    throw new ApiError(res.status, message, errObj?.code, data);
+    throw new ApiError(res.status, failureMessage(res.status, errObj), errObj?.code, data);
   }
 
   return data as T;

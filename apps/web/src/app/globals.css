@@ -2,8 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Nivar ships a single, light theme ("Mist & Pine"). The `dark` variant is kept only so
-   shadcn component classes compile; nothing toggles it. Dark *sections* use .theme-pine. */
+/* Nivar ships a single, light theme ("Nivar Teal", the colour of the nurses' uniform) for the public
+   site, sign-in, the patient app and the staff portals alike. The `dark` variant is kept only so shadcn
+   component classes compile; nothing toggles it. Dark *sections* use .theme-pine. */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -48,7 +49,8 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-active: var(--primary-active);
 
-  /* Brand palette (raw; never re-scoped). Usable as bg-mint, text-saffron, bg-pine, etc. */
+  /* Brand palette (raw; never re-scoped). Usable as bg-aqua, text-saffron, bg-pine, etc. Product
+     components should prefer the semantic names above. */
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
@@ -59,10 +61,8 @@
   --color-blush: var(--blush);
   --color-sky: var(--sky);
   --color-sage: var(--sage);
-  --color-sage-ink: var(--sage-ink);
   --color-teal: var(--teal);
   --color-teal-deep: var(--teal-deep);
-  --color-ivory: var(--ivory);
   --color-signal: var(--signal);
   --color-signal-ink: var(--signal-ink);
   --color-trace: var(--trace);
@@ -86,7 +86,7 @@
   --color-glyph-amber: var(--glyph-amber);
   --color-glyph-sky: var(--glyph-sky);
 
-  /* Landing palette "Nivar Teal" (used by the public site only) */
+  /* The public site's own names for the same family, plus its accents */
   --color-pond: var(--pond);
   --color-pond-2: var(--pond-2);
   --color-jade: var(--jade);
@@ -112,20 +112,19 @@
   --font-display: var(--font-general), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-general), ui-sans-serif, system-ui, sans-serif;
   --font-accent: var(--font-newsreader, ui-serif), Georgia, "Times New Roman", serif;
-  --font-kn: var(--font-general), var(--font-noto-kn, "Noto Sans Kannada"), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
-  --font-deva: var(--font-general), var(--font-noto-deva, "Noto Sans Devanagari"), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Type scale (font-size + line-height + tracking + weight). Landing only. */
+  /* Type scale (font-size + line-height + tracking + weight). */
   --text-h1: clamp(2.5rem, 1.45rem + 4.5vw, 4.75rem);
   --text-h1--line-height: 1.02;
   --text-h1--letter-spacing: -0.038em;
   --text-h1--font-weight: 600;
-  --text-cta: clamp(2.5rem, 1.5rem + 3.8vw, 4.25rem);
+  --text-cta: clamp(2.25rem, 1.5rem + 3.8vw, 4.25rem);
   --text-cta--line-height: 1.03;
   --text-cta--letter-spacing: -0.036em;
   --text-cta--font-weight: 600;
-  --text-h2: clamp(2.125rem, 1.35rem + 2.7vw, 3.5rem);
+  /* 30px at 360 wide, so the page's one h1 stays clearly larger than section titles; 56px at 1440. */
+  --text-h2: clamp(1.875rem, 1.333rem + 2.41vw, 3.5rem);
   --text-h2--line-height: 1.06;
   --text-h2--letter-spacing: -0.032em;
   --text-h2--font-weight: 600;
@@ -143,12 +142,12 @@
   --text-body--line-height: 1.6;
   --text-small: 0.9375rem;
   --text-small--line-height: 1.55;
+  /* Secondary sentences in tight columns. The floor for anything a patient or family reads. */
+  --text-note: 0.875rem;
+  --text-note--line-height: 1.5;
+  /* Labels of a few words only (eyebrows, units, chips); never a sentence. */
   --text-caption: 0.8125rem;
   --text-caption--line-height: 1.45;
-  --text-stat: clamp(3rem, 2rem + 3.4vw, 4.5rem);
-  --text-stat--line-height: 1;
-  --text-stat--letter-spacing: -0.04em;
-  --text-stat--font-weight: 600;
   --text-rotator: clamp(1.25rem, 0.82rem + 2.14vw, 2.75rem);
   --text-rotator--line-height: 1.45;
   --text-rotator--font-weight: 600;
@@ -162,11 +161,11 @@
   --radius-3xl: 24px;
   --radius-4xl: 32px;
 
-  /* Shadows: tinted with pine ink, never grey-black */
-  --shadow-xs: 0 1px 2px rgb(16 32 27 / 0.05);
-  --shadow-soft: 0 1px 2px rgb(16 32 27 / 0.04), 0 8px 24px -12px rgb(16 32 27 / 0.1);
-  --shadow-lift: 0 2px 4px rgb(16 32 27 / 0.04), 0 24px 48px -20px rgb(16 32 27 / 0.2);
-  --shadow-glass: 0 12px 32px -16px rgb(16 32 27 / 0.3);
+  /* Shadows: tinted with the deep teal ink (--shade-ink, set on :root), never grey-black */
+  --shadow-xs: 0 1px 2px rgb(var(--shade-ink) / 0.05);
+  --shadow-soft: 0 1px 2px rgb(var(--shade-ink) / 0.04), 0 8px 24px -12px rgb(var(--shade-ink) / 0.1);
+  --shadow-lift: 0 2px 4px rgb(var(--shade-ink) / 0.04), 0 24px 48px -20px rgb(var(--shade-ink) / 0.2);
+  --shadow-glass: 0 12px 32px -16px rgb(var(--shade-ink) / 0.3);
 
   /* Easing utilities: ease-calm, ease-standard, ease-exit, ease-breath */
   --ease-calm: var(--curve-calm);
@@ -174,11 +173,11 @@
   --ease-exit: var(--curve-exit);
   --ease-breath: var(--curve-breath);
 
-  /* App-wide animations (names unchanged; pulse is slower and softer) */
+  /* App-wide animations (pulse is slower and softer; breathe is the loader's slow fade) */
   --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   --animate-ecg-sweep: ecg-sweep 3.2s linear infinite;
   --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-heartbeat: heartbeat 1.4s ease-in-out infinite;
+  --animate-breathe: breathe 2.8s cubic-bezier(0.37, 0, 0.63, 1) infinite;
 
   @keyframes pulse-ring {
     0% {
@@ -209,86 +208,87 @@
       transform: translateY(0);
     }
   }
-  @keyframes heartbeat {
+  @keyframes breathe {
     0%,
-    40%,
     100% {
-      transform: scale(1);
+      opacity: 1;
     }
-    15% {
-      transform: scale(1.08);
-    }
-    28% {
-      transform: scale(0.98);
+    50% {
+      opacity: 0.55;
     }
   }
 }
 
 :root {
-  /* ---- Raw palette: Mist & Pine (never re-scoped) ---------------------------------- */
-  --mist: #f6f8f6; /* page */
-  --white: #ffffff; /* cards */
-  --wash: #edf3ef; /* sage band, quiet fills */
-  --mint: #e1eee7; /* chips, icon tiles, selected */
-  --sand: #f4efe4; /* warm band (Everyday care), diabetes tint */
+  /* ---- Raw palette: Nivar Teal (never re-scoped) ------------------------------------ */
+  /* Contrast (WCAG): ink on white 12.35, on mist 11.76; ink-2 on white 7.58, on aqua 6.47; ink-3 on
+     white 5.83, on mist 5.55, on aqua 4.98 (never on aqua-2: 4.26); white on jade 9.56; jade on aqua
+     8.16; white on pond 13.84. */
+  --mist: #f6fafb; /* app page */
+  --white: #ffffff; /* cards, and the public site's page */
+  --wash: #edf4f6; /* quiet fills, secondary buttons */
+  --aqua: #e4eff2; /* muted and accent fills, chips, selected, tinted bands */
+  --aqua-2: #cbe0e6; /* tracks and pressed tints; never under ink-3 */
+  --mint: var(--aqua); /* older name for the selected tint */
+  --sand: #f4efe4; /* warm tint */
   --blush: #f6ece9; /* heart tint */
   --sky: #e7eef4; /* vitals tint */
-  --ivory: #ffffff; /* legacy name, unused */
 
-  --ink: #10201b; /* headings, primary text */
-  --ink-2: #43524c; /* ledes, body copy */
-  --ink-3: #5a6964; /* meta, captions, hints */
-  --sage-ink: #3f6a5e; /* serif accent phrase */
-  --sage: #8db5a4; /* decorative strokes only, never text (2.26:1) */
+  --ink: #013a48; /* headings, primary text */
+  --ink-2: #3d5862; /* ledes, body copy */
+  --ink-3: #4f6973; /* meta and labels of 14px or more */
+  --sage: #8fb3bd; /* decorative strokes only, never text */
 
-  --teal: #0e6655; /* icons, glyph strokes, grid tint */
-  --teal-deep: #0e4f45; /* the action colour */
-  --primary-hover: #0b4339;
-  --primary-active: #08372f;
+  --teal: #016a80; /* icons, glyph strokes, grid tint */
+  --jade: #014c5e; /* the action colour (the logo tile) */
+  --jade-hover: #013f4e;
+  --jade-active: #01323e;
+  --teal-deep: var(--jade);
+  --primary-hover: var(--jade-hover);
+  --primary-active: var(--jade-active);
 
+  /* Status. Each reads 4.5:1 or more on white, mist, aqua and its own tint, and the three sit at
+     different lightness (L* 45, 39, 32) so they stay apart in greyscale and for red-green colour
+     blindness. A status is always a word too, never colour alone. */
   --signal-ink: #0b7148; /* "Live" / "Normal" as text on light */
   --trace: #5fd6a6; /* traces, live dots and logo dot on dark */
-  --success: #16704a;
+  --success: #14794f;
   --success-bg: #e6f2ec;
-  --warning: #8f5b0c;
+  --warning: #6b4304;
   --warning-bg: #fbf1df;
-  --warning-ink: #7a4d08;
+  --warning-ink: var(--warning);
   --saffron: var(--warning);
   --saffron-foreground: #ffffff;
-  --danger: #b23a30;
+  --danger: #a63228;
   --danger-bg: #fdf3f2;
-  --danger-hover: #9a3129;
+  --danger-hover: #8e2a22;
 
-  --hairline: #dde5e1;
-  --hairline-strong: #c5d2cc;
-  --input-line: #788d85; /* 3.53:1 on white */
-  --input-hover: #5b7068;
+  --hairline: #d5e4e9; /* dividers and card edges: decoration, not a control's boundary */
+  --hairline-strong: #bcd3da;
+  --input-line: #648794; /* field and switch edges: 3.86 on white, 3.30 on aqua */
+  --input-hover: #4f6973;
 
-  --pine: #0d2420;
-  --pine-raised: #13302a;
-  --on-pine: #f1f6f3;
-  --on-pine-2: #b7c9c1;
-  --on-pine-3: #93aaa1;
-  --pine-accent: #9ccbb9;
-  --ring-on-dark: #7fd1b5;
+  /* Deep teal panels (the Live band, the footer, the sign-in brand panel, Take a minute). */
+  --pond: #012b36;
+  --pond-2: #013a48;
+  --pine: var(--pond);
+  --pine-raised: #063845;
+  --on-pine: #f0f7f9; /* 13.84 on pond */
+  --on-pine-2: #b4ccd3; /* 8.94 on pond */
+  --on-pine-3: #8faeb8; /* 6.37 on pond, 5.37 on pine-raised; never on jade (4.06) */
+  --pine-accent: #9ccfdb;
+  --mint-glow: #8ed3e0;
+  --ring-on-dark: var(--mint-glow); /* 8.96 on pond */
   --amber-on-dark: #e9c27a;
+  --shade-ink: 1 43 54; /* pond, as rgb channels for the shadow-* tokens */
 
   --glyph-rose: #b4574e;
   --glyph-amber: #9a6b1e;
   --glyph-sky: #3d6684;
 
-  /* Landing: "Nivar Teal", the colour of the nurses' uniform. Contrast (WCAG): white on jade 9.56,
-     jade on aqua 8.16, landing ink-3 on aqua 4.98, white on pond 13.9, ink on marigold 6.02,
-     whatsapp-ink on whatsapp 6.36, marigold-ink on marigold-tint 5.81, rose-ink on rose-tint 5.05,
-     sky-ink on sky-tint 4.58. Marigold is the one accent: the main call to action only. */
-  --pond: #012b36;
-  --pond-2: #013a48;
-  --jade: #014c5e;
-  --jade-hover: #013f4e;
-  --jade-active: #01323e;
-  --aqua: #e4eff2;
-  --aqua-2: #cbe0e6;
-  --mint-glow: #8ed3e0;
+  /* Accents. Contrast: ink on marigold 6.02, whatsapp-ink on whatsapp 6.36, marigold-ink on
+     marigold-tint 5.81, rose-ink on rose-tint 5.05, sky-ink on sky-tint 4.58. Marigold is the
+     public site's one call to action; the product's primary action is jade. */
   --marigold: #f2a541;
   --marigold-hover: #e8952b;
   --marigold-tint: #fdf3e3;
@@ -303,20 +303,21 @@
   --whatsapp-hover: #1ebe5a;
   --whatsapp-ink: #073b28;
 
-  --chart-1: #0e4f45;
-  --chart-2: #2f8a6e;
-  --chart-3: #4f7590;
-  --chart-4: #b07d27;
-  --chart-5: #6f9a8b;
+  /* Charts: each 3:1 or more on a white card, and apart in lightness from its neighbours. */
+  --chart-1: var(--jade);
+  --chart-2: #2f6db5;
+  --chart-3: #14794f;
+  --chart-4: #a86a12;
+  --chart-5: #6c8f9a;
 
-  --sidebar: #f1f5f2;
+  --sidebar: #eef5f7;
   --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--teal-deep);
+  --sidebar-primary: var(--jade);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--mint);
+  --sidebar-accent: var(--aqua);
   --sidebar-accent-foreground: var(--ink);
   --sidebar-border: var(--hairline);
-  --sidebar-ring: var(--teal-deep);
+  --sidebar-ring: var(--jade);
 
   --radius: 0.75rem;
 
@@ -335,28 +336,50 @@
   --background: var(--mist);
   --foreground: var(--ink);
   --foreground-2: var(--ink-2);
-  --heading-accent: var(--sage-ink);
+  --heading-accent: var(--jade);
   --card: var(--white);
   --card-foreground: var(--ink);
   --popover: var(--white);
   --popover-foreground: var(--ink);
-  --primary: var(--teal-deep);
+  --primary: var(--jade);
   --primary-foreground: #ffffff;
   --secondary: var(--wash);
   --secondary-foreground: var(--ink);
-  --muted: var(--wash);
+  --muted: var(--aqua);
   --muted-foreground: var(--ink-3);
-  --accent: var(--mint);
+  --accent: var(--aqua);
   --accent-foreground: var(--ink);
   --destructive: var(--danger);
   --border: var(--hairline);
   --border-strong: var(--hairline-strong);
   --input: var(--input-line);
-  --ring: var(--teal-deep);
-  --signal: #1e9563; /* live dots on light surfaces: 3.18-3.79:1 */
+  --ring: var(--jade);
+  --signal: #1e9563; /* live dots on light surfaces: 3.79 on white, 3.61 on mist */
 }
 
-/* ---- Semantic tokens: deep pine panels (Live section, final CTA, auth brand panel) ---- */
+/* The public site was tuned with these earlier values (its field borders, the form's tick, two
+   programme glyphs, status text, the faint shadow-xs). It keeps them until each of those pieces is
+   checked against the shared values above; then this block goes. */
+[data-landing] {
+  --shade-ink: 16 32 27;
+  --wash: #edf3ef;
+  --mint: #e1eee7;
+  --sage: #8db5a4;
+  --teal-deep: #0e4f45;
+  --input-line: #788d85;
+  --input-hover: #5b7068;
+  --success: #16704a;
+  --warning: #8f5b0c;
+  --warning-ink: #7a4d08;
+  --danger: #b23a30;
+  --danger-hover: #9a3129;
+  --saffron: var(--warning);
+  --secondary: var(--wash);
+  --input: var(--input-line);
+  --destructive: var(--danger);
+}
+
+/* ---- Semantic tokens: deep teal panels (Live band, footer, sign-in brand panel) ---- */
 .theme-pine {
   --background: var(--pine);
   --foreground: var(--on-pine);
@@ -379,7 +402,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     @apply font-sans;
@@ -387,15 +410,21 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "ss01", "cv11";
+    font-feature-settings: "ss01";
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: color-mix(in oklab, var(--teal-deep) 16%, transparent);
+    background: color-mix(in oklab, var(--primary) 16%, transparent);
   }
+  /* Headings carry the site's weight everywhere; a font-* utility on the element still wins. */
   .font-display {
     letter-spacing: -0.025em;
-    font-weight: 500;
+    font-weight: 600;
+  }
+  /* A long word (a URL, a name) breaks instead of pushing the page sideways at large text sizes. */
+  h1,
+  h2 {
+    overflow-wrap: break-word;
   }
   .theme-pine {
     background-color: var(--background);
@@ -421,12 +450,41 @@
 /* Indic text: General Sans stays first so every language shares one baseline; Noto supplies
    the Kannada / Devanagari glyphs. Unlayered on purpose so it beats tracking utilities. Noto applies
    only once <html data-indic-fonts> is set, just before Indic text is seen (reveal.tsx), so a first
-   load never fetches it; until then the system's own Indic fonts draw that far-off text. */
+   load never fetches it; until then the system's own Indic fonts draw that far-off text.
+   The "Nivar ... local" faces come first: most Android phones carry Noto Sans Kannada and Devanagari
+   already, so they draw with the phone's own copy (the same design and metrics, so nothing moves) and
+   never download the webfont. Where the phone has no such font (iPhone, most desktops) the face
+   fails to load and the webfont is used as before. 600 asks for SemiBold, then Bold, then the
+   regular file, which a variable font draws at 600 itself. */
+@font-face {
+  font-family: "Nivar Kannada local";
+  font-weight: 500;
+  src: local("Noto Sans Kannada Medium"), local("NotoSansKannada-Medium"), local("Noto Sans Kannada"), local("NotoSansKannada-Regular");
+  unicode-range: U+0C80-0CFF, U+0964-0965, U+200C-200D, U+25CC;
+}
+@font-face {
+  font-family: "Nivar Kannada local";
+  font-weight: 600;
+  src: local("Noto Sans Kannada SemiBold"), local("NotoSansKannada-SemiBold"), local("Noto Sans Kannada Bold"), local("NotoSansKannada-Bold"), local("Noto Sans Kannada"), local("NotoSansKannada-Regular");
+  unicode-range: U+0C80-0CFF, U+0964-0965, U+200C-200D, U+25CC;
+}
+@font-face {
+  font-family: "Nivar Devanagari local";
+  font-weight: 500;
+  src: local("Noto Sans Devanagari Medium"), local("NotoSansDevanagari-Medium"), local("Noto Sans Devanagari"), local("NotoSansDevanagari-Regular");
+  unicode-range: U+0900-097F, U+1CD0-1CFF, U+200C-200D, U+25CC, U+A8E0-A8FF;
+}
+@font-face {
+  font-family: "Nivar Devanagari local";
+  font-weight: 600;
+  src: local("Noto Sans Devanagari SemiBold"), local("NotoSansDevanagari-SemiBold"), local("Noto Sans Devanagari Bold"), local("NotoSansDevanagari-Bold"), local("Noto Sans Devanagari"), local("NotoSansDevanagari-Regular");
+  unicode-range: U+0900-097F, U+1CD0-1CFF, U+200C-200D, U+25CC, U+A8E0-A8FF;
+}
 html[data-indic-fonts] :lang(kn) {
-  font-family: var(--font-general), var(--font-noto-kn), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
+  font-family: var(--font-general), "Nivar Kannada local", var(--font-noto-kn), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
 }
 html[data-indic-fonts] :lang(hi) {
-  font-family: var(--font-general), var(--font-noto-deva), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
+  font-family: var(--font-general), "Nivar Devanagari local", var(--font-noto-deva), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
 }
 :lang(kn),
 :lang(hi) {
@@ -500,12 +558,40 @@ html[data-indic-fonts] :lang(hi) {
   }
 }
 
+/* Touch floors for the UI kit's controls (components/ui). Dense sizes stay for a mouse; on a touch
+   screen nothing is shorter than 44px (48px for large buttons). In the components layer, so a call
+   site's own min-h-* or min-w-* utility still wins, while its h-* cannot shrink a control below it. */
+@layer components {
+  @media (pointer: coarse) {
+    .nv-touch {
+      min-height: 2.75rem;
+    }
+    .nv-touch-lg {
+      min-height: 3rem;
+    }
+    .nv-touch-square {
+      min-height: 2.75rem;
+      min-width: 2.75rem;
+    }
+  }
+}
+
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 @utility tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* General Sans has no tabular figures, so tabular-nums changes nothing. For a centred number that
+   changes in place (a countdown, a live reading), wrap each digit in a span (<Digits>, components/ui)
+   and each sits in a fixed cell; separators keep their own width. */
+.nv-digits > span {
+  display: inline-block;
+  inline-size: 0.6em;
+  text-align: center;
+  letter-spacing: 0;
 }
 
 /* Landing loops stop on their rest pose when <html data-motion="paused"> (reduced motion, or the

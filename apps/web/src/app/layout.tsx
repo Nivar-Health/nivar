@@ -8,16 +8,19 @@ export const metadata: Metadata = {
   // Share previews (og:image, twitter:image) resolve against this. Without it they pointed at localhost.
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || SITE.url),
   title: {
-    default: "Nivar Health | Your OPD, at home",
+    default: "Nivar Health | Nurse at home in Bengaluru",
     template: "%s | Nivar Health",
   },
+  // The home page's own sentence, so every page without one describes Nivar the same way.
   description:
-    "A registered Nivar nurse comes to your home in HSR Layout and nearby, Bengaluru, for injections, drips, dressings, tests and check-ups, and a Nivar doctor joins on video when you need one.",
+    "A registered nurse at your home in HSR Layout, Bengaluru, for injections, IV drips, dressings, blood tests and check-ups. We tell you the price first.",
   applicationName: "Nivar Health",
+  // iOS Safari would otherwise turn readings, booking codes and prices into tap-to-call links.
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f6f8f6",
+  themeColor: "#f6fafb",
   colorScheme: "light",
 };
 
