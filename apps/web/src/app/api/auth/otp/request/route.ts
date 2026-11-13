@@ -28,7 +28,11 @@ export async function POST(req: Request) {
       phone: toE164(phone),
       options: { shouldCreateUser: true },
     });
-    if (otpError) throw badRequest(otpError.message, "otp_failed");
+    if (otpError) {
+      // The SMS provider's own words are for us, not for the person signing in.
+      console.error("OTP request failed:", otpError.message);
+      throw badRequest("We couldn't send the OTP just now. Try again in a minute.", "otp_failed");
+    }
 
     return json({
       ok: true,

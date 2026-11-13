@@ -103,7 +103,7 @@ function DevicesDemo() {
 
 function StripDemo() {
   const samples = useMemo(() => generateEcgSamples(10, 72), []);
-  return <EcgStrip samples={samples} heartRate={72} caption="Captured 12 Oct 2026, 10:42" />;
+  return <EcgStrip samples={samples} heartRate={72} caption="Captured 12 Oct 2026, 10:42" dense />;
 }
 
 function MapDemo() {
@@ -142,7 +142,7 @@ function MapDemo() {
           Hide nurse
         </Button>
       </div>
-      <LiveMap home={KORAMANGALA} nurse={nurse} nurseName="Priya Nair" height={380} />
+      <LiveMap home={KORAMANGALA} nurse={nurse} nurseName="Priya Nair" height={380} dense />
     </>
   );
 }

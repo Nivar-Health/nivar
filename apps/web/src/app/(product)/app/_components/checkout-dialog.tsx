@@ -197,7 +197,7 @@ export function CheckoutDialog({
         const wait = Math.max(0, 900 - (Date.now() - started));
         timers.current.push(
           window.setTimeout(() => {
-            setError(errorMessage(err, "Please try again."));
+            setError(errorMessage(err, "Try again."));
             setPhase("error");
           }, wait),
         );

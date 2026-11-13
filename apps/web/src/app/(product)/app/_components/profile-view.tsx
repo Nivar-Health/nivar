@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { CircleCheck, House, LoaderCircle, LogOut, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -21,6 +21,7 @@ import {
   saveEditedAddress,
   saveNewAddress,
 } from "./address-form";
+import { SHEET_BACKDROP, SHEET_POPUP, useBackToClose } from "./checkout-dialog";
 import { GENDER_LABEL, HelpCard, PersonAvatar, SectionTitle, Surface, ageFromDob } from "./shared";
 
 /** Round icon buttons a thumb can hit (44px). */
@@ -41,6 +42,11 @@ export function ProfileView() {
   const [toDelete, setToDelete] = useState<Address | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  useBackToClose(Boolean(toDelete), () => {
+    if (deleting) return false;
+    setToDelete(null);
+  });
 
   if (!user) return null;
   const addresses = user.addresses ?? [];
@@ -270,41 +276,50 @@ export function ProfileView() {
         <LogOut aria-hidden /> Sign out
       </Button>
 
-      <Dialog open={Boolean(toDelete)} onOpenChange={(o) => !o && !deleting && setToDelete(null)}>
-        {/* The two buttons are the ways out, so the small corner close button is left out. */}
-        <DialogContent showCloseButton={false} className="gap-5 rounded-3xl p-5 sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-lg leading-snug font-semibold">Remove this address?</DialogTitle>
-            <DialogDescription className="text-small">
-              {toDelete?.label || "Home"}: {toDelete?.line1}. Past bookings keep their address.
-            </DialogDescription>
-          </DialogHeader>
-          {deleteError && (
-            <p role="alert" className={fieldErrorClass}>
-              {deleteError}
-            </p>
-          )}
-          <DialogFooter className="-mx-5 -mb-5 gap-2.5 rounded-b-3xl border-t bg-muted/40 p-4 sm:flex-row">
-            <Button
-              variant="outline"
-              onClick={() => setToDelete(null)}
-              disabled={deleting}
-              className="h-12 w-full rounded-full text-small sm:w-auto sm:flex-1"
-            >
-              Keep address
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={deleteAddress}
-              disabled={deleting}
-              aria-busy={deleting}
-              className="h-12 w-full rounded-full text-small font-semibold sm:w-auto sm:flex-1"
-            >
-              {deleting && <LoaderCircle className="animate-spin" aria-hidden />} Remove
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* The same sheet as cancelling a visit: from the bottom on phones, opening on "Keep address". */}
+      <DialogPrimitive.Root
+        open={Boolean(toDelete)}
+        onOpenChange={(o) => !o && !deleting && setToDelete(null)}
+        disablePointerDismissal={deleting}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Backdrop className={SHEET_BACKDROP} />
+          <DialogPrimitive.Popup className={SHEET_POPUP} initialFocus={keepRef}>
+            <div className="overflow-y-auto px-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-6">
+              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
+              <DialogPrimitive.Title className="text-lg leading-snug font-semibold">Remove this address?</DialogPrimitive.Title>
+              <DialogPrimitive.Description className="mt-1.5 text-small text-foreground-2">
+                {toDelete?.label || "Home"}: {toDelete?.line1}. Past bookings keep their address.
+              </DialogPrimitive.Description>
+              {deleteError && (
+                <p role="alert" className={cn("mt-4", fieldErrorClass)}>
+                  {deleteError}
+                </p>
+              )}
+              <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
+                <Button
+                  variant="destructive"
+                  onClick={deleteAddress}
+                  disabled={deleting}
+                  aria-busy={deleting}
+                  className="h-12 w-full rounded-full text-small font-semibold sm:order-2"
+                >
+                  {deleting && <LoaderCircle className="animate-spin" aria-hidden />} Remove
+                </Button>
+                <Button
+                  ref={keepRef}
+                  variant="outline"
+                  onClick={() => setToDelete(null)}
+                  disabled={deleting}
+                  className="h-12 w-full rounded-full text-small font-semibold sm:order-1"
+                >
+                  Keep address
+                </Button>
+              </div>
+            </div>
+          </DialogPrimitive.Popup>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   );
 }

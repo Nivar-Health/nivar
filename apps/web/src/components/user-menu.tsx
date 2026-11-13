@@ -46,7 +46,8 @@ export interface UserMenuLink {
 
 /**
  * Avatar button with a dropdown: identity header, optional links, sign out.
- * The button looks 36px and takes taps on 44px; menu rows are 44px tall.
+ * With a mouse the button is 36px and takes clicks on 44px; on a touch screen it is 44px itself.
+ * Menu rows are 44px tall.
  */
 export function UserMenu({
   links = [],
@@ -75,8 +76,8 @@ export function UserMenu({
         // The name a screen reader hears includes the name on screen; the initials are decoration.
         aria-label={user.name ? `Account menu, ${user.name}` : "Account menu"}
         className={cn(
-          "relative flex items-center gap-2 rounded-full p-0.5 outline-none transition-colors before:absolute before:-inset-1 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 data-popup-open:bg-muted",
-          showName && "pr-2",
+          "relative flex items-center gap-2 rounded-full p-0.5 outline-none pointer-coarse:p-1.5 transition-colors before:absolute before:-inset-1 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 data-popup-open:bg-muted",
+          showName && "pr-2 pointer-coarse:pr-2",
           className,
         )}
       >

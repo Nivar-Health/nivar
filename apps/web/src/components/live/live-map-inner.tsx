@@ -13,6 +13,8 @@ export type LiveMapInnerProps = {
   nurse?: LatLng | null;
   nurseName?: string;
   height: number | string;
+  /** Smaller marker labels, for staff screens with a lot on them. */
+  dense?: boolean;
   className?: string;
 };
 
@@ -47,8 +49,8 @@ function homeIcon(label?: string) {
     iconAnchor: [19, 46],
     html: `<div class="nivar-home">
       <svg width="38" height="48" viewBox="0 0 38 48" aria-hidden="true">
-        <path d="M19 47c-1-1.6-15-17.4-15-28.2C4 9.9 10.7 3 19 3s15 6.9 15 15.8C34 29.6 20 45.4 19 47z" fill="#0E4F45" stroke="#ffffff" stroke-width="2.5"/>
-        <g transform="translate(10.5 10)" fill="none" stroke="#ffffff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 47c-1-1.6-15-17.4-15-28.2C4 9.9 10.7 3 19 3s15 6.9 15 15.8C34 29.6 20 45.4 19 47z" style="fill: var(--primary); stroke: var(--primary-foreground)" stroke-width="2.5"/>
+        <g transform="translate(10.5 10)" fill="none" style="stroke: var(--primary-foreground)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1.5 7.5 8.5 1.6l7 5.9"/>
           <path d="M3.4 6.2V15h10.2V6.2"/>
           <path d="M7 15v-4.2h3V15"/>
@@ -73,7 +75,8 @@ function nurseIcon(name?: string) {
   });
 }
 
-const FIT_PADDING: L.PointExpression = [56, 56];
+// Extra room below: the names hang under the markers, and the attribution sits at the bottom edge.
+const FIT_PADDING = { paddingTopLeft: [56, 56] as L.PointTuple, paddingBottomRight: [56, 84] as L.PointTuple };
 
 /** Imperative nurse marker: animates between updates without React re-renders. */
 function NurseLayer({ home, nurse, nurseName }: { home: LatLng; nurse: LatLng; nurseName?: string }) {
@@ -92,7 +95,8 @@ function NurseLayer({ home, nurse, nurseName }: { home: LatLng; nurse: LatLng; n
         [nurse.lat, nurse.lng],
         [home.lat, home.lng],
       ],
-      { color: "#0E4F45", weight: 3, opacity: 0.7, dashArray: "2 9", lineCap: "round", interactive: false },
+      // Coloured by .nivar-route in live-map.css, so it follows the palette.
+      { className: "nivar-route", weight: 3, opacity: 0.7, dashArray: "2 9", lineCap: "round", interactive: false },
     );
     line.addTo(map);
     marker.addTo(map);
@@ -127,16 +131,16 @@ function NurseLayer({ home, nurse, nurseName }: { home: LatLng; nurse: LatLng; n
     if (!fittedRef.current) {
       fittedRef.current = true;
       map.invalidateSize({ pan: false });
-      map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: 16, animate: false });
+      map.fitBounds(bounds, { ...FIT_PADDING, maxZoom: 16, animate: false });
     } else {
       const outOfView = !map.getBounds().pad(-0.08).contains(to) || !map.getBounds().contains(homeLL);
       // Zoom in step by step as the nurse closes in, at most every few seconds so the map stays calm.
       const canZoomIn =
-        map.getBoundsZoom(bounds, false, L.point(FIT_PADDING as [number, number]).multiplyBy(2)) >= map.getZoom() + 1 &&
+        map.getBoundsZoom(bounds, false, L.point(FIT_PADDING.paddingTopLeft).add(FIT_PADDING.paddingBottomRight)) >= map.getZoom() + 1 &&
         performance.now() - lastRefitRef.current > 4000;
       if (outOfView || canZoomIn) {
         lastRefitRef.current = performance.now();
-        map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: 17, animate: true, duration: 0.8 });
+        map.fitBounds(bounds, { ...FIT_PADDING, maxZoom: 17, animate: true, duration: 0.8 });
       }
     }
 
@@ -188,12 +192,12 @@ function HomeOnlyView({ home, active }: { home: LatLng; active: boolean }) {
   return null;
 }
 
-export default function LiveMapInner({ home, nurse, nurseName, height, className }: LiveMapInnerProps) {
+export default function LiveMapInner({ home, nurse, nurseName, height, dense, className }: LiveMapInnerProps) {
   const icon = useMemo(() => homeIcon(home.label), [home.label]);
   const hasNurse = !!nurse && Number.isFinite(nurse.lat) && Number.isFinite(nurse.lng);
 
   return (
-    <div className={className ? `nivar-map ${className}` : "nivar-map"} style={{ height }}>
+    <div className={["nivar-map", dense && "nivar-map--dense", className].filter(Boolean).join(" ")} style={{ height }}>
       <MapContainer
         center={[home.lat, home.lng]}
         zoom={15}

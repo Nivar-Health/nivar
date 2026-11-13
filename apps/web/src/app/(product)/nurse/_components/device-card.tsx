@@ -149,7 +149,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
   const [phase, setPhase] = useState<Phase>("idle");
   const [capturing, setCapturing] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Nothing is chosen for the nurse: a finding in the record must be one she heard.
+  // Nothing is chosen for the nurse: a finding in the record must be one the nurse heard.
   const [findings, setFindings] = useState<string>(booking.stethoscope?.findings ?? "");
   const connected = useSocketConnected();
   const cardRef = useRef<HTMLElement>(null);

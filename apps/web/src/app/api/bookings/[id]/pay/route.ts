@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { withAuth } from "@/server/auth";
 import { PAYMENT_METHODS, loadForUser, publishBooking, transition } from "@/server/bookings";
+import { scheduleLabel } from "@/lib/format";
 import { json } from "@/server/errors";
 import { notifyAdmins } from "@/server/realtime";
 import { parseBody } from "@/server/validate";
@@ -23,7 +24,7 @@ export const POST = withAuth<{ id: string }>(
     const payload = await publishBooking(booking.id);
     await notifyAdmins({
       title: "New booking",
-      body: `${payload.code} · ${payload.patient.name} · ${payload.scheduledDate} ${payload.slot} needs a care team`,
+      body: `${payload.code} · ${payload.patient.name} · ${scheduleLabel(payload.scheduledDate, payload.slot)}. Needs a care team.`,
       bookingId: payload.id,
     });
     return json({ booking: payload });

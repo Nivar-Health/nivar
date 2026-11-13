@@ -424,7 +424,7 @@ function ConfirmedPanel({ booking }: { booking: Booking }) {
         <p className="relative mt-4 text-base font-semibold">Booking confirmed. We are assigning your nurse and doctor.</p>
         <p className={cn("relative mt-1 max-w-sm", BODY)}>
           {express
-            ? `${EARLIEST_VISIT.title}: we are assigning the next available nurse. You will see who is coming here.`
+            ? `${EARLIEST_VISIT.title}: you get the next available nurse. You will see who is coming here.`
             : "You will see your nurse's and doctor's names here once they are assigned. You do not need to keep this page open."}
         </p>
         <span className="relative mt-4 inline-flex min-h-8 items-center gap-1.5 rounded-full bg-background px-3 py-1 text-sm font-medium text-foreground ring-1 ring-border ring-inset">
@@ -743,8 +743,7 @@ function CompletedPanel({
   const report = booking.report;
   const rxCount = report?.prescription?.length ?? 0;
   // Same check-up, person and address; the wizard opens on the date, the one thing left to choose.
-  const again = bookAgainHref(booking);
-  const againHref = `${again}${again.includes("?") ? "&" : "?"}step=4`;
+  const againHref = bookAgainHref(booking, { onDate: true });
   return (
     <div className="space-y-4">
       <Surface className="animate-fade-up overflow-hidden">

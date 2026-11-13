@@ -9,12 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/api";
-import { homePathForRole, safeNextPath, useAuth } from "@/lib/auth";
+import { UNREACHABLE_MESSAGE, homePathForRole, safeNextPath, useAuth } from "@/lib/auth";
 import { bookingEnabled, demoMode } from "@/lib/features";
 import type { User } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const OFFLINE = "Can't reach Nivar right now. Check your connection and try again.";
 
 /** Demo aids: shown only while demo mode is on (lib/features). */
 const DEMO_PASSWORD = "nivar123";
@@ -58,7 +56,7 @@ export function StaffLoginForm({ next }: { next: string | null }) {
     }
     // A phone with no network must not be told its password is wrong.
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      fail(OFFLINE);
+      fail(UNREACHABLE_MESSAGE);
       return;
     }
     setError(null);
@@ -72,7 +70,7 @@ export function StaffLoginForm({ next }: { next: string | null }) {
       }
       router.replace(destinationFor(user, next));
     } catch (err) {
-      fail(errorMessage(err, "Couldn't sign you in. Please try again."));
+      fail(errorMessage(err, "Couldn't sign you in. Try again."));
     }
   };
 

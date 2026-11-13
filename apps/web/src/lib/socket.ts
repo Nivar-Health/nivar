@@ -667,19 +667,38 @@ export function useDeviceStatus(bookingId: string | null | undefined): DeviceSta
 // Notifications
 // ---------------------------------------------------------------------------
 
-/** Shows a toast for every `notify` event. Mount once per shell. */
+/** A doctor's video call is starting or waiting: someone has to join it, so it must not slip away. */
+function isCallStarting(title: string): boolean {
+  return /consult|video call/i.test(title) && !/ended/i.test(title);
+}
+
+/** The toast that says a booking's video call is starting; it goes once the person joins the call. */
+export const callToastId = (bookingId: string) => `call-starting-${bookingId}`;
+
+/**
+ * Shows a toast for every `notify` event. Mount once per shell. A toast with an action stays 10 s, so
+ * there is time to read it and tap; a call that is starting stays until it is closed, the person
+ * joins, or the call is over.
+ */
 export function useNotifications(): void {
   const router = useRouter();
   const { user } = useAuth();
   useSocketEvent<NotifyEvent>("notify", (e) => {
     if (!e?.title) return;
     const bookingId = e.bookingId;
+    const action =
+      bookingId && user
+        ? { label: "View", onClick: () => router.push(bookingPathForRole(user.role, bookingId)) }
+        : undefined;
+    const call = isCallStarting(e.title);
     toast(e.title, {
+      id: call && bookingId ? callToastId(bookingId) : undefined,
       description: e.body,
-      action:
-        bookingId && user
-          ? { label: "View", onClick: () => router.push(bookingPathForRole(user.role, bookingId)) }
-          : undefined,
+      action,
+      duration: call ? Infinity : action ? 10_000 : undefined,
     });
+  });
+  useSocketEvent<Booking>("booking:updated", (b) => {
+    if (b?.id && b.status !== "consult") toast.dismiss(callToastId(b.id));
   });
 }

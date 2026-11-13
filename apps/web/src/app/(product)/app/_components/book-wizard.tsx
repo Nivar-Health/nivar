@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
@@ -20,6 +20,7 @@ import {
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useScrollPadding } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -270,17 +271,6 @@ function openWizard(user: User, preselect: { pkg: string | null; codes: string[]
 // Small pieces of browser state
 // ---------------------------------------------------------------------------
 
-function onResize(callback: () => void) {
-  window.addEventListener("resize", callback);
-  return () => window.removeEventListener("resize", callback);
-}
-
-/** Height of the app's bottom tab bar while it is on screen, so the booking bar sits just above it. */
-function tabBarHeight(): number {
-  const nav = document.querySelector<HTMLElement>("nav.fixed.bottom-0");
-  return nav ? Math.round(nav.getBoundingClientRect().height) : 0;
-}
-
 const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** The address of a step: /app/book?step=3, keeping whatever else the URL carries. */
@@ -382,7 +372,27 @@ function Wizard({
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const finished = useRef(false);
 
-  const tabBar = useSyncExternalStore(onResize, tabBarHeight, () => 0);
+  const padBelowBar = useScrollPadding("bottom");
+  // With large text the bar would cover more than a quarter of the screen: it then sits at the end
+  // of the step instead, so the step itself stays readable.
+  const [barInFlow, setBarInFlow] = useState(false);
+  const barRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      if (!el) return;
+      const check = () => setBarInFlow(el.getBoundingClientRect().height > window.innerHeight / 4);
+      check();
+      const observer = new ResizeObserver(check);
+      observer.observe(el);
+      window.addEventListener("resize", check);
+      const unpad = padBelowBar(el);
+      return () => {
+        observer.disconnect();
+        window.removeEventListener("resize", check);
+        unpad?.();
+      };
+    },
+    [padBelowBar],
+  );
 
   // ---- people booked for before: the account holder's own details, and family members ----
   const history = useMemo(() => [...(bookings ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [bookings]);
@@ -443,7 +453,7 @@ function Wizard({
     hasSelection ? [] : [{ field: "checkups", message: "Choose a check-up or at least one test to continue." }],
     patientProblems,
     address || addingAddress ? [] : [{ field: "address-choices", message: "Choose where the nurse should visit." }],
-    slot ? [] : [{ field: "slot-choices", message: slotTaken ? "That time was just taken. Please choose another." : "Choose a time for your visit." }],
+    slot ? [] : [{ field: "slot-choices", message: slotTaken ? "That time was just taken. Choose another time." : "Choose a time for your visit." }],
     [],
   ];
   const stepValid = [hasSelection, patientProblems.length === 0, Boolean(address) && !addingAddress, Boolean(slot), true];
@@ -669,8 +679,6 @@ function Wizard({
       {!isLast && !busy && !savingNewAddress && <ArrowRight aria-hidden />}
     </>
   );
-  // With the app's tab bar on screen the booking bar stays one row, so the two never take over the page.
-  const compactBar = tabBar > 0;
 
   return (
     <div className="lg:-mx-44">
@@ -689,7 +697,7 @@ function Wizard({
         </p>
       )}
 
-      <div className={cn("grid items-start gap-6 pb-36 md:pb-24 lg:grid-cols-[minmax(0,1fr)_20rem] lg:pb-0", restored ? "mt-2" : "mt-5")}>
+      <div className={cn("grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:pb-0", !barInFlow && "pb-36 md:pb-24", restored ? "mt-2" : "mt-5")}>
         <div key={step} className="min-w-0 animate-fade-up">
           {step === 0 &&
             (catalog ? (
@@ -812,37 +820,32 @@ function Wizard({
 
       {/* Phone and tablet: the price and the one action stay in reach */}
       <div
-        style={{ bottom: tabBar }}
+        ref={barRef}
         className={cn(
-          "fixed inset-x-0 z-20 border-t border-border bg-card shadow-[0_-10px_30px_-18px_color-mix(in_oklab,var(--foreground)_35%,transparent)] lg:hidden",
-          !compactBar && "pb-safe",
+          "inset-x-0 bottom-0 z-20 border-t border-border bg-card lg:hidden",
+          barInFlow
+            ? "-mx-4 mt-6 md:-mx-6"
+            : "fixed pb-safe shadow-[0_-10px_30px_-18px_color-mix(in_oklab,var(--foreground)_35%,transparent)]",
         )}
       >
-        <div
-          className={cn(
-            "mx-auto flex max-w-2xl gap-x-3 gap-y-2 px-4 py-2.5 md:flex-row md:items-center md:px-6 md:py-3",
-            compactBar ? "flex-row items-center" : "flex-col",
-          )}
-        >
+        <div className="mx-auto flex max-w-2xl flex-col gap-x-3 gap-y-2 px-4 py-2.5 md:flex-row md:items-center md:px-6 md:py-3">
           <div className="min-w-0 flex-1">
             {problem ? (
               <p role="alert" className={fieldErrorClass}>
                 {problem.message}
               </p>
             ) : codes.length > 0 ? (
-              // One line above a full-width button; two lines beside it when the button sits inline.
-              <p className={cn("text-small text-foreground-2", !compactBar && "flex items-baseline gap-1.5 md:block")}>
+              // One line above a full-width button; two lines beside it from tablet width.
+              <p className="flex items-baseline gap-1.5 text-small text-foreground-2 md:block">
                 {isLast ? (
                   <span className="truncate font-semibold text-foreground">{selectionTitle}</span>
                 ) : (
                   <span className="tabular shrink-0 text-base font-semibold text-foreground md:text-lg">{formatINR(total)}</span>
                 )}
-                {!compactBar && (
-                  <span className="md:hidden" aria-hidden>
-                    ·
-                  </span>
-                )}
-                <span className={cn(isLast ? "shrink-0" : "truncate", compactBar ? "block" : "md:block")}>
+                <span className="md:hidden" aria-hidden>
+                  ·
+                </span>
+                <span className={cn(isLast ? "shrink-0" : "truncate", "md:block")}>
                   {isLast ? "Next: choose how to pay" : selectionTitle}
                 </span>
               </p>
@@ -853,10 +856,7 @@ function Wizard({
           <Button
             {...ctaProps}
             disabled={busy || (isLast && !catalog)}
-            className={cn(
-              "h-14 shrink-0 rounded-full px-6 text-base font-semibold md:h-12 md:w-auto",
-              compactBar ? "max-w-[62%] leading-tight whitespace-normal" : "w-full",
-            )}
+            className="h-14 w-full shrink-0 rounded-full px-6 text-base font-semibold md:h-12 md:w-auto"
           >
             {ctaContent}
           </Button>
@@ -1050,7 +1050,7 @@ function TestsStep({
                 aria-disabled={inPkg}
                 onClick={() => !inPkg && onToggleTest(s.code)}
                 className={cn(
-                  "flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors outline-none focus-visible:bg-muted",
+                  "flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors outline-none focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset",
                   inPkg ? "cursor-default" : "hover:bg-muted/50",
                 )}
               >
@@ -1494,7 +1494,7 @@ function shortSlot(slot: string): string {
   const h = Number(slot.slice(0, 2));
   const fmt = (x: number) => `${x % 12 === 0 ? 12 : x % 12}`;
   const per = (x: number) => (x >= 12 ? "PM" : "AM");
-  return per(h) === per(h + 1) ? `${fmt(h)} - ${fmt(h + 1)} ${per(h + 1)}` : `${fmt(h)} ${per(h)} - ${fmt(h + 1)} ${per(h + 1)}`;
+  return per(h) === per(h + 1) ? `${fmt(h)} to ${fmt(h + 1)} ${per(h + 1)}` : `${fmt(h)} ${per(h)} to ${fmt(h + 1)} ${per(h + 1)}`;
 }
 
 function ScheduleStep({

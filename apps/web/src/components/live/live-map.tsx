@@ -22,6 +22,8 @@ export type LiveMapProps = {
    * the home in view; the zoom buttons stay, at a size a thumb can hit. Default false.
    */
   touchScrollsPage?: boolean;
+  /** Smaller marker names and chip text, for dense staff screens. Default false (14px). */
+  dense?: boolean;
   className?: string;
 };
 
@@ -41,7 +43,7 @@ function MapSkeleton({ height }: { height: number | string }) {
         }}
       />
       <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/0 via-white/40 to-white/0" />
-      <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-muted-foreground">
+      <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-muted-foreground">
         Loading map...
       </div>
     </div>
@@ -64,6 +66,7 @@ export function LiveMap({
   height = 320,
   showEta = true,
   touchScrollsPage = false,
+  dense = false,
   className,
 }: LiveMapProps) {
   const km = nurse ? haversineKm(nurse, home) : null;
@@ -77,7 +80,7 @@ export function LiveMap({
       )}
       style={{ height }}
     >
-      <LiveMapInner home={home} nurse={nurse} nurseName={nurseName} height="100%" />
+      <LiveMapInner home={home} nurse={nurse} nurseName={nurseName} height="100%" dense={dense} />
       {showEta && km !== null && (
         <div className="pointer-events-none absolute top-3 left-3 z-[500] flex items-center gap-2.5 rounded-xl border border-border bg-card/95 px-3 py-2 shadow-soft backdrop-blur">
           <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -91,7 +94,7 @@ export function LiveMap({
                 <div className="text-sm font-semibold text-foreground tabular-nums">
                   {etaMinutes(km)} min away
                 </div>
-                <div className="text-[11px] text-muted-foreground tabular-nums">
+                <div className={cn("text-muted-foreground tabular-nums", dense ? "text-[11px]" : "text-sm")}>
                   {first ? `${first} is ` : ""}
                   {formatDistance(km)} from home
                 </div>

@@ -126,10 +126,15 @@ export function Unbroken({ children }: { children: string }) {
  * `?services=` (every test of the visit, comma-separated). The wizard reads both and drops the tests
  * the package already covers, so the format lives here and in book-wizard.tsx only.
  */
-export function bookAgainHref(booking: Pick<Booking, "packageId" | "serviceCodes">): string {
+export function bookAgainHref(
+  booking: Pick<Booking, "packageId" | "serviceCodes">,
+  { onDate = false }: { onDate?: boolean } = {},
+): string {
   const params = new URLSearchParams();
   if (booking.packageId) params.set("package", booking.packageId);
   if (booking.serviceCodes.length) params.set("services", booking.serviceCodes.join(","));
+  // With the person and address saved too (saveDraftFromVisit), only the date is left to choose.
+  if (onDate) params.set("step", "4");
   return params.size ? `/app/book?${params}` : "/app/book";
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarPlus, CircleHelp, ClipboardList, House, UserRound } from "lucide-react";
@@ -28,6 +28,37 @@ export function activeHref(pathname: string, hrefs: readonly string[]): string |
 }
 
 /**
+ * A ref for a fixed bar: tells the browser how much of the window the bar covers, so a field reached
+ * with Tab is never left underneath it. A bar that is hidden (display: none) or back in the page's
+ * flow covers nothing.
+ */
+export function useScrollPadding(edge: "top" | "bottom") {
+  return useCallback(
+    (el: HTMLElement | null) => {
+      if (!el) return;
+      const root = document.documentElement.style;
+      const prop = edge === "top" ? "scrollPaddingTop" : "scrollPaddingBottom";
+      const set = () => {
+        const r = el.getBoundingClientRect();
+        const pinned = ["fixed", "sticky"].includes(getComputedStyle(el).position);
+        const covered = !pinned || r.height === 0 ? 0 : edge === "top" ? r.bottom : window.innerHeight - r.top;
+        root[prop] = covered > 0 ? `${Math.ceil(covered) + 8}px` : "";
+      };
+      set();
+      const observer = new ResizeObserver(set);
+      observer.observe(el);
+      window.addEventListener("resize", set);
+      return () => {
+        observer.disconnect();
+        window.removeEventListener("resize", set);
+        root[prop] = "";
+      };
+    },
+    [edge],
+  );
+}
+
+/**
  * Patient shell. Mobile: top bar + bottom tab bar. Desktop: top bar with
  * inline nav and a centred content column.
  *
@@ -45,6 +76,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
   const booking = active === "/app/book";
   useNotifications();
+  const headerRef = useScrollPadding("top");
+  const tabBarRef = useScrollPadding("bottom");
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -54,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md supports-backdrop-filter:bg-background/70 print:hidden">
+      <header ref={headerRef} className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md supports-backdrop-filter:bg-background/70 print:hidden">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
           <Link href="/app" aria-label="Nivar, home" className="flex h-11 items-center rounded-md focus-ring">
             <Logo size="sm" />
@@ -105,6 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {!booking && (
         <nav
+          ref={tabBarRef}
           aria-label="Main"
           className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-card/95 pb-safe backdrop-blur-md md:hidden print:hidden"
         >

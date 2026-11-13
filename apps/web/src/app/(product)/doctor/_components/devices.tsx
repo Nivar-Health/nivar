@@ -147,6 +147,7 @@ export function EcgPanel({
           variant="brand"
           secondsPerRow={5}
           caption={ecg.capturedAt ? `Captured ${formatTime(ecg.capturedAt)}` : undefined}
+          dense
         />
       )}
       {view === "absent" && <Absent>ECG is not part of this visit.</Absent>}

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 /** Bedside monitor palette (canvas needs literal colours). */
 export const MONITOR = {
   bg: "#0a0a0a",
+  bgRgb: "10, 10, 10",
   bgEdge: "#141414",
   trace: "#19C37D",
   traceRgb: "25, 195, 125",

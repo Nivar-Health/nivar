@@ -258,7 +258,7 @@ function ClinicalPanel({ booking }: { booking: Booking }) {
                 {ecg.capturedAt && <span className="text-xs text-muted-foreground">Captured {formatDateTime(ecg.capturedAt)}</span>}
               </div>
               {ecg.samples?.length ? (
-                <EcgStrip samples={ecg.samples} sampleRate={ecg.sampleRate} heartRate={ecg.heartRate} variant="brand" secondsPerRow={10} />
+                <EcgStrip samples={ecg.samples} sampleRate={ecg.sampleRate} heartRate={ecg.heartRate} variant="brand" secondsPerRow={10} dense />
               ) : null}
               {ecg.interpretation && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{ecg.interpretation}</p>}
             </div>
@@ -545,6 +545,7 @@ export function BookingDetail({ id }: { id: string }) {
                   nurse={b.status === "arrived" ? { lat: b.address.lat, lng: b.address.lng } : nurseLoc}
                   nurseName={nurse?.name}
                   height={340}
+                  dense
                   className="rounded-xl"
                 />
               </div>

@@ -213,7 +213,7 @@ export const EARLIEST_VISIT = {
   label: "Earliest available",
 } as const;
 
-/** "09:00-10:00" -> "9:00 - 10:00 AM"; "11:00-12:00" -> "11:00 AM - 12:00 PM". */
+/** "09:00-10:00" -> "9:00 to 10:00 AM"; "11:00-12:00" -> "11:00 AM to 12:00 PM". */
 export function slotLabel(slot: string | null | undefined): string {
   if (!slot) return "";
   if (slot === EXPRESS_SLOT) return EARLIEST_VISIT.label;
@@ -225,11 +225,11 @@ export function slotLabel(slot: string | null | undefined): string {
   if (!end) return `${s.text} ${s.period}`;
   const e = hm12(end.h, end.m);
   return s.period === e.period
-    ? `${s.text} - ${e.text} ${e.period}`
-    : `${s.text} ${s.period} - ${e.text} ${e.period}`;
+    ? `${s.text} to ${e.text} ${e.period}`
+    : `${s.text} ${s.period} to ${e.text} ${e.period}`;
 }
 
-/** "Today, 9:00 - 10:00 AM" */
+/** "Today, 9:00 to 10:00 AM" */
 export function scheduleLabel(date: string, slot: string): string {
   return `${dayLabel(date)}, ${slotLabel(slot)}`;
 }
@@ -317,7 +317,7 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
   en_route: {
     patientLabel: "Nurse on the way",
     patientDescription: "Your nurse is on the way. Track them live on the map.",
-    staffLabel: "En route",
+    staffLabel: "On the way",
     icon: Navigation,
     badgeClass: "bg-background text-foreground ring-border",
     dotClass: "text-signal",
@@ -361,7 +361,7 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
   reporting: {
     patientLabel: "Preparing report",
     patientDescription: "Your doctor is preparing your report.",
-    staffLabel: "Reporting",
+    staffLabel: "Report pending",
     icon: FilePenLine,
     badgeClass: "bg-background text-foreground ring-border",
     dotClass: "text-foreground",

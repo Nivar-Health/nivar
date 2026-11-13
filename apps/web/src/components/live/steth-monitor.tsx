@@ -338,8 +338,8 @@ export function StethMonitor({
 
       // Fade-in on the left edge so old data scrolls out softly.
       const fade = ctx.createLinearGradient(0, 0, 36, 0);
-      fade.addColorStop(0, "rgba(7,27,24,0.9)");
-      fade.addColorStop(1, "rgba(7,27,24,0)");
+      fade.addColorStop(0, `rgba(${MONITOR.bgRgb}, 0.9)`);
+      fade.addColorStop(1, `rgba(${MONITOR.bgRgb}, 0)`);
       ctx.fillStyle = fade;
       ctx.fillRect(0, 0, 36, h);
     };

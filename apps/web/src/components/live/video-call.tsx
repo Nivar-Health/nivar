@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Signalling } from "@/lib/socket";
+import { toast } from "sonner";
+import { callToastId, type Signalling } from "@/lib/socket";
 import { Mic, MicOff, PhoneOff, RotateCcw, Users, Video, VideoOff, Volume2, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -81,13 +82,17 @@ function initialsOf(name: string) {
   return ((parts[0]?.[0] ?? "?") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
 
+/** What went wrong with the camera or microphone, and what the person can do about it. */
 function describeMediaError(err: unknown): string {
   const name = (err as { name?: string })?.name ?? "";
-  if (name === "NotAllowedError" || name === "SecurityError") return "Camera and microphone permission was blocked.";
-  if (name === "NotFoundError" || name === "OverconstrainedError") return "No camera or microphone was found.";
-  if (name === "NotReadableError" || name === "AbortError") return "Your camera is busy in another app or tab.";
-  if (name === "InsecureContext") return "Camera access needs a secure (https) connection.";
-  return "Could not start your camera.";
+  if (name === "NotAllowedError" || name === "SecurityError")
+    return "Your camera and microphone are blocked. Allow them for this site in your browser settings, then tap Try again.";
+  if (name === "NotFoundError" || name === "OverconstrainedError")
+    return "No camera or microphone was found. Connect one, then tap Try again.";
+  if (name === "NotReadableError" || name === "AbortError")
+    return "Your camera is in use by another app or tab. Close it, then tap Try again.";
+  if (name === "InsecureContext") return "The camera needs a secure (https) connection to this site.";
+  return "Your camera did not start. Tap Try again.";
 }
 
 async function acquireMedia(): Promise<{ stream: MediaStream | null; error: string | null }> {
@@ -188,7 +193,7 @@ function VideoTile({
             {initialsOf(name)}
           </div>
           {!small && (
-            <span className="text-xs text-white/50">
+            <span className="text-sm text-white/70">
               {connecting ? "Connecting..." : stream ? "Camera off" : "No video"}
             </span>
           )}
@@ -198,8 +203,8 @@ function VideoTile({
       <div className={cn("absolute flex max-w-[calc(100%-1rem)] items-center gap-1.5", small ? "bottom-1.5 left-1.5" : "bottom-2.5 left-2.5")}>
         <span
           className={cn(
-            "flex min-w-0 items-center gap-1.5 rounded-full bg-black/55 font-medium text-white backdrop-blur-md",
-            small ? "px-1.5 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
+            "flex min-w-0 items-center gap-1.5 rounded-full bg-black/60 text-sm font-medium text-white",
+            small ? "px-2 py-0.5" : "px-2.5 py-1",
           )}
         >
           {!audioOn && <MicOff className={cn("shrink-0 text-[#FF8A7F]", small ? "size-3" : "size-3.5")} />}
@@ -207,7 +212,7 @@ function VideoTile({
           {!small && (
             <span
               className={cn(
-                "shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold",
+                "shrink-0 rounded-full px-1.5 py-px font-semibold",
                 ROLE_STYLE[role] ?? "bg-white/15 text-white",
               )}
             >
@@ -223,9 +228,9 @@ function VideoTile({
           onClick={() => {
             ref.current?.play().then(() => setBlocked(false), () => {});
           }}
-          className="absolute inset-x-0 top-3 mx-auto flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-lg"
+          className="absolute inset-x-0 top-3 mx-auto flex min-h-11 w-fit items-center gap-1.5 rounded-full bg-white px-4 text-sm font-semibold text-ink shadow-lg"
         >
-          <Volume2 className="size-3.5" /> Tap to enable audio
+          <Volume2 className="size-4" aria-hidden /> Tap to turn on sound
         </button>
       )}
     </div>
@@ -239,12 +244,21 @@ function VideoTile({
 export function VideoCall(props: VideoCallProps) {
   const [session, setSession] = useState(0);
   const [left, setLeft] = useState(false);
-  const { onLeave } = props;
+  const { onLeave, bookingId } = props;
+
+  // Joined: the "call is starting" notice has done its job and would sit over the picture.
+  useEffect(() => {
+    toast.dismiss(callToastId(bookingId));
+  }, [bookingId]);
 
   const leave = useCallback(() => {
     setLeft(true);
     onLeave?.();
   }, [onLeave]);
+
+  // Starting over is how a blocked camera is retried: the browser asks again, and the others see
+  // this person leave and join, which the call already handles.
+  const retry = useCallback(() => setSession((s) => s + 1), []);
 
   if (left) {
     if (props.onLeave) return null;
@@ -256,24 +270,32 @@ export function VideoCall(props: VideoCallProps) {
           props.className,
         )}
       >
-        <p className="text-sm text-white/70">You left the consultation.</p>
+        <p className="text-small text-white/80">You left the video call.</p>
         <button
           type="button"
           onClick={() => {
             setSession((s) => s + 1);
             setLeft(false);
           }}
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-white/90"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-small font-semibold text-ink outline-none hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white/60"
         >
-          <RotateCcw className="size-4" /> Rejoin
+          <RotateCcw className="size-4" aria-hidden /> Rejoin
         </button>
       </div>
     );
   }
-  return <CallSession key={session} {...props} onLeave={leave} />;
+  return <CallSession key={session} {...props} onLeave={leave} onRetry={retry} />;
 }
 
-function CallSession({ signalling, bookingId, self, onLeave, compact, className }: VideoCallProps & { onLeave: () => void }) {
+function CallSession({
+  signalling,
+  bookingId,
+  self,
+  onLeave,
+  onRetry,
+  compact,
+  className,
+}: VideoCallProps & { onLeave: () => void; onRetry: () => void }) {
   const [peers, setPeers] = useState<PeerView[]>([]);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [mediaReady, setMediaReady] = useState(false);
@@ -570,7 +592,7 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
   const status = !online
     ? { label: "Reconnecting", dot: "bg-saffron", pulse: true }
     : !mediaReady
-      ? { label: "Starting camera", dot: "bg-saffron", pulse: true }
+      ? { label: "Starting your camera", dot: "bg-saffron", pulse: true }
       : peers.length === 0
         ? { label: "Waiting for others", dot: "bg-white/60", pulse: true }
         : troubled
@@ -578,6 +600,7 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
           : connecting
             ? { label: "Connecting", dot: "bg-saffron", pulse: true }
             : { label: "Connected", dot: "bg-signal", pulse: false };
+  const isConnected = status.label === "Connected";
 
   const remote = peers.slice(0, 3);
   const alone = remote.length === 0;
@@ -596,7 +619,8 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
 
   const controlBtn =
     "inline-flex items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40";
-  const btnSize = compact ? "size-10" : "size-11";
+  // The side-panel layout is denser with a mouse; a finger still gets 44px.
+  const btnSize = compact ? "size-10 pointer-coarse:size-11" : "size-11";
 
   return (
     <div
@@ -659,39 +683,61 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
           />
         )}
 
-        {(mediaError || (alone && mediaReady)) && (
-          <div className="pointer-events-none absolute inset-x-0 top-4 z-20 flex flex-col items-center gap-2 px-4">
-            {alone && mediaReady && (
-              <span className="rounded-full bg-black/50 px-3 py-1.5 text-center text-xs text-white/85 backdrop-blur-md">
-                You are in the consult room. Others will appear here when they join.
-              </span>
-            )}
-            {mediaError && (
-              <div className="flex max-w-md items-start gap-2 rounded-xl border border-white/15 bg-black/70 px-3 py-2 text-xs text-white/85 backdrop-blur-md">
-                <TriangleAlert className="mt-px size-3.5 shrink-0 text-saffron" />
+        {/* Anything but "Connected" is said in words at the top of the picture, where it has room at any
+            width. The region stays mounted so each change is announced once. */}
+        <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex flex-col items-center gap-2 px-3">
+          <p role="status" className={cn(isConnected && "sr-only")}>
+            <span
+              className={cn(
+                "inline-flex min-h-8 items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-sm font-medium text-white",
+                isConnected && "hidden",
+              )}
+            >
+              <span className={cn("size-2 shrink-0 rounded-full", status.dot)} aria-hidden />
+              {status.label}
+            </span>
+            {isConnected && status.label}
+          </p>
+          {alone && mediaReady && !mediaError && (
+            <span className="rounded-full bg-black/60 px-3 py-1.5 text-center text-sm text-white/90">
+              Others will appear here when they join.
+            </span>
+          )}
+          {mediaError && (
+            <div className="pointer-events-auto flex max-w-md flex-col items-start gap-2.5 rounded-xl border border-white/15 bg-black/80 px-3.5 py-3 text-sm text-white/90">
+              <span className="flex items-start gap-2">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-saffron" aria-hidden />
                 <span>
                   {mediaError}
-                  {hasMic || hasCam ? "" : " You can still see and hear others."}
+                  {hasMic || hasCam ? "" : " You can still see and hear the others."}
                 </span>
-              </div>
-            )}
-          </div>
-        )}
+              </span>
+              <button
+                type="button"
+                onClick={onRetry}
+                className="ml-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-ink outline-none hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white/60"
+              >
+                <RotateCcw className="size-4" aria-hidden /> Try again
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Control bar */}
       <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-t border-white/5 px-3 py-2.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <span className="flex min-w-0 items-center gap-2 text-[11px] font-medium text-white/80">
-            <span className="relative flex size-2 shrink-0">
-              {status.pulse && <span className={cn("absolute inline-flex size-full animate-ping rounded-full opacity-70", status.dot)} />}
-              <span className={cn("relative inline-flex size-2 rounded-full", status.dot)} />
-            </span>
-            <span className={cn("truncate", compact && "hidden sm:inline")}>{status.label}</span>
+        {/* The words for the status are at the top of the picture; here the dot only echoes it. */}
+        <div className="flex min-w-0 items-center gap-2" aria-hidden>
+          <span className="relative flex size-2 shrink-0">
+            {status.pulse && (
+              <span className={cn("absolute inline-flex size-full animate-ping rounded-full opacity-70 motion-reduce:hidden", status.dot)} />
+            )}
+            <span className={cn("relative inline-flex size-2 rounded-full", status.dot)} />
           </span>
+          {isConnected && !compact && <span className="hidden text-sm font-medium text-white/80 sm:inline">Connected</span>}
           {!alone && (
-            <span className="flex items-center gap-1 rounded-full bg-white/8 px-1.5 py-0.5 text-[11px] font-medium text-white/70 tabular-nums">
-              <Users className="size-3" /> {connected + 1}
+            <span className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-sm font-medium text-white/80 tabular-nums">
+              <Users className="size-3.5" /> {connected + 1}
             </span>
           )}
         </div>
@@ -724,7 +770,11 @@ function CallSession({ signalling, bookingId, self, onLeave, compact, className 
             onClick={onLeave}
             aria-label="Leave call"
             title="Leave"
-            className={cn(controlBtn, compact ? "h-10 px-4" : "h-11 px-5", "gap-2 bg-danger text-sm font-semibold hover:bg-danger-hover")}
+            className={cn(
+              controlBtn,
+              compact ? "h-10 px-4 pointer-coarse:h-11" : "h-11 px-5",
+              "gap-2 bg-danger text-sm font-semibold hover:bg-danger-hover",
+            )}
           >
             <PhoneOff className="size-5" />
             {!compact && <span>Leave</span>}

@@ -251,7 +251,7 @@ export function CustomerLoginForm({ next, signedOut = false }: { next: string | 
                 setPhone(DEMO_PHONE);
                 void sendOtp(DEMO_PHONE);
               }}
-              className="mx-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted focus-ring disabled:opacity-60"
+              className="mx-auto inline-flex max-w-full min-h-11 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted focus-ring disabled:opacity-60"
             >
               <Sparkles className="size-4 shrink-0 text-muted-foreground" aria-hidden />
               <span>
@@ -269,7 +269,7 @@ export function CustomerLoginForm({ next, signedOut = false }: { next: string | 
           Nivar doctor, nurse or admin?{" "}
           <Link
             href={next ? `/staff/login?next=${encodeURIComponent(next)}` : "/staff/login"}
-            className="relative rounded-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 before:absolute before:-inset-x-2 before:-inset-y-3 hover:decoration-primary focus-ring"
+            className="relative rounded-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 before:absolute before:-inset-x-2 before:-inset-y-3.5 hover:decoration-primary focus-ring"
           >
             Staff sign in
           </Link>

@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { CalendarDays, ChevronRight, RotateCcw } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
+import { useAuth } from "@/lib/auth";
 import { dayLabel, formatDate, formatINR, slotLabel } from "@/lib/format";
 import type { Booking, Catalog } from "@/lib/types";
+import { saveDraftFromVisit } from "./book-wizard";
 import { Unbroken, bookAgainHref, bookingTitle, testsLabel } from "./shared";
 
 /**
  * A booking on the bookings list. The card opens the visit; a past visit also offers "Book again",
- * as a row of its own under the card's link so the two never nest.
+ * as a row of its own under the card's link so the two never nest. Like the visit page's, it brings
+ * the person and the address along and opens on the date.
  */
 export function BookingCard({ booking, catalog, past }: { booking: Booking; catalog: Catalog | null; past?: boolean }) {
+  const { user } = useAuth();
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-colors hover:border-primary/40">
       <Link
@@ -45,7 +49,8 @@ export function BookingCard({ booking, catalog, past }: { booking: Booking; cata
       </Link>
       {past && (
         <Link
-          href={bookAgainHref(booking)}
+          href={bookAgainHref(booking, { onDate: !!user })}
+          onClick={user ? () => saveDraftFromVisit(booking, user) : undefined}
           className="flex min-h-11 items-center gap-2 border-t border-border px-4 text-sm font-semibold text-primary transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset"
         >
           <RotateCcw className="size-4 shrink-0" aria-hidden />

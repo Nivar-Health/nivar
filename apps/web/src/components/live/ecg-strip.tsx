@@ -9,10 +9,12 @@ export type EcgStripProps = {
   lead?: string;
   /** Seconds per printed row (default 5). Long captures wrap into rows. */
   secondsPerRow?: number;
-  /** "paper" = classic pink ECG paper, "brand" = Nivar mist paper with a pine-ink trace. */
+  /** "paper" = classic pink ECG paper, "brand" = the app's own page colour with an ink trace. */
   variant?: "paper" | "brand";
   /** Optional caption shown on the right of the footer, e.g. capture time. */
   caption?: string;
+  /** Smaller footer text, for dense staff screens. Default false (14px, for patients). */
+  dense?: boolean;
   className?: string;
 };
 
@@ -21,9 +23,16 @@ const MM_PER_MV = 10;
 const ROW_MM = 30; // height of a row in mm
 const CAL_MM = 7; // calibration pulse block width
 
+// Colours go through `style`, not SVG attributes, so the brand theme's tokens resolve everywhere.
 const THEMES = {
   paper: { paper: "#FFF8F6", minor: "#F7D4D0", major: "#EBA59D", trace: "#1B1B1B", text: "#7A3B35" },
-  brand: { paper: "#F7FAF8", minor: "#E4ECE8", major: "#C9D8D1", trace: "#10201B", text: "#5A6964" },
+  brand: {
+    paper: "var(--background)",
+    minor: "var(--muted)",
+    major: "var(--border-strong)",
+    trace: "var(--foreground)",
+    text: "var(--foreground-2)",
+  },
 } as const;
 
 /**
@@ -38,6 +47,7 @@ export function EcgStrip({
   secondsPerRow = 5,
   variant = "paper",
   caption,
+  dense = false,
   className,
 }: EcgStripProps) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
@@ -64,14 +74,14 @@ export function EcgStrip({
       >
         <defs>
           <pattern id={`minor-${uid}`} width="1" height="1" patternUnits="userSpaceOnUse">
-            <path d="M 1 0 L 0 0 0 1" fill="none" stroke={t.minor} strokeWidth="0.06" />
+            <path d="M 1 0 L 0 0 0 1" fill="none" style={{ stroke: t.minor }} strokeWidth="0.06" />
           </pattern>
           <pattern id={`major-${uid}`} width="5" height="5" patternUnits="userSpaceOnUse">
             <rect width="5" height="5" fill={`url(#minor-${uid})`} />
-            <path d="M 5 0 L 0 0 0 5" fill="none" stroke={t.major} strokeWidth="0.14" />
+            <path d="M 5 0 L 0 0 0 5" fill="none" style={{ stroke: t.major }} strokeWidth="0.14" />
           </pattern>
         </defs>
-        <rect width={rowWidthMm} height={heightMm} fill={t.paper} />
+        <rect width={rowWidthMm} height={heightMm} style={{ fill: t.paper }} />
         <rect width={rowWidthMm} height={heightMm} fill={`url(#major-${uid})`} />
 
         {rows.map((row, r) => {
@@ -87,11 +97,11 @@ export function EcgStrip({
           }
           return (
             <g key={r}>
-              <path d={cal} fill="none" stroke={t.trace} strokeWidth="0.32" strokeLinejoin="round" />
+              <path d={cal} fill="none" style={{ stroke: t.trace }} strokeWidth="0.32" strokeLinejoin="round" />
               {d && (
-                <path d={d} fill="none" stroke={t.trace} strokeWidth="0.3" strokeLinejoin="round" strokeLinecap="round" />
+                <path d={d} fill="none" style={{ stroke: t.trace }} strokeWidth="0.3" strokeLinejoin="round" strokeLinecap="round" />
               )}
-              <text x={CAL_MM + 1.2} y={r * ROW_MM + 3.6} fontSize="2.6" fontWeight="600" fill={t.text} fontFamily="ui-sans-serif, system-ui">
+              <text x={CAL_MM + 1.2} y={r * ROW_MM + 3.6} fontSize="2.6" fontWeight="600" style={{ fill: t.text }} fontFamily="ui-sans-serif, system-ui">
                 {lead}
               </text>
             </g>
@@ -99,7 +109,11 @@ export function EcgStrip({
         })}
       </svg>
       <figcaption
-        className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-3 py-1.5 text-[11px] tabular-nums"
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-3 py-1.5 tabular-nums",
+          // A printed report keeps the strip's own small footer.
+          dense ? "text-[11px]" : "text-sm print:text-[11px]",
+        )}
         style={{ borderColor: t.minor, color: t.text }}
       >
         <span>

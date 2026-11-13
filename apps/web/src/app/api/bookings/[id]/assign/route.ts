@@ -2,6 +2,7 @@ import { z } from "zod";
 import { withAuth } from "@/server/auth";
 import { idOf } from "@/server/booking-status";
 import { findActiveStaff, loadBooking, notifyStatusChange, publishBooking, transition } from "@/server/bookings";
+import { scheduleLabel } from "@/lib/format";
 import { badRequest, json } from "@/server/errors";
 import { notifyUsers } from "@/server/realtime";
 import { parseBody, uuidSchema } from "@/server/validate";
@@ -26,7 +27,8 @@ export const POST = withAuth<{ id: string }>(
     });
     const payload = await publishBooking(booking.id);
 
-    const when = `${payload.scheduledDate}, ${payload.slot}`;
+    // The way the app writes a visit time: "Today, 7:00 to 8:00 AM", "Fri, 13 Nov, 7:00 to 8:00 AM".
+    const when = scheduleLabel(payload.scheduledDate, payload.slot);
     const where = payload.address?.area || payload.address?.city || "";
     const newStaff: string[] = [];
     if (prevNurse !== nurse.id) newStaff.push(nurse.id);

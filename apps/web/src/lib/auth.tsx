@@ -256,8 +256,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginStaff = useCallback(
     async (email: string, password: string) => {
-      const { data, error } = await getSupabase().auth.signInWithPassword({ email, password });
+      const { data, error } = await getSupabase()
+        .auth.signInWithPassword({ email, password })
+        .catch(() => ({ data: { session: null }, error: { status: 0 } }));
       if (error || !data.session) {
+        // No answer or a server fault says nothing about the password: only a refusal does.
+        const status = error?.status ?? 0;
+        if (status === 0 || status >= 500) throw new ApiError(0, UNREACHABLE_MESSAGE);
+        if (status === 429) throw new ApiError(429, "Too many tries. Wait a minute, then try again.", "rate_limited");
         throw new ApiError(401, "Incorrect email or password", "invalid_credentials");
       }
       return completeSignIn(data.session.access_token, async (me) => {

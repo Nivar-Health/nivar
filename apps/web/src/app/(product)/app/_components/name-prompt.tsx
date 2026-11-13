@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { LoaderCircle } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo";
@@ -9,10 +9,15 @@ import { Input } from "@/components/ui/input";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
+import { SHEET_BACKDROP, SHEET_POPUP } from "./checkout-dialog";
 
-/** Asks first-time patients (created by OTP without a name) for their name. */
+/**
+ * Asks first-time patients (created by OTP without a name) for their name. The same sheet as the
+ * app's other questions, but it cannot be dismissed: the name is needed before anything else.
+ */
 export function NamePrompt() {
   const { user, setUser } = useAuth();
+  const popupRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,50 +45,57 @@ export function NamePrompt() {
   return (
     <DialogPrimitive.Root open={open} disablePointerDismissal>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-foreground/45 backdrop-blur-[2px]" />
-        {/* Phones: near the top, so the button stays above the keyboard. Wider screens: centred. */}
-        <DialogPrimitive.Popup className="fixed top-[12dvh] left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-3xl bg-card p-6 shadow-2xl outline-none sm:top-1/2 sm:-translate-y-1/2">
-          <LogoMark className="size-11" />
-          <DialogPrimitive.Title className="mt-4 font-display text-2xl leading-tight font-semibold">
-            Welcome to Nivar
-          </DialogPrimitive.Title>
-          <DialogPrimitive.Description className="mt-1 text-small text-foreground-2">
-            What should we call you? Your nurse and doctor will see this name.
-          </DialogPrimitive.Description>
-          <form method="post" onSubmit={save} className="mt-5 space-y-3" noValidate>
-            <label htmlFor="welcome-name" className="sr-only">
-              Your full name
-            </label>
-            <Input
-              id="welcome-name"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError(null);
-              }}
-              placeholder="Your full name"
-              autoComplete="name"
-              autoCapitalize="words"
-              enterKeyHint="done"
-              maxLength={80}
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "welcome-name-error" : undefined}
-              className="h-14 rounded-xl px-3.5 text-base sm:h-12 md:text-base"
-            />
-            {error && (
-              <p id="welcome-name-error" role="alert" className="text-small text-destructive">
-                {error}
-              </p>
-            )}
-            <Button
-              type="submit"
-              disabled={saving}
-              aria-busy={saving}
-              className="h-14 w-full rounded-full text-base font-semibold sm:h-12"
-            >
-              {saving && <LoaderCircle className="animate-spin" aria-hidden />} Continue
-            </Button>
-          </form>
+        <DialogPrimitive.Backdrop className={SHEET_BACKDROP} />
+        {/* On a touch screen the sheet itself takes focus, so the keyboard waits for a tap on the field. */}
+        <DialogPrimitive.Popup
+          ref={popupRef}
+          className={SHEET_POPUP}
+          initialFocus={() => (window.matchMedia("(pointer: coarse)").matches ? popupRef.current : true)}
+        >
+          <div className="overflow-y-auto px-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:p-6">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
+            <LogoMark className="size-11" />
+            <DialogPrimitive.Title className="mt-4 font-display text-2xl leading-tight font-semibold">
+              Welcome to Nivar
+            </DialogPrimitive.Title>
+            <DialogPrimitive.Description className="mt-1 text-small text-foreground-2">
+              What should we call you? Your nurse and doctor will see this name.
+            </DialogPrimitive.Description>
+            <form method="post" onSubmit={save} className="mt-5 space-y-3" noValidate>
+              <label htmlFor="welcome-name" className="sr-only">
+                Your full name
+              </label>
+              <Input
+                id="welcome-name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError(null);
+                }}
+                placeholder="Your full name"
+                autoComplete="name"
+                autoCapitalize="words"
+                enterKeyHint="done"
+                maxLength={80}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "welcome-name-error" : undefined}
+                className="h-14 rounded-xl px-3.5 text-base sm:h-12 md:text-base"
+              />
+              {error && (
+                <p id="welcome-name-error" role="alert" className="text-small font-medium text-destructive">
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                disabled={saving}
+                aria-busy={saving}
+                className="h-14 w-full rounded-full text-base font-semibold sm:h-12"
+              >
+                {saving && <LoaderCircle className="animate-spin" aria-hidden />} Continue
+              </Button>
+            </form>
+          </div>
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
