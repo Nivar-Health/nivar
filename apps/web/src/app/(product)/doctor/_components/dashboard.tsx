@@ -28,7 +28,7 @@ import { populated, type Booking } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { GENDER_SHORT } from "./clinical";
 import { statusAt, useDoctorBookings, useLiveFeed, useNow } from "./hooks";
-import { vitalRows } from "./vitals";
+import { vitalRows, vitalTextClass } from "./vitals";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -95,7 +95,7 @@ function Kpi({
       className={cn(
         "relative flex min-w-0 flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 shadow-soft",
         className,
-        tone === "live" && "border-foreground",
+        tone === "live" && value !== "0" && "border-foreground",
       )}
     >
       <div className="flex min-h-5 items-center justify-between gap-2 sm:min-h-8">
@@ -168,6 +168,8 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
   const nurse = populated(booking.nurse);
   const inConsult = booking.status === "consult";
   const rows = vitalRows(booking.vitals, ecg.heartRate).filter((r) => ["bp", "hr", "spo2", "sugar"].includes(r.key));
+  // An idle monitor for a visit with no ECG would sit "offline" for the whole visit.
+  const showEcg = booking.serviceCodes.includes("ECG") || ecg.live;
   const started = statusAt(booking, booking.status);
 
   return (
@@ -191,13 +193,13 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
           )}
         </div>
       )}
-      <div className="grid gap-4 p-4 @2xl/live:grid-cols-[minmax(0,0.8fr)_minmax(0,1.3fr)]">
+      <div className={cn("grid gap-4 p-4", showEcg && "@2xl/live:grid-cols-[minmax(0,0.8fr)_minmax(0,1.3fr)]")}>
         <div className="flex min-w-0 flex-col gap-3.5">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               <UserAvatar name={booking.patient.name} size="lg" />
               <div className="min-w-0">
-                <p className="truncate text-[15px] font-semibold">{booking.patient.name}</p>
+                <p className="line-clamp-2 text-[15px] leading-snug font-semibold">{booking.patient.name}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {booking.code} · {booking.patient.age}
                   {GENDER_SHORT[booking.patient.gender]}
@@ -206,26 +208,27 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
                   {booking.address.area}
                   {nurse ? ` · with ${nurse.name}` : ""}
                 </p>
+                {!inConsult && <StatusBadge status={booking.status} size="sm" className="mt-1.5" />}
               </div>
             </div>
-            {!inConsult && <StatusBadge status={booking.status} size="sm" />}
           </div>
 
-          <dl className="grid grid-cols-2 gap-2 @lg/live:grid-cols-4 @2xl/live:grid-cols-2">
+          <dl className={cn("grid grid-cols-2 gap-2 @lg/live:grid-cols-4", showEcg && "@2xl/live:grid-cols-2")}>
             {rows.map((r) => {
               const abnormal = r.assessment && r.assessment.level !== "normal";
               return (
                 <div
                   key={r.key}
                   className={cn(
-                    "flex min-w-0 flex-col rounded-xl border px-3 py-2",
-                    abnormal ? "border-danger/30 bg-card" : "border-border bg-card",
+                    "flex min-w-0 flex-col rounded-xl border bg-card px-3 py-2",
+                    abnormal ? "border-current/30" : "border-border",
+                    abnormal && vitalTextClass(r.assessment),
                   )}
                 >
                   <dt className="flex items-center justify-between gap-1 text-[11px] font-medium text-muted-foreground">
                     <span className="truncate">{SHORT_LABEL[r.key] ?? r.label}</span>
                     {abnormal && (
-                      <span className="shrink-0 text-[10px] font-semibold text-danger">
+                      <span className={cn("shrink-0 text-[10px] font-semibold", vitalTextClass(r.assessment))}>
                         {r.assessment?.label}
                       </span>
                     )}
@@ -234,8 +237,7 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
                     <span
                       className={cn(
                         "text-base font-semibold tabular-nums",
-                        r.value === null && "text-muted-foreground/60",
-                        abnormal && "text-danger",
+                        r.value === null ? "text-muted-foreground/60" : vitalTextClass(r.assessment),
                       )}
                     >
                       {r.value ?? "--"}
@@ -261,7 +263,7 @@ function LiveCard({ booking, highlight }: { booking: Booking; highlight: boolean
             </Link>
           </div>
         </div>
-        <EcgMonitor feed={ecg.feed} heartRate={ecg.heartRate} height={196} className="rounded-xl" />
+        {showEcg && <EcgMonitor feed={ecg.feed} heartRate={ecg.heartRate} height={196} className="rounded-xl" />}
       </div>
     </article>
   );
@@ -360,7 +362,8 @@ function ReportRow({ booking, now }: { booking: Booking; now: number }) {
         </p>
         <p className={cn("mt-0.5 truncate text-xs", overdue ? "text-saffron" : "text-muted-foreground")}>
           {booking.report?.diagnosis ? `Draft: ${booking.report.diagnosis}` : "No draft yet"}
-          {mins !== null && ` · consult ended ${mins === 0 ? "just now" : `${mins} min ago`}`}
+          {mins !== null &&
+            ` · consult ended ${mins === 0 ? "just now" : mins > 90 ? `${Math.round(mins / 60)} h ago` : `${mins} min ago`}`}
         </p>
       </div>
       <Link href={workspaceHref(booking)} className={cn(buttonVariants({ size: "lg" }), "shrink-0 px-3.5")}>
@@ -417,11 +420,12 @@ export function DoctorDashboard() {
     const upcoming = bookings
       .filter(
         (b) =>
-          (UPCOMING as readonly string[]).includes(b.status) && (b.scheduledDate === today || b.status !== "assigned"),
+          // An unfinished visit from an earlier day stays here (with its date) until it is done.
+          (UPCOMING as readonly string[]).includes(b.status) && (b.scheduledDate <= today || b.status !== "assigned"),
       )
       .sort((a, b) => {
         const rank = (x: Booking) => (x.status === "arrived" ? 0 : x.status === "en_route" ? 1 : 2);
-        return rank(a) - rank(b) || a.slot.localeCompare(b.slot);
+        return rank(a) - rank(b) || a.scheduledDate.localeCompare(b.scheduledDate) || a.slot.localeCompare(b.slot);
       });
     const later = bookings.filter((b) => b.status === "assigned" && b.scheduledDate > today);
     const completed = bookings
@@ -480,7 +484,11 @@ export function DoctorDashboard() {
       )}
 
       {/* KPIs */}
-      <section aria-label="Today at a glance" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      {/* On phones the patients waiting come first and the counts after them. */}
+      <section
+        aria-label="Today at a glance"
+        className="grid grid-cols-2 gap-3 max-md:order-2 md:grid-cols-3 xl:grid-cols-5"
+      >
         {loading ? (
           Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-[124px] rounded-2xl" />)
         ) : (
@@ -517,7 +525,7 @@ export function DoctorDashboard() {
             />
             <Kpi
               label="Avg turnaround"
-              value={view.avgTurnaround !== null ? `${view.avgTurnaround}m` : "--"}
+              value={view.avgTurnaround !== null ? `${view.avgTurnaround} min` : "--"}
               sub="Arrival to published report"
               className="col-span-2 md:col-span-1"
               icon={<Timer />}
@@ -526,9 +534,9 @@ export function DoctorDashboard() {
         )}
       </section>
 
-      <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-7 max-md:contents xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* Main column */}
-        <div className="flex min-w-0 flex-col gap-7">
+        <div className="flex min-w-0 flex-col gap-7 max-md:order-1">
           <section className="flex flex-col gap-3" aria-label="Live now">
             <SectionHeader
               title="Live now"
@@ -569,7 +577,7 @@ export function DoctorDashboard() {
         </div>
 
         {/* Side column */}
-        <div className="flex min-w-0 flex-col gap-7">
+        <div className="flex min-w-0 flex-col gap-7 max-md:order-3">
           <section className="flex flex-col gap-3" aria-label="Upcoming today">
             <SectionHeader title="Upcoming today" count={loading ? undefined : view.upcoming.length} icon={<Clock />} />
             <div className="rounded-2xl border bg-card p-1.5 shadow-soft">

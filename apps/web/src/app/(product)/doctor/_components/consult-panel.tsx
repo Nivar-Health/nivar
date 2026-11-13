@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   BadgeCheck,
   Camera,
+  Loader2,
   FilePenLine,
   FlaskConical,
   House,
@@ -14,6 +15,15 @@ import {
 } from "lucide-react";
 import { VideoCall } from "@/components/live/video-call";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/user-menu";
 import { useAuth } from "@/lib/auth";
 import { firstName } from "@/lib/format";
@@ -99,30 +109,39 @@ const WAITING_STATES: Record<string, { icon: React.ReactNode; title: (nurse: str
   },
 };
 
+/** Statuses where the call is over: the stage shrinks so the report comes into view. */
+const ENDED = ["reporting", "completed", "cancelled"];
+
 export function ConsultPanel({
   booking,
-  onEndCall,
+  onEndConsult,
   ending,
 }: {
   booking: Booking;
-  /** Ends the consult (status reporting). */
-  onEndCall: () => void;
+  /** Ends the consult for everyone (status reporting). Resolves true on success. */
+  onEndConsult: () => Promise<boolean>;
   ending: boolean;
 }) {
   const { user } = useAuth();
   const signalling = useSignalling();
   const connected = useSocketConnected();
   const [joined, setJoined] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const nurse = populated(booking.nurse);
   const nurseName = nurse ? firstName(nurse.name) : "The nurse";
   const inConsult = booking.status === "consult";
   const showCall = inConsult && joined && signalling;
   const waiting = WAITING_STATES[booking.status];
 
+  const ended = ENDED.includes(booking.status);
+
   return (
     <section
+      id="video-consult"
+      aria-label="Video consult"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-3 rounded-2xl border bg-card p-4 shadow-soft transition-shadow",
+        "flex min-h-0 scroll-mt-20 flex-col gap-3 rounded-2xl border bg-card p-4 shadow-soft transition-shadow",
+        !ended && "flex-1",
         inConsult && !showCall && "border-foreground",
       )}
     >
@@ -180,7 +199,7 @@ export function ConsultPanel({
               {firstName(booking.patient.name)} and {nurseName} are ready
             </p>
             <p className="max-w-[300px] text-xs text-white/60">
-              Join from here. Your camera and microphone are requested when you join.
+              Join from here. Your browser will ask for your camera and microphone when you join.
             </p>
           </div>
           <Button
@@ -194,7 +213,7 @@ export function ConsultPanel({
           </Button>
         </Stage>
       ) : waiting ? (
-        <Stage className="min-h-[300px]">
+        <Stage className={ended ? "min-h-[160px] flex-none gap-4 py-6" : "min-h-[300px]"}>
           <span className="grid size-14 place-items-center rounded-2xl bg-white/8 text-white ring-1 ring-white/10 [&_svg]:size-6">
             {waiting.icon}
           </span>
@@ -212,10 +231,45 @@ export function ConsultPanel({
       ) : null}
 
       {inConsult && (
-        <Button variant="outline" size="lg" onClick={onEndCall} disabled={ending} className="w-full">
-          <PhoneOff /> {ending ? "Ending consult" : "End call, write report later"}
+        <Button variant="outline" size="lg" onClick={() => setConfirmEnd(true)} disabled={ending} className="w-full">
+          {ending ? <Loader2 className="animate-spin" /> : <PhoneOff />}
+          {ending ? "Ending consult" : "End consult, write report later"}
         </Button>
       )}
+
+      {/* Ending is for everyone and cannot be undone, unlike "Leave call" in the video controls. */}
+      <Dialog open={confirmEnd} onOpenChange={(open) => !ending && setConfirmEnd(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">End the consult for everyone?</DialogTitle>
+            <DialogDescription>
+              The video call closes for {firstName(booking.patient.name)}
+              {nurse ? ` and ${firstName(nurse.name)}` : ""}, and the nurse&apos;s visit is marked complete. You can
+              still write and publish the report.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            {/* First in the dialog, so it has the focus when it opens. */}
+            <DialogClose render={<Button variant="outline" size="lg" disabled={ending} />}>Keep going</DialogClose>
+            <Button
+              size="lg"
+              disabled={ending}
+              className="px-4"
+              onClick={() => {
+                void onEndConsult().then((ok) => {
+                  if (ok) {
+                    setConfirmEnd(false);
+                    setJoined(false);
+                  }
+                });
+              }}
+            >
+              {ending ? <Loader2 className="animate-spin" /> : <PhoneOff />}
+              {ending ? "Ending consult" : "End consult"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

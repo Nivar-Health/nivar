@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatPhone } from "@/lib/format";
-import type { Address, User } from "@/lib/types";
+import { formatDateLong, formatPhone } from "@/lib/format";
+import type { Address, Gender, User } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { todayIST } from "@/server/time";
 import {
   AddressForm,
   fieldErrorClass,
@@ -19,7 +21,7 @@ import {
   saveEditedAddress,
   saveNewAddress,
 } from "./address-form";
-import { HelpCard, PersonAvatar, SectionTitle, Surface } from "./shared";
+import { GENDER_LABEL, HelpCard, PersonAvatar, SectionTitle, Surface, ageFromDob } from "./shared";
 
 /** Round icon buttons a thumb can hit (44px). */
 const iconButton = "size-11 shrink-0 rounded-full";
@@ -171,6 +173,8 @@ export function ProfileView() {
         )}
       </Surface>
 
+      <DetailsCard user={user} onSaved={setUser} />
+
       <section aria-labelledby="profile-addresses">
         <SectionTitle id="profile-addresses">Saved addresses</SectionTitle>
         <div className="space-y-2.5">
@@ -302,5 +306,177 @@ export function ProfileView() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+const GENDERS = Object.keys(GENDER_LABEL) as Gender[];
+
+/**
+ * Date of birth and gender: the booking form fills them in for "Myself", so they are asked once
+ * here rather than on every booking. Both are optional.
+ */
+function DetailsCard({ user, onSaved }: { user: User; onSaved: (user: User) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<Gender | "">("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const savedDob = user.dob?.slice(0, 10) ?? "";
+  const age = ageFromDob(savedDob);
+
+  const startEditing = () => {
+    setDob(savedDob);
+    setGender(user.gender ?? "");
+    setError(null);
+    setEditing(true);
+  };
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (saving) return;
+    if (dob && (dob > todayIST() || ageFromDob(dob) === null)) {
+      setError("Check the date of birth. It cannot be in the future or more than 120 years ago.");
+      document.getElementById("profile-dob")?.focus();
+      return;
+    }
+    const body: { dob?: string | null; gender?: Gender } = {};
+    if (dob !== savedDob) body.dob = dob || null;
+    if (gender && gender !== user.gender) body.gender = gender;
+    if (Object.keys(body).length === 0) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const { user: next } = await api.patch<{ user: User }>("/me", body);
+      onSaved(next);
+      setEditing(false);
+      toast.success("Details saved");
+    } catch (err) {
+      // Shown in the form, with what was chosen still in it.
+      setError(`Couldn't save your details. ${errorMessage(err)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section aria-labelledby="profile-details">
+      <SectionTitle id="profile-details">Your details</SectionTitle>
+      <Surface className="p-4 sm:p-5">
+        {editing ? (
+          <form method="post" onSubmit={save} className="space-y-4" noValidate>
+            <div className="space-y-1.5">
+              <label htmlFor="profile-dob" className={fieldLabelClass}>
+                Date of birth
+              </label>
+              <Input
+                id="profile-dob"
+                type="date"
+                value={dob}
+                min="1900-01-01"
+                max={todayIST()}
+                autoComplete="bday"
+                onChange={(e) => {
+                  setDob(e.target.value);
+                  setError(null);
+                }}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "profile-details-error" : undefined}
+                className={inputClass}
+              />
+            </div>
+            <fieldset>
+              <legend className={fieldLabelClass}>Gender</legend>
+              {/* Native radios: arrow keys move between them, and the chosen one shows in the brand colour. */}
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
+                {GENDERS.map((g) => (
+                  <label
+                    key={g}
+                    className={cn(
+                      "flex h-12 cursor-pointer items-center justify-center rounded-full border border-input bg-card text-small font-medium transition-colors",
+                      "has-checked:border-primary has-checked:bg-accent has-checked:font-semibold has-checked:text-primary",
+                      "has-focus-visible:ring-3 has-focus-visible:ring-ring/40",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="profile-gender"
+                      value={g}
+                      checked={gender === g}
+                      onChange={() => {
+                        setGender(g);
+                        setError(null);
+                      }}
+                      className="sr-only"
+                    />
+                    {GENDER_LABEL[g]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {error && (
+              <p id="profile-details-error" role="alert" className={fieldErrorClass}>
+                {error}
+              </p>
+            )}
+            <div className="flex flex-col-reverse gap-2.5 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditing(false)}
+                className="h-12 w-full rounded-full text-small sm:w-auto sm:flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                aria-busy={saving}
+                className="h-14 w-full rounded-full text-base font-semibold sm:h-12 sm:w-auto sm:flex-1 sm:text-small"
+              >
+                {saving && <LoaderCircle className="animate-spin" aria-hidden />} Save
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex items-start gap-4">
+            <div className="min-w-0 flex-1 space-y-2.5">
+              <dl className="space-y-2.5 text-small">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Date of birth</dt>
+                  <dd className="font-medium">
+                    {savedDob ? (
+                      <>
+                        {formatDateLong(savedDob)}
+                        {age !== null && <span className="text-foreground-2"> ({age} years)</span>}
+                      </>
+                    ) : (
+                      <span className="text-foreground-2">Not added</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Gender</dt>
+                  <dd className="font-medium">
+                    {user.gender ? GENDER_LABEL[user.gender] : <span className="text-foreground-2">Not added</span>}
+                  </dd>
+                </div>
+              </dl>
+              <p className="text-sm text-muted-foreground">Used to fill in your bookings.</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={startEditing}
+              aria-label="Edit your details"
+              className="h-11 shrink-0 rounded-full px-4 text-sm font-semibold"
+            >
+              <Pencil aria-hidden /> Edit
+            </Button>
+          </div>
+        )}
+      </Surface>
+    </section>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { createElement } from "react";
 import { Activity, Droplet, Gauge, HeartPulse, Stethoscope, Thermometer, Wind, type LucideIcon } from "lucide-react";
 import { EcgStrip } from "@/components/live/ecg-strip";
 import {
@@ -8,6 +9,7 @@ import {
   formatTime,
   sugarNormalRange,
   vitalAssessment,
+  vitalShape,
   vitalToneClass,
   type VitalAssessment,
 } from "@/lib/format";
@@ -18,8 +20,8 @@ import { SectionTitle, Surface } from "./shared";
 
 interface VitalCardModel {
   key: string;
+  /** The plain name ("Oxygen level (SpO2)"), as on the report. */
   label: string;
-  short: string;
   icon: LucideIcon;
   value: string | null;
   unit: string;
@@ -36,7 +38,6 @@ export function buildVitalCards(booking: Booking): VitalCardModel[] {
   if (codes.includes("BP") || hasBp) {
     cards.push({
       key: "bp",
-      short: "BP",
       label: VITAL_INFO.bp.label,
       icon: Gauge,
       value: hasBp ? `${v.bpSystolic}/${v.bpDiastolic}` : null,
@@ -48,7 +49,6 @@ export function buildVitalCards(booking: Booking): VitalCardModel[] {
   if (codes.includes("SUGAR") || v.sugar != null) {
     cards.push({
       key: "sugar",
-      short: "Sugar",
       label: VITAL_INFO.sugar.label,
       icon: Droplet,
       value: v.sugar != null ? String(v.sugar) : null,
@@ -61,7 +61,6 @@ export function buildVitalCards(booking: Booking): VitalCardModel[] {
   if (codes.includes("HR") || v.heartRate != null) {
     cards.push({
       key: "hr",
-      short: "Heart rate",
       label: VITAL_INFO.heartRate.label,
       icon: HeartPulse,
       value: v.heartRate != null ? String(v.heartRate) : null,
@@ -73,7 +72,6 @@ export function buildVitalCards(booking: Booking): VitalCardModel[] {
   if (codes.includes("SPO2") || v.spo2 != null) {
     cards.push({
       key: "spo2",
-      short: "SpO2",
       label: VITAL_INFO.spo2.label,
       icon: Wind,
       value: v.spo2 != null ? String(v.spo2) : null,
@@ -85,7 +83,6 @@ export function buildVitalCards(booking: Booking): VitalCardModel[] {
   if (v.temperatureF != null) {
     cards.push({
       key: "temp",
-      short: "Temp",
       label: VITAL_INFO.temperature.label,
       icon: Thermometer,
       value: String(v.temperatureF),
@@ -101,44 +98,49 @@ function lowerFirst(s: string): string {
   return s ? s[0].toLowerCase() + s.slice(1) : s;
 }
 
+/** A reading's status as a word and a shape, never colour alone. */
+function VitalFlag({ assessment }: { assessment: VitalAssessment }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-7 w-fit items-center gap-1 rounded-full px-2.5 text-sm font-semibold ring-1 ring-inset",
+        vitalToneClass(assessment),
+      )}
+    >
+      {createElement(vitalShape(assessment), { className: "size-3.5 shrink-0", strokeWidth: 2.5, "aria-hidden": true })}
+      {assessment.label}
+    </span>
+  );
+}
+
 function VitalCard({ card, waiting }: { card: VitalCardModel; waiting: boolean }) {
   const Icon = card.icon;
   return (
     <div
       className={cn(
-        "flex min-h-[7.25rem] flex-col rounded-2xl border p-3.5 transition-colors",
+        "flex min-h-[8.5rem] flex-col rounded-2xl border p-3.5 transition-colors",
         card.value ? "border-border bg-card" : "border-dashed border-border bg-background",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Icon className="size-3.5 shrink-0 text-foreground" aria-hidden />
-          <span className="truncate">{card.short}</span>
-        </span>
-        {card.assessment && (
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-1.5 py-px text-[10.5px] font-semibold ring-1 ring-inset",
-              vitalToneClass(card.assessment),
-            )}
-          >
-            {card.assessment.label}
-          </span>
-        )}
-      </div>
+      {/* The name may take two lines on a narrow phone; it is never cut. */}
+      <p className="flex items-start gap-1.5 text-sm leading-snug font-medium text-foreground-2">
+        <Icon className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden />
+        <span className="min-w-0">{card.label}</span>
+      </p>
       {card.value ? (
         <div key={card.value} className="mt-auto animate-fade-up pt-2">
-          <p className="flex items-baseline gap-1">
+          <p className="flex flex-wrap items-baseline gap-x-1">
             <span className="tabular font-display text-[1.7rem] leading-none font-medium tracking-tight">{card.value}</span>
-            <span className="text-xs text-muted-foreground">{card.unit}</span>
+            <span className="text-sm text-muted-foreground">{card.unit}</span>
           </p>
-          <p className="mt-1 truncate text-[11px] text-muted-foreground">
+          {card.assessment && <div className="mt-2"><VitalFlag assessment={card.assessment} /></div>}
+          <p className="tabular mt-1.5 text-sm leading-snug text-muted-foreground">
             {card.sub ? `${card.sub} · ` : ""}Normal {lowerFirst(card.range)}
           </p>
         </div>
       ) : (
         <div className="mt-auto pt-2">
-          <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-small text-foreground-2">
             {waiting ? (
               <>
                 <span className="flex gap-0.5" aria-hidden>
@@ -152,7 +154,7 @@ function VitalCard({ card, waiting }: { card: VitalCardModel; waiting: boolean }
               "Not recorded"
             )}
           </div>
-          <p className="mt-1 truncate text-[11px] text-muted-foreground">Normal {lowerFirst(card.range)}</p>
+          <p className="tabular mt-1 text-sm leading-snug text-muted-foreground">Normal {lowerFirst(card.range)}</p>
         </div>
       )}
     </div>
@@ -177,17 +179,17 @@ export function VitalsSection({ booking }: { booking: Booking }) {
       <SectionTitle
         action={
           capturing ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
-              <span className="live-dot size-1.5 text-signal" /> Live
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <span className="live-dot size-1.5 text-signal" aria-hidden /> Live
             </span>
           ) : booking.vitals?.recordedAt ? (
-            <span className="text-xs text-muted-foreground">Recorded {formatTime(booking.vitals.recordedAt)}</span>
+            <span className="tabular text-sm text-muted-foreground">Recorded {formatTime(booking.vitals.recordedAt)}</span>
           ) : null
         }
       >
         Your readings
         {cards.length > 0 && (
-          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+          <span className="tabular ml-1.5 text-sm font-normal text-muted-foreground">
             {recorded} of {cards.length}
           </span>
         )}
@@ -200,24 +202,29 @@ export function VitalsSection({ booking }: { booking: Booking }) {
           ))}
         </div>
       )}
+      {cards.length > 0 && (
+        <p className="mt-2.5 px-1 text-small text-foreground-2">
+          These are general adult ranges. Your doctor will explain your readings.
+        </p>
+      )}
 
       {(wantsEcg || booking.ecg) && (
         <Surface className="mt-2.5 overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-3">
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <Activity className="size-4 text-primary" aria-hidden /> Smart ECG
+            <span className="flex items-center gap-2 text-small font-semibold">
+              <Activity className="size-4 text-primary" aria-hidden /> Heart tracing (ECG)
             </span>
             {ecgLive ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border ring-inset">
-                <span className="live-dot size-1.5 text-signal" /> {devices.ecg === "connecting" ? "Pairing..." : "Recording..."}
+              <span className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-background px-2.5 text-sm font-medium text-foreground ring-1 ring-border ring-inset">
+                <span className="live-dot size-1.5 text-signal" aria-hidden /> {devices.ecg === "connecting" ? "Pairing…" : "Recording…"}
               </span>
             ) : booking.ecg ? (
-              <span className="tabular text-xs text-muted-foreground">
+              <span className="tabular text-sm text-muted-foreground">
                 {booking.ecg.heartRate ? `${Math.round(booking.ecg.heartRate)} bpm · ` : ""}
                 {booking.ecg.rhythm}
               </span>
             ) : (
-              <span className="text-xs text-muted-foreground">{capturing ? "Not started yet" : "Not captured"}</span>
+              <span className="text-sm text-muted-foreground">{capturing ? "Not started yet" : "Not captured"}</span>
             )}
           </div>
           {booking.ecg?.samples?.length ? (
@@ -231,12 +238,12 @@ export function VitalsSection({ booking }: { booking: Booking }) {
                 caption={booking.ecg.capturedAt ? `Captured ${formatTime(booking.ecg.capturedAt)}` : undefined}
               />
               {booking.ecg.interpretation && (
-                <p className="mt-2.5 px-1 text-[13px] leading-relaxed text-muted-foreground">{booking.ecg.interpretation}</p>
+                <p className="mt-2.5 px-1 text-small leading-relaxed text-foreground-2">{booking.ecg.interpretation}</p>
               )}
             </div>
           ) : ecgLive ? (
-            <p className="px-4 pb-4 text-[13px] text-muted-foreground">
-              Your nurse is recording a 10 second ECG. Your doctor is watching it live.
+            <p className="px-4 pb-4 text-small text-foreground-2">
+              Your nurse is recording a 10-second ECG. Your doctor can see it as it is recorded.
             </p>
           ) : null}
         </Surface>
@@ -249,18 +256,18 @@ export function VitalsSection({ booking }: { booking: Booking }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">Smart stethoscope</p>
+              <p className="text-small font-semibold">Heart and lung sounds</p>
               {stethLive && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border ring-inset">
-                  <span className="live-dot size-1.5 text-signal" /> {devices.stethoscope === "connecting" ? "Pairing..." : "Listening..."}
+                <span className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-background px-2.5 text-sm font-medium text-foreground ring-1 ring-border ring-inset">
+                  <span className="live-dot size-1.5 text-signal" aria-hidden /> {devices.stethoscope === "connecting" ? "Pairing…" : "Listening…"}
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
+            <p className="mt-0.5 text-small leading-snug text-foreground-2">
               {booking.stethoscope
                 ? `${booking.stethoscope.findings}${booking.stethoscope.heartRate ? ` · ${Math.round(booking.stethoscope.heartRate)} bpm` : ""}`
                 : stethLive
-                  ? "Heart and lung sounds are streaming to your doctor."
+                  ? "Your doctor is listening to your heart and lungs."
                   : capturing
                     ? "Not started yet"
                     : "Not captured"}

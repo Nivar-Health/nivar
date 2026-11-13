@@ -119,7 +119,9 @@ export function AddressForm({
         }
         const nearest = BANGALORE_AREAS.map((a) => ({ a, km: haversineKm(here, a) })).sort((x, y) => x.km - y.km)[0];
         if (nearest && nearest.km < MAX_KM_TO_NEAREST) {
-          setCoords(here);
+          // The area is a good guess a little further out; the pin itself only when it is close.
+          if (nearest.km <= MAX_KM_FROM_AREA) setCoords(here);
+          else setLocNote(tooFar(nearest.a.name));
           setArea(nearest.a.name);
           setPincode((prev) => prev || nearest.a.pincode);
         } else {

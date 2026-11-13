@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthLayout } from "@/components/auth-layout";
+import { bookingEnabled } from "@/lib/features";
 import { StaffLoginForm } from "./staff-login-form";
 
 export const metadata: Metadata = {
@@ -24,17 +25,21 @@ export default async function StaffLoginPage({ searchParams }: PageProps<"/staff
         "Doctors watch live, consult over video and publish the report",
       ]}
       footnote={
-        <>
-          For Nivar employees. Patients sign in{" "}
-          {/* Always underlined: colour alone is under 3:1 against the muted footnote text (WCAG 1.4.1). */}
-          <Link
-            href="/login"
-            className="rounded-sm font-medium text-foreground underline decoration-foreground/40 underline-offset-4 transition-[text-decoration-color] hover:decoration-foreground focus-ring"
-          >
-            here
-          </Link>
-          .
-        </>
+        bookingEnabled ? (
+          <>
+            For Nivar staff. Patients use the{" "}
+            {/* Always underlined: colour alone is under 3:1 against the muted footnote text (WCAG 1.4.1). */}
+            <Link
+              href="/login"
+              className="rounded-sm font-medium text-foreground underline decoration-foreground/40 underline-offset-4 transition-[text-decoration-color] hover:decoration-foreground focus-ring"
+            >
+              patient sign-in
+            </Link>
+            .
+          </>
+        ) : (
+          "For Nivar staff."
+        )
       }
     >
       <StaffLoginForm next={typeof next === "string" ? next : null} />

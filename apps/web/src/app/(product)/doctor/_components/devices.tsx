@@ -254,7 +254,7 @@ export function StethPanel({
         subtitle={
           view === "captured" && steth
             ? `Heart sounds · ${steth.heartRate} bpm`
-            : "Tap Listen to hear the heart sounds live"
+            : "Use Listen to hear the heart sounds live"
         }
         chip={<DeviceChip view={view} state={state} live={feed.live} capturedAt={steth?.capturedAt} />}
       />

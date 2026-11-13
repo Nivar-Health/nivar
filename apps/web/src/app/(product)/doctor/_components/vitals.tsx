@@ -123,6 +123,15 @@ function ChangeFlash({ value }: { value: string | null }) {
   );
 }
 
+/**
+ * A reading's own colour, matching the pill beside it: amber for Elevated and Low, red for High and
+ * Fever, so the same value never reads amber on one screen and red on another.
+ */
+export function vitalTextClass(a: VitalAssessment | null | undefined): string {
+  if (!a || a.level === "normal") return "text-foreground";
+  return a.label === "Elevated" || a.level === "low" ? "text-saffron" : "text-danger";
+}
+
 /** Compact clinical list of vitals: label and normal range left, value and flag right. */
 export function VitalsList({ rows }: { rows: VitalRow[] }) {
   return (
@@ -139,7 +148,9 @@ export function VitalsList({ rows }: { rows: VitalRow[] }) {
             <span
               className={cn(
                 "grid size-8 shrink-0 place-items-center rounded-lg [&_svg]:size-4",
-                abnormal ? "border border-danger/30 bg-card text-danger" : "border border-border bg-card text-foreground",
+                abnormal
+                  ? cn("border border-current/30 bg-card", vitalTextClass(row.assessment))
+                  : "border border-border bg-card text-foreground",
               )}
             >
               {row.icon}
@@ -156,7 +167,7 @@ export function VitalsList({ rows }: { rows: VitalRow[] }) {
                   <span
                     className={cn(
                       "text-[17px] leading-none font-semibold tracking-tight tabular-nums",
-                      abnormal ? "text-danger" : "text-foreground",
+                      vitalTextClass(row.assessment),
                     )}
                   >
                     {row.value}

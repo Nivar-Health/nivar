@@ -249,7 +249,7 @@ export function PackagesPage() {
 
       <Panel
         title="Individual tests"
-        description="Click a price to edit it. Packages keep their own price."
+        description="Tap a price to edit it. Packages keep their own price."
         icon={<PackageOpen />}
         className="mt-6"
       >
@@ -286,7 +286,7 @@ export function PackagesPage() {
                       {s.requiresDevice ? (
                         <span className="inline-flex items-center gap-1.5">
                           {s.requiresDevice === "ecg" ? <Radio className="size-3.5 text-muted-foreground" /> : <Stethoscope className="size-3.5 text-muted-foreground" />}
-                          {s.requiresDevice === "ecg" ? "Smart ECG" : "Digital stethoscope"}
+                          {s.requiresDevice === "ecg" ? "Smart ECG" : "Smart stethoscope"}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">Standard kit</span>

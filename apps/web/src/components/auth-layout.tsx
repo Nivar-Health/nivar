@@ -47,7 +47,7 @@ export function AuthLayout({
             </Headline>
             <ul className="mt-8 flex flex-col gap-3.5">
               {points.map((point) => (
-                <li key={point} className="flex items-start gap-3 text-[15px] leading-snug text-pretty text-foreground-2">
+                <li key={point} className="flex items-start gap-3 text-small leading-snug text-pretty text-foreground-2">
                   <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full ring-1 ring-border-strong">
                     <Check className="size-3 text-signal" strokeWidth={2.5} aria-hidden />
                   </span>
@@ -78,7 +78,8 @@ export function AuthLayout({
       {/* Mobile brand header */}
       <header className="theme-pine relative overflow-hidden px-5 pt-5 pb-20 lg:hidden">
         <div className="relative flex items-center justify-between">
-          <Link href="/" className="rounded-md focus-ring">
+          {/* The hit area reaches 44px without moving the logo. */}
+          <Link href="/" className="relative rounded-md focus-ring before:absolute before:-inset-x-1 before:-inset-y-1.5">
             <Logo size="sm" variant="light" />
           </Link>
           <span className="text-sm font-medium text-muted-foreground">{eyebrow}</span>
@@ -92,8 +93,8 @@ export function AuthLayout({
         />
       </header>
 
-      {/* Form column */}
-      <main className="relative -mt-6 flex flex-1 flex-col rounded-t-3xl bg-background px-5 pt-8 pb-10 sm:px-8 lg:mt-0 lg:items-center lg:justify-center lg:rounded-none lg:px-12">
+      {/* Form column. From tablet width the form sits in the middle of the space below the header. */}
+      <main className="relative -mt-6 flex flex-1 flex-col rounded-t-3xl bg-background px-5 pt-8 pb-10 sm:px-8 md:justify-center lg:mt-0 lg:items-center lg:rounded-none lg:px-12">
         <div className="mx-auto w-full max-w-[400px] animate-fade-up">{children}</div>
       </main>
     </div>

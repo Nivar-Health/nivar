@@ -88,6 +88,52 @@ function StaffMini({ name, role }: { name?: string; role: "N" | "D" }) {
   );
 }
 
+/** Phones and tablets: one link card per booking, with the status a coordinator scans for up top. */
+function BookingCard({ booking: b, flashing }: { booking: Booking; flashing: boolean }) {
+  const nurse = populated(b.nurse);
+  const doctor = populated(b.doctor);
+  const team = [nurse?.name, doctor?.name].filter(Boolean).join(" · ");
+  const paid = b.payment?.status;
+  return (
+    <li>
+      <Link
+        href={`/admin/bookings/${b.id}`}
+        className={cn(
+          "flex min-h-18 flex-col gap-1 px-4 py-3.5 transition-colors duration-700 outline-none hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset",
+          flashing && "bg-muted duration-150",
+        )}
+      >
+        <span className="flex items-center justify-between gap-3">
+          <BookingCode code={b.code} />
+          <StatusBadge status={b.status} size="sm" />
+        </span>
+        <span className="text-[15px] font-semibold">
+          {b.patient.name}
+          <span className="ml-1.5 text-[13px] font-normal text-muted-foreground">
+            {b.patient.age}
+            {b.patient.gender?.[0]?.toUpperCase()}
+          </span>
+        </span>
+        <span className="flex items-center gap-1 text-[13px] text-muted-foreground tabular">
+          {b.slot === EXPRESS_SLOT && <Zap className="size-3 fill-current text-foreground" aria-hidden />}
+          {dayLabel(b.scheduledDate)}, {b.slot === EXPRESS_SLOT ? "Express" : slotLabel(b.slot)} · {b.address.area}
+        </span>
+        <span className="flex items-baseline justify-between gap-3 text-[13px]">
+          <span className={cn("min-w-0 truncate", team ? "text-foreground" : "text-saffron")}>
+            {team || "Needs a care team"}
+          </span>
+          <span className="shrink-0 tabular">
+            <span className="font-semibold">{formatINR(b.amount)}</span>
+            <span className={cn("ml-1.5 text-xs", paid === "paid" || paid === "refunded" ? "text-muted-foreground" : "text-saffron")}>
+              {paid === "paid" ? "Paid" : paid === "refunded" ? "Refunded" : "Unpaid"}
+            </span>
+          </span>
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 export function BookingsList() {
   const router = useRouter();
   const pathname = usePathname();
@@ -152,7 +198,7 @@ export function BookingsList() {
         description={
           bookings
             ? `${counts.all} bookings${date ? ` ${/^(Today|Tomorrow|Yesterday)$/.test(dayLabel(date)) ? dayLabel(date).toLowerCase() : `on ${dayLabel(date)}`}` : ""} · ${counts.confirmed ?? 0} need assignment · ${counts.live} live now`
-            : "Every booking across Bangalore, updated live"
+            : "Every booking, updated live"
         }
       />
 
@@ -269,90 +315,97 @@ export function BookingsList() {
             className="py-16"
           />
         ) : (
-          <Table className="min-w-[880px]">
-            <TableHeader className="bg-muted/40 [&_tr]:border-border/70">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="h-10 pl-5 text-xs font-medium text-muted-foreground">Booking</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Patient</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Schedule</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Tests</TableHead>
-                <TableHead className="text-right text-xs font-medium text-muted-foreground">Amount</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Care team</TableHead>
-                <TableHead className="pr-5 text-xs font-medium text-muted-foreground">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((b) => {
-                const by = bookedByLabel(b);
-                const nurse = populated(b.nurse);
-                const doctor = populated(b.doctor);
-                const href = `/admin/bookings/${b.id}`;
-                return (
-                  <TableRow
-                    key={b.id}
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).closest("a")) return;
-                      if (e.metaKey || e.ctrlKey) window.open(href, "_blank");
-                      else router.push(href);
-                    }}
-                    className={cn(
-                      "cursor-pointer border-border/70 transition-colors duration-700",
-                      flashing.has(b.id) && "bg-muted duration-150",
-                    )}
-                  >
-                    <TableCell className="py-3 pl-5">
-                      <Link href={href} className="outline-none hover:underline focus-visible:underline">
-                        <BookingCode code={b.code} />
-                      </Link>
-                      <div className="mt-0.5 text-xs text-muted-foreground">{b.address.area}</div>
-                    </TableCell>
-                    <TableCell className="max-w-56 py-3">
-                      <div className="truncate text-[13px] font-medium">
-                        {b.patient.name}
-                        <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                          {b.patient.age}
-                          {b.patient.gender?.[0]?.toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {by ?? formatPhone(customerOf(b)?.phone)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <div className={cn("text-[13px]", dayLabel(b.scheduledDate) === "Today" && "font-medium")}>
-                        {dayLabel(b.scheduledDate)}
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground tabular">
-                        {b.slot === EXPRESS_SLOT && <Zap className="size-3 fill-current text-foreground" />}
-                        {b.slot === EXPRESS_SLOT ? "Express" : slotLabel(b.slot)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <ServiceChips codes={b.serviceCodes} max={2} className="flex-nowrap" />
-                    </TableCell>
-                    <TableCell className="py-3 text-right">
-                      <div className="text-[13px] font-semibold tabular">{formatINR(b.amount)}</div>
-                      <div
-                        className={cn(
-                          "text-[11px]",
-                          b.payment?.status === "paid" ? "text-muted-foreground" : b.payment?.status === "refunded" ? "text-muted-foreground" : "text-saffron",
-                        )}
-                      >
-                        {b.payment?.status === "paid" ? "Paid" : b.payment?.status === "refunded" ? "Refunded" : "Unpaid"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-52 py-3">
-                      <StaffMini name={nurse?.name} role="N" />
-                      <StaffMini name={doctor?.name} role="D" />
-                    </TableCell>
-                    <TableCell className="py-3 pr-5">
-                      <StatusBadge status={b.status} size="sm" />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <>
+            <ul className="divide-y divide-border/70 lg:hidden">
+              {rows.map((b) => (
+                <BookingCard key={b.id} booking={b} flashing={flashing.has(b.id)} />
+              ))}
+            </ul>
+            <Table className="hidden min-w-[880px] lg:table">
+              <TableHeader className="bg-muted/40 [&_tr]:border-border/70">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-10 pl-5 text-xs font-medium text-muted-foreground">Booking</TableHead>
+                  <TableHead className="text-xs font-medium text-muted-foreground">Patient</TableHead>
+                  <TableHead className="text-xs font-medium text-muted-foreground">Schedule</TableHead>
+                  <TableHead className="text-xs font-medium text-muted-foreground">Tests</TableHead>
+                  <TableHead className="text-right text-xs font-medium text-muted-foreground">Amount</TableHead>
+                  <TableHead className="text-xs font-medium text-muted-foreground">Care team</TableHead>
+                  <TableHead className="pr-5 text-xs font-medium text-muted-foreground">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((b) => {
+                  const by = bookedByLabel(b);
+                  const nurse = populated(b.nurse);
+                  const doctor = populated(b.doctor);
+                  const href = `/admin/bookings/${b.id}`;
+                  return (
+                    <TableRow
+                      key={b.id}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest("a")) return;
+                        if (e.metaKey || e.ctrlKey) window.open(href, "_blank");
+                        else router.push(href);
+                      }}
+                      className={cn(
+                        "cursor-pointer border-border/70 transition-colors duration-700",
+                        flashing.has(b.id) && "bg-muted duration-150",
+                      )}
+                    >
+                      <TableCell className="py-3 pl-5">
+                        <Link href={href} className="outline-none hover:underline focus-visible:underline">
+                          <BookingCode code={b.code} />
+                        </Link>
+                        <div className="mt-0.5 text-xs text-muted-foreground">{b.address.area}</div>
+                      </TableCell>
+                      <TableCell className="max-w-56 py-3">
+                        <div className="truncate text-[13px] font-medium">
+                          {b.patient.name}
+                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            {b.patient.age}
+                            {b.patient.gender?.[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {by ?? formatPhone(customerOf(b)?.phone)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className={cn("text-[13px]", dayLabel(b.scheduledDate) === "Today" && "font-medium")}>
+                          {dayLabel(b.scheduledDate)}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground tabular">
+                          {b.slot === EXPRESS_SLOT && <Zap className="size-3 fill-current text-foreground" />}
+                          {b.slot === EXPRESS_SLOT ? "Express" : slotLabel(b.slot)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <ServiceChips codes={b.serviceCodes} max={2} className="flex-nowrap" />
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
+                        <div className="text-[13px] font-semibold tabular">{formatINR(b.amount)}</div>
+                        <div
+                          className={cn(
+                            "text-[11px]",
+                            b.payment?.status === "paid" ? "text-muted-foreground" : b.payment?.status === "refunded" ? "text-muted-foreground" : "text-saffron",
+                          )}
+                        >
+                          {b.payment?.status === "paid" ? "Paid" : b.payment?.status === "refunded" ? "Refunded" : "Unpaid"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-52 py-3">
+                        <StaffMini name={nurse?.name} role="N" />
+                        <StaffMini name={doctor?.name} role="D" />
+                      </TableCell>
+                      <TableCell className="py-3 pr-5">
+                        <StatusBadge status={b.status} size="sm" />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </>
         )}
         {bookings && filtered.length > 0 && (
           <div className="flex items-center justify-between gap-3 border-t border-border/70 px-5 py-3 text-xs text-muted-foreground">
@@ -363,7 +416,7 @@ export function BookingsList() {
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label="Previous page"
                   disabled={current <= 1}
                   onClick={() => setParams({ page: String(current - 1) })}
@@ -375,7 +428,7 @@ export function BookingsList() {
                 </span>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label="Next page"
                   disabled={current >= pages}
                   onClick={() => setParams({ page: String(current + 1) })}

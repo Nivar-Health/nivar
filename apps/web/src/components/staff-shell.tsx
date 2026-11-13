@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu } from "lucide-react";
@@ -62,13 +62,67 @@ function NavList({
 function RealtimeStatus({ className }: { className?: string }) {
   const connected = useSocketConnected();
   return (
-    <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
+    <div role="status" className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
       {connected ? (
         <span className="live-dot size-1.5 text-signal" aria-hidden />
       ) : (
         <span className="size-1.5 rounded-full bg-muted-foreground/40" aria-hidden />
       )}
       {connected ? "Live updates on" : "Connecting to live updates"}
+    </div>
+  );
+}
+
+/** A drop shorter than this (a page load, a quick network blip) is not worth interrupting anyone for. */
+const DROP_GRACE_MS = 3000;
+const BACK_ONLINE_MS = 2000;
+
+/**
+ * Phones and tablets have no sidebar, so a lost realtime connection is shown as a slim bar under the
+ * top bar: the nurse must know when the doctor and the family stop receiving updates.
+ */
+function ConnectionBar() {
+  const connected = useSocketConnected();
+  const [notice, setNotice] = useState<"down" | "back" | null>(null);
+  const wasDown = useRef(false);
+
+  useEffect(() => {
+    if (!connected) {
+      const t = window.setTimeout(() => {
+        wasDown.current = true;
+        setNotice("down");
+      }, DROP_GRACE_MS);
+      return () => window.clearTimeout(t);
+    }
+    if (!wasDown.current) return;
+    wasDown.current = false;
+    const show = window.setTimeout(() => setNotice("back"), 0);
+    const hide = window.setTimeout(() => setNotice(null), BACK_ONLINE_MS);
+    return () => {
+      window.clearTimeout(show);
+      window.clearTimeout(hide);
+    };
+  }, [connected]);
+
+  const shown = connected ? (notice === "back" ? "back" : null) : notice === "down" ? "down" : null;
+  return (
+    <div role="status" className="lg:hidden">
+      {shown && (
+        <p
+          className={cn(
+            "flex items-center justify-center gap-2 border-t px-4 py-1.5 text-[13px] font-medium",
+            shown === "down"
+              ? "border-saffron/30 bg-saffron/10 text-foreground"
+              : "border-success/30 bg-success/10 text-foreground",
+          )}
+        >
+          <span
+            className={cn("size-2 shrink-0 rounded-full", shown === "down" ? "bg-saffron" : "bg-success")}
+            aria-hidden
+          />
+          {shown === "down" ? "No live connection. Reconnecting..." : "Back online"}
+        </p>
+      )}
     </div>
   );
 }
@@ -194,7 +248,10 @@ export function StaffShell({
                   </SheetContent>
                 </Sheet>
               )}
-              <Link href={homeHref} className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+              <Link
+                href={homeHref}
+                className="inline-flex h-11 items-center rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
                 <Logo size="sm" />
               </Link>
               <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
@@ -203,6 +260,7 @@ export function StaffShell({
             </div>
             <UserMenu />
           </div>
+          <ConnectionBar />
         </header>
 
         <main

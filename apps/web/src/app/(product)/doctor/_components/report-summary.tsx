@@ -2,6 +2,7 @@ import { CalendarCheck, CheckCircle2, Pill, Sparkles } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
 import { populated, type Booking, type Report } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { frequencyLabel } from "./clinical";
 
 /** Read-only view of a published (or draft) report, letterhead style. */
 export function ReportSummary({
@@ -63,7 +64,7 @@ export function ReportSummary({
                           {p.notes && <span className="block text-xs text-muted-foreground">{p.notes}</span>}
                         </td>
                         <td className="px-3 py-2">{p.dosage || "-"}</td>
-                        <td className="px-3 py-2">{p.frequency || "-"}</td>
+                        <td className="px-3 py-2">{p.frequency ? frequencyLabel(p.frequency) : "-"}</td>
                         <td className="px-3 py-2">{p.duration || "-"}</td>
                       </tr>
                     ))}

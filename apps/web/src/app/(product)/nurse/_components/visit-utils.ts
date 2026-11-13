@@ -1,13 +1,13 @@
 import { Activity, Droplet, Gauge, HeartPulse, Stethoscope, Video, Wind, type LucideIcon } from "lucide-react";
 import { EXPRESS_SLOT } from "@/lib/format";
-import type { Booking, BookingStatus, Gender, ServiceCode } from "@/lib/types";
+import { populated, type Booking, type BookingStatus, type Gender, type Relation, type ServiceCode } from "@/lib/types";
 
 export const TEST_META: Record<ServiceCode, { label: string; short: string; icon: LucideIcon }> = {
   BP: { label: "Blood pressure", short: "BP", icon: Gauge },
   ECG: { label: "Smart ECG", short: "ECG", icon: Activity },
   SUGAR: { label: "Blood sugar", short: "Sugar", icon: Droplet },
   HR: { label: "Heart rate", short: "Heart rate", icon: HeartPulse },
-  SPO2: { label: "Oxygen saturation", short: "SpO2", icon: Wind },
+  SPO2: { label: "Oxygen (SpO2)", short: "SpO2", icon: Wind },
   STETH: {
     label: "Smart stethoscope",
     short: "Stethoscope",
@@ -30,6 +30,24 @@ const GENDER_LABEL: Record<Gender, string> = {
 /** "58 yrs, Male" */
 export function ageGender(p: Booking["patient"]): string {
   return [p.age != null ? `${p.age} yrs` : null, p.gender ? GENDER_LABEL[p.gender] : null].filter(Boolean).join(", ");
+}
+
+const FOR_WHOM: Record<Exclude<Relation, "self">, string> = {
+  parent: "for a parent",
+  spouse: "for a spouse",
+  child: "for a child",
+  other: "for someone else",
+};
+
+/**
+ * The account holder, when they booked for someone else: the visit's phone number is theirs, so the
+ * nurse should know who answers. Null for a patient who booked for themselves.
+ */
+export function bookedBy(booking: Booking): { name: string; forWhom: string } | null {
+  const customer = populated(booking.customer);
+  const relation = booking.patient.relation;
+  if (!customer?.name || relation === "self" || customer.name.trim() === booking.patient.name.trim()) return null;
+  return { name: customer.name, forWhom: FOR_WHOM[relation] ?? FOR_WHOM.other };
 }
 
 /** Statuses where the visit is underway (the nurse is working on it). */

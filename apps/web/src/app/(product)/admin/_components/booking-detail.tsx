@@ -72,7 +72,7 @@ const HISTORY_LABEL: Record<BookingStatus, string> = {
   completed: "Report published",
   cancelled: "Booking cancelled",
 };
-const METHOD: Record<string, string> = { upi: "UPI", card: "Card", netbanking: "Netbanking", cash: "Cash" };
+const METHOD: Record<string, string> = { upi: "UPI", card: "Card", netbanking: "Net banking", cash: "Cash" };
 
 function Fact({ label, children, icon }: { label: string; children: ReactNode; icon: ReactNode }) {
   return (
@@ -271,7 +271,7 @@ function ClinicalPanel({ booking }: { booking: Booking }) {
               </span>
               <div className="min-w-0 text-sm">
                 <div className="font-semibold">
-                  Digital stethoscope
+                  Smart stethoscope
                   {steth.heartRate ? (
                     <span className="ml-2 text-xs font-normal text-muted-foreground">{Math.round(steth.heartRate)} bpm</span>
                   ) : null}
@@ -321,7 +321,7 @@ function ClinicalPanel({ booking }: { booking: Booking }) {
                 )}
                 {report.followUp && (
                   <p className="text-[13px]">
-                    <span className="text-muted-foreground">Follow up: </span>
+                    <span className="text-muted-foreground">Follow-up: </span>
                     {report.followUp}
                   </p>
                 )}
@@ -348,6 +348,12 @@ function ClinicalPanel({ booking }: { booking: Booking }) {
   );
 }
 
+/** "Payment received via card" under the title "Payment received" only needs "via card". */
+function noteBeyondTitle(note: string | undefined, title: string): string {
+  if (!note) return "";
+  return note.toLowerCase().startsWith(title.toLowerCase()) ? note.slice(title.length).trim() : note;
+}
+
 function TimelineList({ booking }: { booking: Booking }) {
   const entries = [...(booking.timeline ?? [])].reverse();
   return (
@@ -357,6 +363,7 @@ function TimelineList({ booking }: { booking: Booking }) {
           const meta = STATUS_META[e.status];
           const Icon = meta.icon;
           const last = idx === entries.length - 1;
+          const note = noteBeyondTitle(e.note, HISTORY_LABEL[e.status]);
           return (
             <li key={`${e.status}-${e.at}`} className="relative flex gap-3">
               {!last && <span aria-hidden className="absolute top-8 bottom-0 left-[13px] w-px bg-border" />}
@@ -376,8 +383,8 @@ function TimelineList({ booking }: { booking: Booking }) {
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                  {e.note}
-                  {e.note && e.by ? " · " : ""}
+                  {note}
+                  {note && e.by ? " · " : ""}
                   {e.by ? `by ${e.by}` : ""}
                 </p>
               </div>
@@ -522,7 +529,7 @@ export function BookingDetail({ id }: { id: string }) {
                   ? `Arrived ${relative(b.timeline.findLast((e) => e.status === "arrived")?.at)}`
                   : nurseLoc?.at
                     ? `Location updated ${relative(nurseLoc.at)}`
-                    : "Waiting for the first location ping"
+                    : "Waiting for the nurse's first location update"
               }
               icon={<Navigation />}
               action={

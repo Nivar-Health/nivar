@@ -369,7 +369,7 @@ export function StatusBreakdown({
           <div className="mt-0.5 text-lg font-semibold">{formatNumber(cancelled)}</div>
         </div>
         <div className="px-4 py-3">
-          <div className="text-xs font-medium text-muted-foreground">Success</div>
+          <div className="text-xs font-medium text-muted-foreground">Completion rate</div>
           <div className="mt-0.5 text-lg font-semibold">{completionRate}%</div>
         </div>
       </div>

@@ -31,7 +31,6 @@ import {
   EARLIEST_VISIT,
   EXPRESS_SLOT,
   checksLabel,
-  deviceOnIndiaTime,
   formatDate,
   formatDayLong,
   formatDayParts,
@@ -48,8 +47,10 @@ import { addDays, isSlotPast, isValidDateStr, istParts } from "@/server/time";
 import { AddressForm, fieldErrorClass, fieldLabelClass, inputClass, saveNewAddress } from "./address-form";
 import { CheckoutDialog, DemoTag, chooseWithArrowKeys } from "./checkout-dialog";
 import {
+  EmergencyLine,
   ErrorState,
   GENDER_LABEL,
+  IndiaTimeNote,
   RELATION_LABEL,
   Surface,
   ageFromDob,
@@ -269,8 +270,6 @@ function openWizard(user: User, preselect: { pkg: string | null; codes: string[]
 // Small pieces of browser state
 // ---------------------------------------------------------------------------
 
-const never = () => () => {};
-
 function onResize(callback: () => void) {
   window.addEventListener("resize", callback);
   return () => window.removeEventListener("resize", callback);
@@ -384,7 +383,6 @@ function Wizard({
   const finished = useRef(false);
 
   const tabBar = useSyncExternalStore(onResize, tabBarHeight, () => 0);
-  const indiaTime = useSyncExternalStore(never, deviceOnIndiaTime, () => true);
 
   // ---- people booked for before: the account holder's own details, and family members ----
   const history = useMemo(() => [...(bookings ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [bookings]);
@@ -759,7 +757,6 @@ function Wizard({
             <ScheduleStep
               date={date}
               slot={slot}
-              indiaTime={indiaTime}
               onDate={(d) => {
                 setDate(d);
                 setSlot(null);
@@ -947,30 +944,6 @@ function RadioDot({ checked }: { checked: boolean }) {
     >
       {checked && <span className="size-2 rounded-full bg-primary-foreground" />}
     </span>
-  );
-}
-
-/** The fixed emergency line, with 112 and 108 as phone links a thumb can hit. */
-function EmergencyNote({ className }: { className?: string }) {
-  return (
-    <p className={cn("flex items-start gap-2.5 text-small leading-relaxed text-foreground-2", className)}>
-      <Phone className="mt-1 size-4 shrink-0" aria-hidden />
-      <span>
-        {SITE.emergency.full.split(/\b(112|108)\b/).map((part, i) =>
-          part === "112" || part === "108" ? (
-            <a
-              key={i}
-              href={`tel:${part}`}
-              className="relative rounded-sm font-semibold text-foreground underline underline-offset-2 outline-none before:absolute before:-inset-x-2.5 before:-inset-y-3 focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              {part}
-            </a>
-          ) : (
-            part
-          ),
-        )}
-      </span>
-    </p>
   );
 }
 
@@ -1360,8 +1333,9 @@ function PatientStep(props: {
           aria-describedby="p-notes-emergency"
           className="min-h-24 rounded-xl bg-card px-3.5 py-3 text-base md:text-base"
         />
-        <div id="p-notes-emergency">
-          <EmergencyNote />
+        <div id="p-notes-emergency" className="flex items-start gap-2.5">
+          <Phone className="mt-1 size-4 shrink-0 text-foreground-2" aria-hidden />
+          <EmergencyLine />
         </div>
       </div>
     </form>
@@ -1526,14 +1500,12 @@ function shortSlot(slot: string): string {
 function ScheduleStep({
   date,
   slot,
-  indiaTime,
   onDate,
   onSlot,
   problem,
 }: {
   date: string;
   slot: string | null;
-  indiaTime: boolean;
   onDate: (d: string) => void;
   onSlot: (s: string) => void;
   problem: string | null;
@@ -1573,7 +1545,8 @@ function ScheduleStep({
         <p className="mb-2.5 flex items-center gap-2 text-small font-semibold">
           <CalendarDays className="size-4 text-muted-foreground" aria-hidden /> Date
         </p>
-        <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:px-0">
+        {/* Phones scroll the week sideways with the next day peeking in; wider screens show all seven. */}
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:overflow-visible md:px-0">
           <div role="radiogroup" aria-label="Date" onKeyDown={chooseWithArrowKeys} className="flex gap-2">
             {days.map((d) => {
               const selected = d.iso === date;
@@ -1585,7 +1558,7 @@ function ScheduleStep({
                   aria-checked={selected}
                   onClick={() => onDate(d.iso)}
                   className={cn(
-                    "flex h-16 w-[5.25rem] shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                    "flex h-16 w-[5.25rem] shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40 md:w-auto md:min-w-0 md:flex-1",
                     selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-primary/40",
                   )}
                 >
@@ -1596,7 +1569,7 @@ function ScheduleStep({
             })}
           </div>
         </div>
-        {!indiaTime && <p className="mt-2 text-small text-foreground-2">Times are India time (IST).</p>}
+        <IndiaTimeNote className="mt-2" />
       </div>
 
       {loading ? (

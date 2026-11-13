@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import Link from "next/link";
 import {
   Activity,
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronDown,
+  CircleAlert,
   CircleCheckBig,
   Clock,
   ExternalLink,
@@ -17,6 +19,7 @@ import {
   MessageSquareText,
   Navigation,
   Phone,
+  Plus,
   RotateCw,
   Route,
   Video,
@@ -40,15 +43,25 @@ import { Switch } from "@/components/ui/switch";
 import { UserAvatar } from "@/components/user-menu";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { demoMode } from "@/lib/features";
 import { EXPRESS_SLOT, firstName, formatPhone, formatTime, scheduleLabel, vitalAssessment } from "@/lib/format";
-import { useBooking, useSignalling } from "@/lib/socket";
-import { populated, type Booking, type BookingStatus, type ServiceCode } from "@/lib/types";
+import { phoneDigits } from "@/lib/phone";
+import { useBooking, useSignalling, useSocketConnected } from "@/lib/socket";
+import { populated, type Booking, type BookingStatus, type DeviceKind, type ServiceCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DeviceCard } from "./device-card";
 import { TestChips } from "./visit-bits";
-import { TEST_META, addressLine, ageGender, mapsDirectionsUrl, nurseTests, testDone } from "./visit-utils";
-import { useLocationSharing } from "./use-location-sharing";
-import { VitalsPanel } from "./vitals-panel";
+import {
+  TEST_META,
+  addressLine,
+  ageGender,
+  bookedBy,
+  mapsDirectionsUrl,
+  nurseTests,
+  testDone,
+} from "./visit-utils";
+import { useLocationSharing, type LocationSharing } from "./use-location-sharing";
+import { VitalsPanel, hasOptionalVitals, optionalVitalNames } from "./vitals-panel";
 
 /* ------------------------------------------------------------------------- */
 /* Small building blocks                                                     */
@@ -61,6 +74,22 @@ const STEPS: { label: string; statuses: BookingStatus[] }[] = [
   { label: "Consult", statuses: ["consult"] },
   { label: "Done", statuses: ["reporting", "completed"] },
 ];
+
+/** Read out when the visit moves on, for screen-reader and switch users. */
+const STEP_ANNOUNCEMENT: Partial<Record<BookingStatus, string>> = {
+  en_route: "Step 1 of 5: on the way",
+  arrived: "Step 2 of 5: arrived",
+  testing: "Step 3 of 5: tests",
+  consult: "Step 4 of 5: doctor consult",
+  reporting: "Step 5 of 5: visit complete",
+  completed: "Visit complete. The report is published.",
+  cancelled: "This visit was cancelled",
+};
+
+/** After a step changes, the next step's button sits under the same thumb: hold it this long. */
+const STEP_GUARD_MS = 800;
+/** "I've arrived" further than this from the home (or with no location) asks once before telling the family. */
+const ARRIVE_CHECK_KM = 0.3;
 
 function NurseProgress({ status }: { status: BookingStatus }) {
   const current = STEPS.findIndex((s) => s.statuses.includes(status));
@@ -133,10 +162,14 @@ function SectionHeading({ children, aside }: { children: ReactNode; aside?: Reac
 }
 
 /** Fixed bottom bar holding the step's single primary action. */
-function ActionBar({ hint, children }: { hint?: ReactNode; children: ReactNode }) {
+function ActionBar({ hint, step, children }: { hint?: ReactNode; step: string; children: ReactNode }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/90 backdrop-blur-md lg:left-64">
-      <div className="mx-auto flex max-w-2xl flex-col gap-2 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 lg:px-8">
+      {/* Keyed by step so the new action fades in rather than swapping under the thumb. */}
+      <div
+        key={step}
+        className="mx-auto flex max-w-2xl animate-in flex-col gap-2 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] duration-200 fade-in md:px-6 lg:px-8"
+      >
         {hint && <div className="text-center text-xs text-muted-foreground">{hint}</div>}
         {children}
       </div>
@@ -145,23 +178,32 @@ function ActionBar({ hint, children }: { hint?: ReactNode; children: ReactNode }
 }
 
 const primaryCta = "h-13 w-full rounded-xl text-base font-semibold [&_svg:not([class*='size-'])]:size-5";
+const dialogPrimary = "h-12 w-full rounded-xl text-base font-semibold";
+const dialogSecondary = "h-12 w-full rounded-xl text-base";
 
 /* ------------------------------------------------------------------------- */
 /* Header                                                                    */
 /* ------------------------------------------------------------------------- */
 
-function VisitHeader({ booking }: { booking: Booking }) {
+function VisitHeader({ booking, headingRef }: { booking: Booking; headingRef: RefObject<HTMLHeadingElement | null> }) {
   const phone = populated(booking.customer)?.phone;
+  const booker = bookedBy(booking);
   const { lat, lng } = booking.address;
   // Once at the patient's home the address and directions are no longer needed.
   const compact = !["assigned", "en_route", "arrived"].includes(booking.status);
-  const tel = phone ? `tel:+91${phone.replace(/\D/g, "").slice(-10)}` : null;
+  const digits = phone ? phoneDigits(phone) : "";
+  const tel = digits.length === 10 ? `tel:+91${digits}` : null;
+  // The number on a booking is the account holder's: say who answers when that is not the patient.
+  const callLabel = booker ? `Call ${firstName(booker.name)}` : "Call patient";
+  const callAria = booker
+    ? `Call ${booker.name}, who booked this visit, on ${formatPhone(phone)}`
+    : `Call patient on ${formatPhone(phone)}`;
   return (
     <header className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <Link
           href="/nurse"
-          className="-ml-2 inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="-ml-2 inline-flex h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           <ArrowLeft className="size-4" /> Today
         </Link>
@@ -170,7 +212,11 @@ function VisitHeader({ booking }: { booking: Booking }) {
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-display text-[1.75rem] leading-tight font-medium tracking-tight">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="font-display text-[1.75rem] leading-tight font-medium tracking-tight outline-none"
+          >
             {booking.patient.name}
           </h1>
           <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -178,6 +224,11 @@ function VisitHeader({ booking }: { booking: Booking }) {
             <span aria-hidden>·</span>
             <span>{ageGender(booking.patient)}</span>
           </p>
+          {booker && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Booked by <span className="font-medium text-foreground">{booker.name}</span> {booker.forWhom}
+            </p>
+          )}
           <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium">
             {booking.slot === EXPRESS_SLOT ? (
               <Zap className="size-4 fill-current text-foreground" aria-hidden />
@@ -190,7 +241,7 @@ function VisitHeader({ booking }: { booking: Booking }) {
         {compact && tel && (
           <a
             href={tel}
-            aria-label={`Call patient on ${formatPhone(phone)}`}
+            aria-label={callAria}
             className={cn(buttonVariants({ variant: "outline" }), "mt-1 size-11 shrink-0 rounded-full")}
           >
             <Phone className="size-[18px]" />
@@ -214,28 +265,26 @@ function VisitHeader({ booking }: { booking: Booking }) {
                 href={tel}
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
-                  "h-11 rounded-xl text-sm font-semibold",
+                  "h-11 min-w-0 rounded-xl px-3 text-sm font-semibold",
                 )}
-                aria-label={`Call patient on ${formatPhone(phone)}`}
+                aria-label={callAria}
               >
-                <Phone className="size-4" /> Call patient
+                <Phone className="size-4" /> <span className="truncate">{callLabel}</span>
               </a>
             ) : (
-              <Button variant="outline" size="lg" disabled className="h-11 rounded-xl text-sm font-semibold">
-                <Phone className="size-4" /> No phone
+              <Button variant="outline" size="lg" disabled className="h-11 rounded-xl px-3 text-sm font-semibold">
+                <Phone className="size-4" /> No phone number
               </Button>
             )}
             <a
               href={mapsDirectionsUrl(lat, lng)}
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "h-11 rounded-xl text-sm font-semibold",
-              )}
+              className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 rounded-xl px-3 text-sm font-semibold")}
             >
-              <Navigation className="size-4" /> Google Maps
-              <ExternalLink className="size-3.5 text-muted-foreground" />
+              <Navigation className="size-4" /> Directions
+              <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden />
+              <span className="sr-only">(opens Google Maps)</span>
             </a>
           </div>
         </>
@@ -248,19 +297,12 @@ function VisitHeader({ booking }: { booking: Booking }) {
 /* Steps                                                                     */
 /* ------------------------------------------------------------------------- */
 
-function DoctorCard({ booking, live }: { booking: Booking; live?: boolean }) {
+function DoctorCard({ booking }: { booking: Booking }) {
   const doctor = populated(booking.doctor);
   if (!doctor) return null;
   return (
     <div className="flex items-center gap-3">
-      <span className="relative">
-        <UserAvatar name={doctor.name} src={doctor.avatarUrl} size="lg" />
-        {live && (
-          <span className="absolute -right-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full bg-card">
-            <span className="live-dot size-2 text-signal" />
-          </span>
-        )}
-      </span>
+      <UserAvatar name={doctor.name} src={doctor.avatarUrl} size="lg" />
       <div className="min-w-0">
         <p className="truncate font-semibold">{doctor.name}</p>
         <p className="truncate text-sm text-muted-foreground">
@@ -274,6 +316,7 @@ function DoctorCard({ booking, live }: { booking: Booking; live?: boolean }) {
   );
 }
 
+/** What to pack and what the patient said: read before setting off, so it comes before the map. */
 function VisitBrief({ booking }: { booking: Booking }) {
   return (
     <>
@@ -284,28 +327,46 @@ function VisitBrief({ booking }: { booking: Booking }) {
         {booking.notes ? (
           <p className="text-sm leading-relaxed whitespace-pre-line">{booking.notes}</p>
         ) : (
-          <p className="text-sm text-muted-foreground">No symptoms or instructions shared.</p>
+          <p className="text-sm text-muted-foreground">No notes from the patient.</p>
         )}
       </Panel>
-      {populated(booking.doctor) && (
-        <Panel title="Reviewing doctor">
-          <DoctorCard booking={booking} />
-        </Panel>
-      )}
     </>
   );
 }
 
-function SimulateToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+function ReviewingDoctor({ booking }: { booking: Booking }) {
+  if (!populated(booking.doctor)) return null;
+  return (
+    <Panel title="Reviewing doctor">
+      <DoctorCard booking={booking} />
+    </Panel>
+  );
+}
+
+/** Demo aid: drives the nurse to the patient in 45 seconds. Never shown outside demo mode. */
+function DemoDriveToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-input bg-card px-3.5 py-3">
       <Route className="size-5 shrink-0 text-muted-foreground" aria-hidden />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-foreground">Simulate drive</span>
-        <span className="block text-xs text-muted-foreground">Demo mode: drive to the patient in 45 seconds</span>
+        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          Simulate drive
+          <span className="rounded-full bg-muted px-1.5 py-px text-[11px] font-medium text-muted-foreground">Demo</span>
+        </span>
+        <span className="block text-xs text-muted-foreground">Drives to the patient in 45 seconds</span>
       </span>
-      <Switch checked={on} onCheckedChange={(v) => onChange(Boolean(v))} aria-label="Simulate drive" />
+      <Switch checked={on} onCheckedChange={(v) => onChange(Boolean(v))} aria-label="Simulate drive (demo)" />
     </label>
+  );
+}
+
+function StatusLine({ tone, children }: { tone?: "live" | "warn"; children: ReactNode }) {
+  return (
+    <span className="flex items-start gap-2">
+      {tone === "live" && <span className="live-dot mt-1.5 size-1.5 shrink-0 text-signal" aria-hidden />}
+      {tone === "warn" && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-saffron" aria-hidden />}
+      <span>{children}</span>
+    </span>
   );
 }
 
@@ -313,29 +374,35 @@ function TripPanel({
   booking,
   sharing,
   nurseName,
+  family,
 }: {
   booking: Booking;
-  sharing: ReturnType<typeof useLocationSharing>;
+  sharing: LocationSharing;
   nurseName?: string;
+  /** Who is told about the trip: the patient's first name, or "the family" when someone else booked. */
+  family: string;
 }) {
+  const connected = useSocketConnected();
   const enRoute = booking.status === "en_route";
   const home = {
     lat: booking.address.lat,
     lng: booking.address.lng,
     label: booking.patient.name,
   };
-  const pos = sharing.position;
-  const km = pos ? haversineKm(pos, home) : null;
   const patientFirst = firstName(booking.patient.name);
+  // Before the trip: distance from the last known point (or the hub). On the way: this trip's fixes only.
+  const pos = enRoute ? sharing.live : sharing.position;
+  const km = pos ? haversineKm(pos, home) : null;
   const reached = enRoute && (sharing.reached || (km !== null && km < 0.08));
+  const withoutMap = `${family.charAt(0).toUpperCase()}${family.slice(1)} sees that you are on the way, without the map.`;
 
   let line: ReactNode;
   if (!enRoute) {
     line =
       km !== null ? (
-        <>
+        <span className="tabular-nums">
           {formatDistance(km)} away · about {etaMinutes(km)} min drive
-        </>
+        </span>
       ) : (
         "Location sharing starts when you start the trip"
       );
@@ -346,21 +413,57 @@ function TripPanel({
         You have reached {patientFirst}&apos;s home. Tap I&apos;ve arrived.
       </span>
     );
+  } else if (sharing.sharing && !connected) {
+    line = <StatusLine tone="warn">Can&apos;t share your location right now. Reconnecting...</StatusLine>;
   } else if (sharing.sharing) {
     line = (
-      <span className="flex items-center gap-2">
-        <span className="live-dot size-1.5 text-signal" aria-hidden />
-        Sharing live location with {patientFirst}
+      <span className="flex flex-col gap-1">
+        <StatusLine tone="live">Sharing live location with {family}</StatusLine>
+        {km !== null && (
+          <span className="pl-3.5 font-medium text-foreground tabular-nums">
+            {etaMinutes(km)} min away · {formatDistance(km)} to {patientFirst}&apos;s home
+          </span>
+        )}
+      </span>
+    );
+  } else if (sharing.gps === "off" || sharing.consent === null) {
+    line = (
+      <span className="flex flex-col items-start gap-2.5">
+        <span>Your location is not shared on this trip. {withoutMap}</span>
+        <Button
+          variant="outline"
+          className="h-11 rounded-xl px-4 text-sm font-semibold"
+          onClick={() => sharing.setConsent(true)}
+        >
+          <Navigation /> Share my location
+        </Button>
       </span>
     );
   } else if (sharing.gps === "locating" || sharing.gps === "idle") {
     line = (
       <span className="flex items-center gap-2">
-        <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> Locating you...
+        <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> Finding your location...
       </span>
     );
+  } else if (sharing.gps === "denied") {
+    line = (
+      <StatusLine tone="warn">
+        Location is off for Nivar. {withoutMap} To share it, allow location for this site in your browser settings.
+      </StatusLine>
+    );
+  } else if (demoMode) {
+    line = (
+      <StatusLine tone="warn">
+        Your location is not available. Turn on Simulate drive, or allow location for this site in your browser
+        settings.
+      </StatusLine>
+    );
   } else {
-    line = "GPS unavailable. Turn on Simulate drive.";
+    line = (
+      <StatusLine tone="warn">
+        Can&apos;t find your location yet. {withoutMap} We keep trying while this page is open.
+      </StatusLine>
+    );
   }
 
   return (
@@ -375,8 +478,18 @@ function TripPanel({
         ) : undefined
       }
     >
-      <LiveMap home={home} nurse={pos} nurseName={nurseName} height={enRoute ? 300 : 220} />
-      <div className="text-sm text-muted-foreground">{line}</div>
+      {/* The map's own chip speaks about the nurse in the third person; this screen has its own line. */}
+      <LiveMap
+        home={home}
+        nurse={pos}
+        nurseName={nurseName}
+        height={enRoute ? 300 : 220}
+        showEta={false}
+        touchScrollsPage
+      />
+      <div role="status" className="text-sm text-muted-foreground">
+        {line}
+      </div>
       {enRoute && sharing.simulate && !reached && (
         <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
           <div
@@ -385,7 +498,7 @@ function TripPanel({
           />
         </div>
       )}
-      <SimulateToggle on={sharing.simulate} onChange={sharing.setSimulate} />
+      {demoMode && <DemoDriveToggle on={sharing.simulate} onChange={sharing.setSimulate} />}
     </Panel>
   );
 }
@@ -394,17 +507,20 @@ const PREP = [
   "Introduce yourself and confirm the patient's name",
   "Sanitise hands and wear gloves",
   "Patient seated and rested for 5 minutes",
-  "Smart ECG and stethoscope charged and nearby",
 ];
+const DEVICE_PREP = "Smart ECG and stethoscope charged and nearby";
+
+const isDevice = (code: ServiceCode) => code === "ECG" || code === "STETH";
 
 function ArrivedPanel({ booking }: { booking: Booking }) {
   const [ticked, setTicked] = useState<Set<number>>(() => new Set());
   const tests = nurseTests(booking.serviceCodes);
+  const prep = tests.some(isDevice) ? [...PREP, DEVICE_PREP] : PREP;
   return (
     <>
       <Panel title="Before you begin" icon={<ListChecks />}>
         <ul className="flex flex-col gap-1">
-          {PREP.map((item, i) => {
+          {prep.map((item, i) => {
             const on = ticked.has(i);
             return (
               <li key={item}>
@@ -443,14 +559,13 @@ function ArrivedPanel({ booking }: { booking: Booking }) {
           {tests.map((code) => {
             const meta = TEST_META[code];
             const Icon = meta.icon;
-            const device = code === "ECG" || code === "STETH";
             return (
               <li key={code} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
                 <span className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-foreground">
                   <Icon className="size-[18px]" aria-hidden />
                 </span>
                 <span className="flex-1 text-sm font-medium">{meta.label}</span>
-                {device && (
+                {isDevice(code) && (
                   <span className="rounded-full bg-foreground px-2 py-0.5 text-[10.5px] font-medium text-background">
                     Smart device
                   </span>
@@ -510,41 +625,95 @@ function ReadinessPanel({ booking }: { booking: Booking }) {
   );
 }
 
+const DEVICE_NAME: Record<DeviceKind, string> = { ecg: "Smart ECG", stethoscope: "Smart stethoscope" };
+
+/**
+ * Readings that were not booked, behind one row so the booked ones come first. Closed, its cards stay
+ * mounted (hidden), so a device streaming from in here keeps streaming to the doctor.
+ */
+function AddReadings({ booking, devices, children }: { booking: Booking; devices: DeviceKind[]; children: ReactNode }) {
+  const [open, setOpen] = useState(
+    () =>
+      hasOptionalVitals(booking) ||
+      devices.some((d) => (d === "ecg" ? booking.ecg?.capturedAt : booking.stethoscope?.capturedAt)),
+  );
+  const names = [...optionalVitalNames(booking), ...devices.map((d) => DEVICE_NAME[d])];
+  if (names.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-3 pt-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="add-readings"
+        onClick={() => setOpen((o) => !o)}
+        className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-input bg-card px-4 py-3 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/40"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
+          <Plus className="size-[18px]" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Add another reading</span>
+          <span className="block text-xs text-muted-foreground">{names.join(", ")}</span>
+        </span>
+        <ChevronDown
+          className={cn("size-5 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+          aria-hidden
+        />
+      </button>
+      <div id="add-readings" hidden={!open} className="flex flex-col gap-3">
+        {children}
+      </div>
+    </section>
+  );
+}
+
 function Workspace({
   booking,
   setBooking,
   inCall,
   onLeaveCall,
   onFinish,
+  onFailedChange,
 }: {
   booking: Booking;
   setBooking: (b: Booking) => void;
   inCall: boolean;
   onLeaveCall: () => void;
   onFinish: () => void;
+  onFailedChange: (title: string, failed: boolean) => void;
 }) {
   const { user } = useAuth();
   const signalling = useSignalling();
   const doctor = populated(booking.doctor);
   const consult = booking.status === "consult";
-  const hasEcg = booking.serviceCodes.includes("ECG");
-  const hasSteth = booking.serviceCodes.includes("STETH");
   const hr = booking.vitals?.heartRate ?? null;
+  const bookedDevice = (k: DeviceKind) => booking.serviceCodes.includes(k === "ecg" ? "ECG" : "STETH");
+  const devices: DeviceKind[] = ["ecg", "stethoscope"];
+  const booked = devices.filter(bookedDevice);
+  const extra = devices.filter((k) => !bookedDevice(k));
+  const hasBookedVitals = nurseTests(booking.serviceCodes).some((c) => !isDevice(c));
+
+  const deviceCard = (kind: DeviceKind) => (
+    <DeviceCard
+      key={kind}
+      kind={kind}
+      booking={booking}
+      booked={bookedDevice(kind)}
+      doctorName={doctor?.name}
+      heartRateHint={hr}
+      onSaved={setBooking}
+    />
+  );
 
   return (
     <>
-      {consult && (
-        <Panel className="border-foreground">
-          <p className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-            <span className="live-dot size-1.5 text-signal" aria-hidden />
-            Live doctor consult
-          </p>
-          <DoctorCard booking={booking} live />
+      {consult ? (
+        <Panel title="Doctor consult" icon={<Video />} className="border-foreground">
+          <DoctorCard booking={booking} />
+          {/* The app cannot know whether the doctor is watching yet: say only what was done. */}
           <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {doctor ? `${doctor.name} is reviewing live.` : "The doctor is reviewing live."}
-            </span>{" "}
-            Keep devices streaming and update vitals if asked.
+            {doctor?.name ?? "The doctor"} has been told that {firstName(booking.patient.name)} is ready. Join the
+            video call and keep the devices streaming.
           </p>
           {inCall && signalling && user && (
             <VideoCall
@@ -555,40 +724,33 @@ function Workspace({
               compact
             />
           )}
-          <button
-            type="button"
-            onClick={onFinish}
-            className="self-start text-sm font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Doctor finished? Mark visit complete
-          </button>
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            <p className="text-sm text-muted-foreground">When the doctor has ended the consult:</p>
+            <Button variant="outline" className="h-12 w-full rounded-xl text-base font-semibold" onClick={onFinish}>
+              <CircleCheckBig className="size-5" /> Finish visit
+            </Button>
+          </div>
         </Panel>
+      ) : (
+        <ReadinessPanel booking={booking} />
       )}
-      {!consult && <ReadinessPanel booking={booking} />}
 
-      <SectionHeading>Vitals</SectionHeading>
-      <VitalsPanel booking={booking} onSaved={setBooking} />
+      {hasBookedVitals && <SectionHeading>Vitals</SectionHeading>}
+      <VitalsPanel booking={booking} onSaved={setBooking} group="booked" onFailedChange={onFailedChange} />
 
-      <SectionHeading aside={<span className="text-xs text-muted-foreground">Streams live to the doctor</span>}>
-        Smart devices
-      </SectionHeading>
-      {(["ecg", "stethoscope"] as const)
-        .slice()
-        .sort((a, b) => {
-          const booked = (k: string) => (k === "ecg" ? hasEcg : hasSteth);
-          return Number(booked(b)) - Number(booked(a));
-        })
-        .map((kind) => (
-          <DeviceCard
-            key={kind}
-            kind={kind}
-            booking={booking}
-            booked={kind === "ecg" ? hasEcg : hasSteth}
-            doctorName={doctor?.name}
-            heartRateHint={hr}
-            onSaved={setBooking}
-          />
-        ))}
+      {booked.length > 0 && (
+        <>
+          <SectionHeading aside={<span className="text-xs text-muted-foreground">Streams live to the doctor</span>}>
+            Smart devices
+          </SectionHeading>
+          {booked.map(deviceCard)}
+        </>
+      )}
+
+      <AddReadings booking={booking} devices={extra}>
+        <VitalsPanel booking={booking} onSaved={setBooking} group="optional" onFailedChange={onFailedChange} />
+        {extra.map(deviceCard)}
+      </AddReadings>
     </>
   );
 }
@@ -636,7 +798,7 @@ function DonePanel({ booking }: { booking: Booking }) {
     });
   if (v.spo2 != null)
     rows.push({
-      label: "SpO2",
+      label: "Oxygen (SpO2)",
       value: `${v.spo2}%`,
       flag: vitalAssessment("spo2", v.spo2).label,
     });
@@ -695,12 +857,25 @@ function missingTests(booking: Booking): ServiceCode[] {
   return nurseTests(booking.serviceCodes).filter((c) => !testDone(booking, c));
 }
 
+function plural(n: number, word: string) {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+type Confirm = "share" | "arrive" | "consult" | "finish";
+
 function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b: Booking) => void }) {
   const { user } = useAuth();
   const [pending, setPending] = useState<BookingStatus | null>(null);
-  const [confirm, setConfirm] = useState<"consult" | "finish" | null>(null);
+  const [cooling, setCooling] = useState(false);
+  const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [inCall, setInCall] = useState(false);
+  const [unsaved, setUnsaved] = useState<string[]>([]);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const coolTimer = useRef<number | null>(null);
   const status = booking.status;
+  const booker = bookedBy(booking);
+  const patientFirst = firstName(booking.patient.name);
+  const family = booker ? "the family" : patientFirst;
 
   const home = { lat: booking.address.lat, lng: booking.address.lng };
   const from = booking.nurseLocation?.lat != null ? booking.nurseLocation : (user?.baseLocation ?? null);
@@ -711,13 +886,33 @@ function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b
     to: home,
   });
 
+  useEffect(
+    () => () => {
+      if (coolTimer.current) window.clearTimeout(coolTimer.current);
+    },
+    [],
+  );
+
+  const onFailedChange = useCallback((title: string, failed: boolean) => {
+    setUnsaved((prev) => {
+      if (failed) return prev.includes(title) ? prev : [...prev, title];
+      return prev.includes(title) ? prev.filter((t) => t !== title) : prev;
+    });
+  }, []);
+
   const advance = useCallback(
     async (to: BookingStatus) => {
       setPending(to);
       try {
         const res = await api.post<{ booking: Booking }>(`/bookings/${booking.id}/status`, { status: to });
         setBooking(res.booking);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // Each step tells the family and cannot be undone: a second tap must not land on the next one.
+        setCooling(true);
+        if (coolTimer.current) window.clearTimeout(coolTimer.current);
+        coolTimer.current = window.setTimeout(() => setCooling(false), STEP_GUARD_MS);
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        headingRef.current?.focus({ preventScroll: true });
+        window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
       } catch (err) {
         toast.error(errorMessage(err, "Couldn't update the visit."));
       } finally {
@@ -727,35 +922,56 @@ function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b
     [booking.id, setBooking],
   );
 
+  const startTrip = () => {
+    // Real use asks once before the browser's own location prompt; demo mode and an already
+    // allowed (or blocked) site go straight on.
+    const canAsk = typeof navigator !== "undefined" && "geolocation" in navigator;
+    if (!demoMode && canAsk && sharing.consent === null && sharing.permission !== "denied") setConfirm("share");
+    else void advance("en_route");
+  };
+
+  const liveKm = sharing.live ? haversineKm(sharing.live, home) : null;
+  const arrive = () => {
+    if (liveKm !== null && liveKm <= ARRIVE_CHECK_KM) void advance("arrived");
+    else setConfirm("arrive");
+  };
+
   const missing = missingTests(booking);
-  const busy = pending !== null;
-  const spinner = <LoaderCircle className="animate-spin" />;
+  const busy = pending !== null || cooling;
+  const spinner = pending !== null ? <LoaderCircle className="animate-spin" /> : null;
+  const unsavedHint =
+    unsaved.length > 0 ? (
+      <span className="font-medium text-danger">{plural(unsaved.length, "reading")} not saved yet</span>
+    ) : null;
 
   let bar: ReactNode = null;
   switch (status) {
     case "assigned":
       bar = (
-        <ActionBar hint="Shares your live location with the patient">
-          <Button className={primaryCta} disabled={busy} onClick={() => void advance("en_route")}>
-            {busy ? spinner : <Navigation />} Start trip
+        <ActionBar
+          step={status}
+          hint={!demoMode && sharing.permission === "denied" ? undefined : `Shares your live location with ${booker ? "the family" : "the patient"}`}
+        >
+          <Button className={primaryCta} disabled={busy} onClick={startTrip}>
+            {spinner ?? <Navigation />} Start trip
           </Button>
         </ActionBar>
       );
       break;
     case "en_route":
       bar = (
-        <ActionBar>
-          <Button className={primaryCta} disabled={busy} onClick={() => void advance("arrived")}>
-            {busy ? spinner : <House />} I&apos;ve arrived
+        <ActionBar step={status}>
+          <Button className={primaryCta} disabled={busy} onClick={arrive}>
+            {spinner ?? <House />} I&apos;ve arrived
           </Button>
         </ActionBar>
       );
       break;
     case "arrived":
       bar = (
-        <ActionBar>
+        <ActionBar step={status}>
           <Button className={primaryCta} disabled={busy} onClick={() => void advance("testing")}>
-            {busy ? spinner : <ArrowRight />} Begin tests
+            {spinner ?? <ArrowRight />} Begin tests
           </Button>
         </ActionBar>
       );
@@ -763,28 +979,30 @@ function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b
     case "testing":
       bar = (
         <ActionBar
+          step={status}
           hint={
-            missing.length === 0 ? (
+            unsavedHint ??
+            (missing.length === 0 ? (
               <span className="font-medium text-success">All readings saved</span>
             ) : (
-              `${missing.length} reading${missing.length > 1 ? "s" : ""} left: ${missing.map((c) => TEST_META[c].short).join(", ")}`
-            )
+              `${plural(missing.length, "reading")} left: ${missing.map((c) => TEST_META[c].short).join(", ")}`
+            ))
           }
         >
           <Button
             className={primaryCta}
             disabled={busy}
-            onClick={() => (missing.length ? setConfirm("consult") : void advance("consult"))}
+            onClick={() => (missing.length || unsaved.length ? setConfirm("consult") : void advance("consult"))}
           >
-            {busy ? spinner : <Video />} Start doctor consult
+            {spinner ?? <Video />} Start doctor consult
           </Button>
         </ActionBar>
       );
       break;
     case "consult":
       bar = inCall ? null : (
-        <ActionBar>
-          <Button className={primaryCta} onClick={() => setInCall(true)}>
+        <ActionBar step={status} hint={unsavedHint ?? undefined}>
+          <Button className={primaryCta} disabled={busy} onClick={() => setInCall(true)}>
             <Video /> Join video call
           </Button>
         </ActionBar>
@@ -792,7 +1010,7 @@ function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b
       break;
     default:
       bar = (
-        <ActionBar>
+        <ActionBar step={status}>
           <Link href="/nurse" className={cn(buttonVariants({ size: "lg" }), primaryCta)}>
             <ArrowLeft /> Back to Today
           </Link>
@@ -803,15 +1021,142 @@ function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b
   const workspace = status === "testing" || status === "consult";
   const done = status === "reporting" || status === "completed";
 
+  let dialog: ReactNode = null;
+  if (confirm === "share") {
+    dialog = (
+      <>
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">Share your location for this trip?</DialogTitle>
+          <DialogDescription>
+            {booker ? "The family sees" : `${patientFirst} sees`} where you are while you are on the way. Sharing
+            stops when you arrive.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="-mx-5 -mb-5 flex-col gap-2 p-5 sm:flex-col">
+          <Button
+            className={dialogPrimary}
+            onClick={() => {
+              setConfirm(null);
+              sharing.setConsent(true);
+              void advance("en_route");
+            }}
+          >
+            Share and start trip
+          </Button>
+          <Button
+            variant="outline"
+            className={dialogSecondary}
+            onClick={() => {
+              setConfirm(null);
+              sharing.setConsent(false);
+              void advance("en_route");
+            }}
+          >
+            Start without sharing
+          </Button>
+        </DialogFooter>
+      </>
+    );
+  } else if (confirm === "arrive") {
+    dialog = (
+      <>
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">Mark as arrived?</DialogTitle>
+          <DialogDescription>
+            {liveKm !== null
+              ? `Your phone shows you about ${formatDistance(liveKm)} from ${patientFirst}'s home.`
+              : "We can't see your location right now."}{" "}
+            We tell {family} as soon as you mark yourself arrived.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="-mx-5 -mb-5 flex-col gap-2 p-5 sm:flex-col">
+          <Button
+            className={dialogPrimary}
+            onClick={() => {
+              setConfirm(null);
+              void advance("arrived");
+            }}
+          >
+            Yes, I&apos;m at the door
+          </Button>
+          <DialogClose render={<Button variant="outline" className={dialogSecondary} />}>Not yet</DialogClose>
+        </DialogFooter>
+      </>
+    );
+  } else if (confirm === "consult") {
+    dialog = (
+      <>
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">Start consult without all readings?</DialogTitle>
+          <DialogDescription>
+            {unsaved.length > 0 && <>Not saved: {unsaved.join(", ")}. </>}
+            {missing.length > 0 && <>Still missing: {missing.map((c) => TEST_META[c].label).join(", ")}. </>}
+            You can keep recording during the consult.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="-mx-5 -mb-5 flex-col gap-2 p-5 sm:flex-col">
+          <Button
+            className={dialogPrimary}
+            onClick={() => {
+              setConfirm(null);
+              void advance("consult");
+            }}
+          >
+            Start consult anyway
+          </Button>
+          <DialogClose render={<Button variant="outline" className={dialogSecondary} />}>Keep testing</DialogClose>
+        </DialogFooter>
+      </>
+    );
+  } else if (confirm === "finish") {
+    dialog = (
+      <>
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">Finish this visit?</DialogTitle>
+          <DialogDescription>
+            Do this once the doctor has ended the consult. You can&apos;t add readings after this, and the doctor will
+            prepare the report.
+          </DialogDescription>
+        </DialogHeader>
+        {unsaved.length > 0 && (
+          <p className="flex items-start gap-2 rounded-xl bg-danger/5 px-3 py-2.5 text-sm ring-1 ring-danger/25 ring-inset">
+            <CircleAlert className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden />
+            <span>
+              <span className="font-semibold text-danger">Not saved yet: {unsaved.join(", ")}.</span> Use Try again on
+              the reading first, or it will be lost.
+            </span>
+          </p>
+        )}
+        <DialogFooter className="-mx-5 -mb-5 flex-col gap-2 p-5 sm:flex-col">
+          <Button
+            className={dialogPrimary}
+            onClick={() => {
+              setConfirm(null);
+              setInCall(false);
+              void advance("reporting");
+            }}
+          >
+            Finish visit
+          </Button>
+          <DialogClose render={<Button variant="outline" className={dialogSecondary} />}>Not yet</DialogClose>
+        </DialogFooter>
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 pb-28">
-      <VisitHeader booking={booking} />
+      <VisitHeader booking={booking} headingRef={headingRef} />
       <NurseProgress status={status} />
+      <p role="status" className="sr-only">
+        {STEP_ANNOUNCEMENT[status] ?? ""}
+      </p>
 
-      {(status === "assigned" || status === "en_route") && (
-        <TripPanel booking={booking} sharing={sharing} nurseName={user?.name} />
-      )}
       {status === "assigned" && <VisitBrief booking={booking} />}
+      {(status === "assigned" || status === "en_route") && (
+        <TripPanel booking={booking} sharing={sharing} nurseName={user?.name} family={family} />
+      )}
+      {status === "assigned" && <ReviewingDoctor booking={booking} />}
       {status === "arrived" && <ArrivedPanel booking={booking} />}
       {workspace && (
         <Workspace
@@ -820,6 +1165,7 @@ function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b
           inCall={inCall}
           onLeaveCall={() => setInCall(false)}
           onFinish={() => setConfirm("finish")}
+          onFailedChange={onFailedChange}
         />
       )}
       {done && <DonePanel booking={booking} />}
@@ -832,57 +1178,7 @@ function VisitScreen({ booking, setBooking }: { booking: Booking; setBooking: (b
       {bar}
 
       <Dialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
-        <DialogContent className="gap-5 p-5">
-          {confirm === "consult" ? (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-lg font-semibold">Start consult without all readings?</DialogTitle>
-                <DialogDescription>
-                  Still missing: {missing.map((c) => TEST_META[c].label).join(", ")}. You can keep recording during the
-                  consult.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="-mx-5 -mb-5 flex-col gap-2 p-5 sm:flex-col">
-                <Button
-                  className="h-12 w-full rounded-xl text-base font-semibold"
-                  onClick={() => {
-                    setConfirm(null);
-                    void advance("consult");
-                  }}
-                >
-                  Start consult anyway
-                </Button>
-                <DialogClose render={<Button variant="outline" className="h-12 w-full rounded-xl text-base" />}>
-                  Keep testing
-                </DialogClose>
-              </DialogFooter>
-            </>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-lg font-semibold">Mark this visit complete?</DialogTitle>
-                <DialogDescription>
-                  Use this once the doctor has finished the consult. The doctor will then prepare the report.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="-mx-5 -mb-5 flex-col gap-2 p-5 sm:flex-col">
-                <Button
-                  className="h-12 w-full rounded-xl text-base font-semibold"
-                  onClick={() => {
-                    setConfirm(null);
-                    setInCall(false);
-                    void advance("reporting");
-                  }}
-                >
-                  Mark complete
-                </Button>
-                <DialogClose render={<Button variant="outline" className="h-12 w-full rounded-xl text-base" />}>
-                  Not yet
-                </DialogClose>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
+        <DialogContent className="gap-5 p-5">{dialog}</DialogContent>
       </Dialog>
     </div>
   );
@@ -904,20 +1200,40 @@ export function VisitView({ bookingId }: { bookingId: string }) {
   }
 
   if (!booking) {
-    const notMine = errorStatus === 403 || errorStatus === 404;
+    const notFound = errorStatus === 404;
+    const notMine = errorStatus === 403;
+    const title = notFound
+      ? "We couldn't find this visit"
+      : notMine
+        ? "This visit is assigned to another nurse"
+        : "Couldn't load this visit";
+    const body = notFound
+      ? "It may have been cancelled or given to another nurse. Your current visits are on Today."
+      : notMine
+        ? "Your current visits are on Today."
+        : error;
+    const back = (
+      <Link
+        href="/nurse"
+        className={cn(
+          buttonVariants({ variant: notFound || notMine ? "default" : "outline", size: "lg" }),
+          "h-11 rounded-xl px-5 font-semibold",
+        )}
+      >
+        <ArrowLeft /> Back to Today
+      </Link>
+    );
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center">
-        <p className="font-semibold">{notMine ? "This visit is not assigned to you" : "Couldn't load this visit"}</p>
-        <p className="max-w-xs text-sm text-muted-foreground">{error}</p>
-        <div className="flex gap-2">
-          <Link href="/nurse" className={buttonVariants({ variant: "outline", size: "lg" })}>
-            Back to Today
-          </Link>
-          {!notMine && (
-            <Button size="lg" onClick={reload}>
-              <RotateCw /> Retry
+        <h1 className="text-lg font-semibold">{title}</h1>
+        <p className="max-w-xs text-sm text-muted-foreground">{body}</p>
+        <div className="mt-1 flex flex-wrap justify-center gap-2">
+          {!notFound && !notMine && (
+            <Button size="lg" className="h-11 rounded-xl px-5 font-semibold" onClick={reload}>
+              <RotateCw /> Try again
             </Button>
           )}
+          {back}
         </div>
       </div>
     );

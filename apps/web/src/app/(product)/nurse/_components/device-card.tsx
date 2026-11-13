@@ -15,7 +15,7 @@ import {
   type StethChunk,
 } from "@/lib/device-sim";
 import { formatTime } from "@/lib/format";
-import { emit } from "@/lib/socket";
+import { emit, useSocketConnected } from "@/lib/socket";
 import type { Booking, DeviceKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -38,13 +38,13 @@ const DEVICE = {
     title: "Smart ECG",
     model: "Nivar ECG-1",
     icon: Activity,
-    connect: "Connect Smart ECG",
+    connect: "Connect smart ECG",
   },
   stethoscope: {
-    title: "Smart Stethoscope",
+    title: "Smart stethoscope",
     model: "Nivar Steth-1",
     icon: Stethoscope,
-    connect: "Connect Smart Stethoscope",
+    connect: "Connect smart stethoscope",
   },
 } as const;
 
@@ -149,7 +149,10 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
   const [phase, setPhase] = useState<Phase>("idle");
   const [capturing, setCapturing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [findings, setFindings] = useState<string>(booking.stethoscope?.findings || STETH_FINDINGS[0]);
+  // Nothing is chosen for the nurse: a finding in the record must be one she heard.
+  const [findings, setFindings] = useState<string>(booking.stethoscope?.findings ?? "");
+  const connected = useSocketConnected();
+  const cardRef = useRef<HTMLElement>(null);
 
   const phaseRef = useRef<Phase>("idle");
   const pairTimer = useRef<number | null>(null);
@@ -200,7 +203,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
           description: doctorName ? `${doctorName} can review it now.` : undefined,
         });
       } catch (err) {
-        toast.error(errorMessage(err, "Couldn't save the reading."));
+        toast.error(errorMessage(err, "Couldn't save the reading. Capture it again."));
       } finally {
         setSaving(false);
       }
@@ -270,6 +273,11 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
   const connect = () => {
     setPhaseBoth("connecting");
     sendStatus("connecting");
+    // The pairing panel and the monitor open inside this card; keep them clear of the action bar.
+    requestAnimationFrame(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      cardRef.current?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    });
     pairTimer.current = window.setTimeout(() => {
       pairTimer.current = null;
       setPhaseBoth("streaming");
@@ -321,21 +329,27 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
         : "";
 
   const live = phase === "streaming";
+  // While the live connection is down nothing reaches the doctor, whatever the device is doing.
+  const unreachable = live && !connected;
   const subtitle =
     phase === "connecting"
       ? "Pairing..."
-      : live
-        ? capturing
-          ? "Capturing 10 second reading"
-          : `Streaming live${doctorName ? ` to ${doctorName}` : ""}`
-        : savedAt
-          ? "Reading saved"
-          : "Not connected";
+      : unreachable
+        ? `Not reaching ${doctorName ?? "the doctor"} right now. Reconnecting...`
+        : live
+          ? capturing
+            ? "Capturing 10-second reading"
+            : `Streaming live${doctorName ? ` to ${doctorName}` : ""}`
+          : savedAt
+            ? "Reading saved"
+            : "Not connected";
+  const needsFinding = kind === "stethoscope" && !findings;
 
   return (
     <section
+      ref={cardRef}
       className={cn(
-        "flex flex-col gap-4 rounded-2xl border bg-card p-4 shadow-soft transition-colors",
+        "flex scroll-mb-40 flex-col gap-4 rounded-2xl border bg-card p-4 shadow-soft transition-colors",
         live ? "border-primary/30" : "border-border",
       )}
       aria-label={meta.title}
@@ -361,8 +375,18 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
               {booked ? "Booked" : "Optional"}
             </span>
           </div>
-          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-            {live && <span className="live-dot size-1.5 text-signal" aria-hidden />}
+          <p
+            role="status"
+            className={cn(
+              "mt-0.5 flex items-center gap-1.5 text-sm",
+              unreachable ? "font-medium text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {unreachable ? (
+              <span className="size-2 shrink-0 rounded-full bg-saffron" aria-hidden />
+            ) : (
+              live && <span className="live-dot size-1.5 text-signal" aria-hidden />
+            )}
             {subtitle}
           </p>
         </div>
@@ -380,6 +404,9 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
       {kind === "stethoscope" && live && (
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-xs font-medium text-muted-foreground">Findings</legend>
+          {needsFinding && (
+            <p className="text-sm text-foreground">Choose what you heard, then capture the reading.</p>
+          )}
           <div className="flex flex-wrap gap-2">
             {STETH_FINDINGS.map((f) => (
               <button
@@ -388,7 +415,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
                 aria-pressed={findings === f}
                 onClick={() => void saveFindings(f)}
                 className={cn(
-                  "min-h-10 rounded-full border px-3.5 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                  "min-h-11 rounded-full border px-3.5 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                   findings === f
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background hover:bg-muted",
@@ -405,7 +432,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
         <div className="flex items-start gap-2.5 rounded-xl bg-muted px-3 py-2.5 text-sm text-foreground ring-1 ring-border ring-inset">
           <CircleCheck className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="font-medium">10s reading saved at {formatTime(savedAt)}</p>
+            <p className="font-medium">10-second reading saved at {formatTime(savedAt)}</p>
             <p className="text-muted-foreground">{savedSummary}</p>
           </div>
         </div>
@@ -424,11 +451,11 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
       )}
 
       {live && (
-        <div className="flex gap-2.5">
+        <div className="flex flex-col gap-2.5 min-[420px]:flex-row">
           {capturing || saving ? (
             <div
               role="status"
-              className="flex h-12 flex-1 items-center justify-center gap-2.5 rounded-xl bg-foreground text-base font-semibold text-background"
+              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2.5 rounded-xl bg-foreground text-base font-semibold text-background"
             >
               {capturing ? (
                 <ProgressRing progressRef={progressRef} />
@@ -441,7 +468,8 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
             <Button
               size="lg"
               variant={savedAt ? "outline" : "default"}
-              className="h-12 flex-1 rounded-xl text-base font-semibold"
+              className="h-12 min-w-0 flex-1 rounded-xl text-base font-semibold"
+              disabled={needsFinding}
               onClick={startCapture}
             >
               {savedAt ? <RotateCcw className="size-5" /> : <Timer className="size-5" />}
@@ -450,7 +478,7 @@ export function DeviceCard({ kind, booking, booked, doctorName, heartRateHint, o
           )}
           <Button size="lg" variant="outline" className="h-12 rounded-xl px-4 text-base" onClick={disconnect}>
             <Plug className="size-5" />
-            Stop
+            Disconnect
           </Button>
         </div>
       )}

@@ -80,7 +80,7 @@ function StaffCard({
         <div className="min-w-0 bg-card px-3.5 py-2.5">
           <dt className="flex items-center gap-1 text-[11px] text-muted-foreground">
             {isNurse ? <MapPin className="size-3" /> : <Award className="size-3" />}
-            {isNurse ? "Hub" : "Specialty"}
+            {isNurse ? "Hub" : "Speciality"}
           </dt>
           <dd className="mt-0.5 truncate text-[13px] font-medium" title={isNurse ? hub : member.specialization}>
             {(isNurse ? hub : member.specialization) ?? "Not set"}
@@ -182,7 +182,7 @@ export function StaffPage() {
         title="Staff"
         description={
           staff
-            ? `${activeCount("nurse")} nurses and ${activeCount("doctor")} doctors on duty.`
+            ? `${activeCount("nurse")} nurses and ${activeCount("doctor")} doctors active.`
             : "Nurses and doctors"
         }
         actions={

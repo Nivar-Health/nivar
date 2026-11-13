@@ -163,7 +163,7 @@ export function AddStaffDialog({
         <form method="post" onSubmit={submit} noValidate>
           <DialogHeader className="px-5 pt-5">
             <DialogTitle className="text-lg">Add staff member</DialogTitle>
-            <DialogDescription>Full-time Nivar employees only. They sign in with this email and password.</DialogDescription>
+            <DialogDescription>For Nivar nurses and doctors. They sign in with this email and password.</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 px-5 py-5">
@@ -235,7 +235,7 @@ export function AddStaffDialog({
                 </Field>
               ) : (
                 <>
-                  <Field label="Specialization" htmlFor="s-spec">
+                  <Field label="Speciality" htmlFor="s-spec">
                     <Select value={form.specialization} onValueChange={(v) => v && setForm((f) => ({ ...f, specialization: v as string }))}>
                       <SelectTrigger id="s-spec" className="h-9 w-full">
                         <SelectValue />

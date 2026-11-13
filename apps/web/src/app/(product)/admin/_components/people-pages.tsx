@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Contact, Inbox, MapPin, Phone } from "lucide-react";
+import { Contact, MapPin } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UserAvatar } from "@/components/user-menu";
 import { formatDate, formatDateTime, formatINR, formatPhone, relative } from "@/lib/format";
-import { refId, type CustomerRow, type Lead } from "@/lib/types";
+import { refId, type CustomerRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EmptyState, ErrorState, PageHeader, SearchInput, TableSkeleton } from "./admin-ui";
 import { useAdminBookings, useAdminResource, useNow } from "./use-admin-data";
@@ -147,89 +147,6 @@ export function CustomersPage() {
               </TableBody>
             </Table>
             <Footer shown={rows.length} total={all.length} noun="customers" />
-          </>
-        )}
-      </TableShell>
-    </>
-  );
-}
-
-export function LeadsPage() {
-  const { data, error, reload } = useAdminResource<{ leads: Lead[] }>("/admin/leads");
-  const [query, setQuery] = useState("");
-  useNow(60_000);
-  const all = data?.leads ?? [];
-  const q = query.trim().toLowerCase();
-  const rows = all.filter((l) => !q || [l.name, l.phone, l.city, l.message].join(" ").toLowerCase().includes(q));
-  const outside = all.filter((l) => !/bangalore|bengaluru/i.test(l.city)).length;
-
-  return (
-    <>
-      <PageHeader
-        title="Leads"
-        description={
-          data
-            ? `${all.length} callback requests from the website${outside ? ` · ${outside} from outside Bangalore` : ""}`
-            : "Callback requests from the website"
-        }
-      />
-      <SearchInput value={query} onChange={setQuery} placeholder="Search name, phone, city or message" className="mb-4 md:w-80" />
-      {error && (
-        <div className="mb-4">
-          <ErrorState message={error} onRetry={reload} />
-        </div>
-      )}
-      <TableShell>
-        {!data ? (
-          <TableSkeleton rows={6} cols={5} />
-        ) : rows.length === 0 ? (
-          <EmptyState icon={<Inbox />} title={q ? "No leads match" : "No leads yet"} body={q ? undefined : "Requests from the landing page form land here."} className="py-14" />
-        ) : (
-          <>
-            <Table className="min-w-[760px]">
-              <TableHeader className="bg-muted/40 [&_tr]:border-border/70">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className={cn(headCls, "pl-5")}>Name</TableHead>
-                  <TableHead className={headCls}>Phone</TableHead>
-                  <TableHead className={headCls}>City</TableHead>
-                  <TableHead className={headCls}>Message</TableHead>
-                  <TableHead className={cn(headCls, "pr-5 text-right")}>Received</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((l) => {
-                  const local = /bangalore|bengaluru/i.test(l.city);
-                  return (
-                    <TableRow key={l.id} className="border-border/70 align-top hover:bg-muted/30">
-                      <TableCell className="py-3 pl-5 text-[13px] font-medium">{l.name}</TableCell>
-                      <TableCell className="py-3 text-[13px] tabular">
-                        <a href={`tel:${l.phone}`} className="inline-flex items-center gap-1.5 hover:underline">
-                          <Phone className="size-3.5 text-muted-foreground" />
-                          {formatPhone(l.phone)}
-                        </a>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <span
-                          className={cn(
-                            "inline-flex h-5 items-center rounded-full px-2 text-[11px] font-medium",
-                            local ? "bg-muted text-foreground" : "bg-background text-saffron ring-1 ring-saffron/35 ring-inset",
-                          )}
-                        >
-                          {l.city}
-                        </span>
-                      </TableCell>
-                      <TableCell className="max-w-md py-3 text-[13px] whitespace-normal text-foreground/85">
-                        {l.message || <span className="text-muted-foreground">No message</span>}
-                      </TableCell>
-                      <TableCell className="py-3 pr-5 text-right text-[13px] text-muted-foreground" title={formatDateTime(l.createdAt)}>
-                        {relative(l.createdAt)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            <Footer shown={rows.length} total={all.length} noun="leads" />
           </>
         )}
       </TableShell>

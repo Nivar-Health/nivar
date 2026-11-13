@@ -10,9 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/api";
 import { homePathForRole, safeNextPath, useAuth } from "@/lib/auth";
+import { bookingEnabled, demoMode } from "@/lib/features";
 import type { User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const OFFLINE = "Can't reach Nivar right now. Check your connection and try again.";
+
+/** Demo aids: shown only while demo mode is on (lib/features). */
 const DEMO_PASSWORD = "nivar123";
 
 const DEMO_ACCOUNTS = [
@@ -31,6 +35,7 @@ export function StaffLoginForm({ next }: { next: string | null }) {
   const router = useRouter();
   const { loginStaff, logout } = useAuth();
   const submitRef = useRef<HTMLButtonElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,10 +43,22 @@ export function StaffLoginForm({ next }: { next: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  // After a failed attempt the password is the field to fix (or retype), so the cursor goes there.
+  const fail = (message: string) => {
+    setError(message);
+    setPending(false);
+    requestAnimationFrame(() => passwordRef.current?.focus());
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
       setError("Enter your work email and password.");
+      return;
+    }
+    // A phone with no network must not be told its password is wrong.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      fail(OFFLINE);
       return;
     }
     setError(null);
@@ -50,14 +67,12 @@ export function StaffLoginForm({ next }: { next: string | null }) {
       const user = await loginStaff(email.trim().toLowerCase(), password);
       if (user.role === "customer") {
         logout();
-        setError("This sign in is for Nivar staff. Patients sign in with their mobile number.");
-        setPending(false);
+        fail("This sign in is for Nivar staff. Patients sign in with their mobile number.");
         return;
       }
       router.replace(destinationFor(user, next));
     } catch (err) {
-      setError(errorMessage(err, "Couldn't sign you in. Please try again."));
-      setPending(false);
+      fail(errorMessage(err, "Couldn't sign you in. Please try again."));
     }
   };
 
@@ -74,42 +89,44 @@ export function StaffLoginForm({ next }: { next: string | null }) {
       <h2 className="font-display text-[2rem] leading-tight font-medium tracking-tight">Staff sign in</h2>
       <p className="mt-2 text-[15px] text-muted-foreground">Use your Nivar work account.</p>
 
-      <div className="mt-7">
-        <p className="mb-2.5 text-[13px] font-medium text-muted-foreground">Demo accounts</p>
-        <div className="grid grid-cols-3 gap-2">
-          {DEMO_ACCOUNTS.map((acc) => {
-            const selected = email === acc.email;
-            return (
-              <button
-                key={acc.email}
-                type="button"
-                onClick={() => fillDemo(acc.email)}
-                aria-pressed={selected}
-                title={`${acc.name} (${acc.email})`}
-                className={cn(
-                  "group flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-card p-2.5 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
-                  selected ? "border-foreground" : "border-border hover:border-foreground/40",
-                )}
-              >
-                <span
+      {demoMode && (
+        <div className="mt-7">
+          <p className="mb-2.5 text-[13px] font-medium text-muted-foreground">Demo accounts</p>
+          <div className="grid grid-cols-3 gap-2">
+            {DEMO_ACCOUNTS.map((acc) => {
+              const selected = email === acc.email;
+              return (
+                <button
+                  key={acc.email}
+                  type="button"
+                  onClick={() => fillDemo(acc.email)}
+                  aria-pressed={selected}
+                  title={`${acc.name} (${acc.email})`}
                   className={cn(
-                    "grid size-7 place-items-center rounded-lg transition-colors",
-                    selected ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
+                    "group flex min-w-0 flex-col items-start gap-2 rounded-xl border bg-card p-2.5 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
+                    selected ? "border-foreground" : "border-border hover:border-foreground/40",
                   )}
                 >
-                  <acc.icon className="size-4" />
-                </span>
-                <span className="w-full min-w-0">
-                  <span className="block text-sm leading-tight font-semibold">{acc.role}</span>
-                  <span className="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
-                    {acc.name}
+                  <span
+                    className={cn(
+                      "grid size-7 place-items-center rounded-lg transition-colors",
+                      selected ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
+                    )}
+                  >
+                    <acc.icon className="size-4" />
                   </span>
-                </span>
-              </button>
-            );
-          })}
+                  <span className="w-full min-w-0">
+                    <span className="block text-sm leading-tight font-semibold">{acc.role}</span>
+                    <span className="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
+                      {acc.name}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <form method="post" onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
         <div className="flex flex-col gap-2">
@@ -127,13 +144,14 @@ export function StaffLoginForm({ next }: { next: string | null }) {
               setError(null);
             }}
             aria-invalid={Boolean(error)}
-            className="h-12 rounded-xl bg-card px-3.5 text-[15px] md:text-[15px]"
+            className="h-12 rounded-xl bg-card px-3.5 text-base md:text-[15px]"
           />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Password</Label>
           <div className="relative">
             <Input
+              ref={passwordRef}
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
@@ -146,13 +164,13 @@ export function StaffLoginForm({ next }: { next: string | null }) {
               }}
               aria-invalid={Boolean(error)}
               aria-describedby={error ? "staff-error" : undefined}
-              className="h-12 rounded-xl bg-card pr-11 pl-3.5 text-[15px] md:text-[15px]"
+              className="h-12 rounded-xl bg-card pr-11 pl-3.5 text-base md:text-[15px]"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute top-1/2 right-1.5 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
@@ -171,16 +189,26 @@ export function StaffLoginForm({ next }: { next: string | null }) {
           disabled={pending}
           className="mt-1 h-12 w-full rounded-full text-[15px] font-semibold"
         >
-          {pending ? <LoaderCircle className="size-4 animate-spin" /> : "Sign in"}
+          {pending ? (
+            <>
+              <LoaderCircle className="size-4 animate-spin" aria-hidden />
+              <span className="sr-only">Signing in</span>
+            </>
+          ) : (
+            "Sign in"
+          )}
         </Button>
       </form>
 
-      <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
-        Booking a check-up?{" "}
-        <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
-          Patient sign in
-        </Link>
-      </p>
+      {/* The patient sign-in does not exist while booking is switched off. */}
+      {bookingEnabled && (
+        <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
+          Not staff?{" "}
+          <Link href="/login" className="font-medium text-primary underline underline-offset-4">
+            Patient sign in
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

@@ -120,6 +120,8 @@ export function CustomerLoginForm({ next, signedOut = false }: { next: string | 
       setStep("otp");
       setResendIn(RESEND_SECONDS);
       setResent(resend);
+      // The Resend button gives way to the countdown, so the cursor goes back to the empty boxes.
+      if (resend) requestAnimationFrame(() => document.getElementById(otpBoxId(0))?.focus());
     } catch (err) {
       fail(resend ? "otp" : "phone", signInError(err, "send"));
     } finally {

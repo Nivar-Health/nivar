@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { LeadsPage } from "../_components/people-pages";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Leads" };
-
+/** The inbox was called "Leads"; old links and bookmarks land on its new name. */
 export default function AdminLeadsPage() {
-  return <LeadsPage />;
+  redirect("/admin/callbacks");
 }

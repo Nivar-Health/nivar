@@ -36,16 +36,17 @@ function SectionTitle({ children, count }: { children: React.ReactNode; count?: 
 function Kpi({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5 rounded-2xl border border-border bg-card px-3 py-3 shadow-soft">
+      {/* No truncation: on a 320px phone "8:00 AM" and the labels must still read in full. */}
       <span
         className={
           accent
-            ? "truncate font-display text-xl leading-8 tabular-nums"
-            : "truncate font-display text-2xl leading-8 tabular-nums"
+            ? "font-display text-lg leading-8 tabular-nums min-[360px]:text-xl"
+            : "font-display text-2xl leading-8 tabular-nums"
         }
       >
         {value}
       </span>
-      <span className="truncate text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs leading-tight text-muted-foreground">{label}</span>
     </div>
   );
 }
@@ -113,11 +114,13 @@ export function TodayView() {
     const hero = open.find((b) => ONGOING.includes(b.status)) ?? open[0] ?? null;
     const rest = open.filter((b) => b !== hero);
     const upcoming = list.filter((b) => b.scheduledDate > today && !NURSE_DONE.includes(b.status));
-    return { todays, done, open, hero, rest, upcoming };
+    // A visit from an earlier day that was never finished would otherwise fall off every list.
+    const overdue = list.filter((b) => b.scheduledDate < today && !NURSE_DONE.includes(b.status));
+    return { todays, done, open, hero, rest, upcoming, overdue };
   }, [bookings, today]);
 
   const nextVisit = groups.open.find((b) => !ONGOING.includes(b.status));
-  const nextAt = nextVisit ? slotStart(nextVisit.slot) : "None";
+  const nextAt = nextVisit ? slotStart(nextVisit.slot) : "None left";
 
   return (
     <div className="flex flex-col gap-6">
@@ -135,7 +138,7 @@ export function TodayView() {
       {error && !bookings ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-10 text-center">
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" size="lg" onClick={reload}>
+          <Button variant="outline" size="lg" className="h-11 rounded-xl px-5" onClick={reload}>
             <RotateCw /> Try again
           </Button>
         </div>
@@ -146,8 +149,19 @@ export function TodayView() {
           <div className="grid grid-cols-3 gap-2.5">
             <Kpi label="Visits today" value={String(groups.todays.length)} />
             <Kpi label="Completed" value={String(groups.done.length)} />
-            <Kpi label="Next at" value={nextAt} accent />
+            <Kpi label="Next visit" value={nextAt} accent />
           </div>
+
+          {groups.overdue.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <SectionTitle count={groups.overdue.length}>Overdue</SectionTitle>
+              <div className="flex flex-col gap-2.5">
+                {groups.overdue.map((b) => (
+                  <VisitRow key={b.id} booking={b} showDay />
+                ))}
+              </div>
+            </section>
+          )}
 
           {groups.hero ? (
             <VisitHeroCard key={groups.hero.id} booking={groups.hero} />

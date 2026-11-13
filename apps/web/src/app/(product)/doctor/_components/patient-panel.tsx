@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { formatDateLong, formatPhone, relative, scheduleLabel } from "@/lib/format";
 import { populated, refId, type Booking } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { RELATION_LABEL, SERVICE_LABEL, genderLabel } from "./clinical";
+import { FOR_WHOM, SERVICE_LABEL, genderLabel } from "./clinical";
 import { statusAt } from "./hooks";
 import { VitalsList, vitalRows } from "./vitals";
 
@@ -50,7 +50,7 @@ function PatientCard({ booking }: { booking: Booking }) {
         <div className="min-w-0">
           <p className="truncate font-display text-xl leading-tight">{patient.name}</p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {patient.age} yrs · {genderLabel(patient.gender)} · {RELATION_LABEL[patient.relation]}
+            {patient.age} yrs · {genderLabel(patient.gender)}
           </p>
         </div>
       </div>
@@ -59,7 +59,7 @@ function PatientCard({ booking }: { booking: Booking }) {
           <div className="flex items-start gap-2.5">
             <Users className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <dd>
-              Booked by <span className="font-medium">{customer.name}</span>
+              Booked by <span className="font-medium">{customer.name}</span> {FOR_WHOM[patient.relation]}
             </dd>
           </div>
         )}

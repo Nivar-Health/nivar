@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import type { Booking, BookingStatus, Report } from "@/lib/types";
 
@@ -209,7 +210,8 @@ export function useReportDraft(booking: Booking, setBooking: (b: Booking) => voi
       setBooking(next);
       return true;
     } catch (err) {
-      setSaveState({ kind: "error", message: errorMessage(err, "Couldn't end the consult.") });
+      // Shown where the doctor clicked, not in the report bar further down the page.
+      toast.error(errorMessage(err, "Couldn't end the consult."));
       return false;
     } finally {
       setBusy(null);

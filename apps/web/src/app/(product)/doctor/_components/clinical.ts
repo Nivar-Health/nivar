@@ -35,14 +35,23 @@ export const MEDICINES = [
   "Iron + Folic acid (Livogen)",
 ] as const;
 
+/**
+ * The stored value stays the short code doctors write (the patient's report spells it out); the
+ * picker shows the words first so nobody has to decode it.
+ */
 export const FREQUENCIES = [
-  { value: "OD", label: "OD", hint: "Once a day" },
-  { value: "BD", label: "BD", hint: "Twice a day" },
-  { value: "TDS", label: "TDS", hint: "Three times a day" },
-  { value: "HS", label: "HS", hint: "At bedtime" },
-  { value: "SOS", label: "SOS", hint: "When needed" },
-  { value: "Once a week", label: "Weekly", hint: "Once a week" },
+  { value: "OD", label: "Once a day (OD)" },
+  { value: "BD", label: "Twice a day (BD)" },
+  { value: "TDS", label: "Three times a day (TDS)" },
+  { value: "HS", label: "At bedtime (HS)" },
+  { value: "SOS", label: "When needed (SOS)" },
+  { value: "Once a week", label: "Once a week" },
 ] as const;
+
+/** "Once a day (OD)" for a stored "OD"; anything else as written. */
+export function frequencyLabel(value: string): string {
+  return FREQUENCIES.find((f) => f.value === value)?.label ?? value;
+}
 
 export const ADVICE_TEMPLATES = [
   "Reduce salt intake to under 5 g a day",
@@ -72,12 +81,13 @@ export const SERVICE_LABEL: Record<ServiceCode, string> = {
   CONSULT: "Doctor consult",
 };
 
-export const RELATION_LABEL: Record<Patient["relation"], string> = {
-  self: "Self",
-  parent: "Parent",
-  spouse: "Spouse",
-  child: "Child",
-  other: "Family",
+/** Completes "Booked by Rohan Gupta …" when someone else booked for the patient. */
+export const FOR_WHOM: Record<Patient["relation"], string> = {
+  self: "",
+  parent: "for a parent",
+  spouse: "for a spouse",
+  child: "for a child",
+  other: "for someone else",
 };
 
 export const GENDER_SHORT: Record<Patient["gender"], string> = {

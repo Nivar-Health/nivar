@@ -20,7 +20,7 @@ export interface FeedItem {
   live?: boolean;
 }
 
-const METHOD: Record<string, string> = { upi: "UPI", card: "card", netbanking: "netbanking", cash: "cash" };
+const METHOD: Record<string, string> = { upi: "UPI", card: "card", netbanking: "net banking", cash: "cash" };
 
 function first(name?: string | null) {
   return (name ?? "").trim();

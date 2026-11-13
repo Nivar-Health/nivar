@@ -197,7 +197,7 @@ export function CheckoutDialog({
         const wait = Math.max(0, 900 - (Date.now() - started));
         timers.current.push(
           window.setTimeout(() => {
-            setError(errorMessage(err, "The payment did not go through. Please try again."));
+            setError(errorMessage(err, "Please try again."));
             setPhase("error");
           }, wait),
         );
@@ -249,10 +249,11 @@ export function CheckoutDialog({
           {(phase === "form" || phase === "error") && (
             <>
               <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-3">
-                {phase === "error" && error && (
+                {phase === "error" && (
                   // No gateway is behind this mock, so a failure never takes money. A real gateway must say what it knows.
-                  <div role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-background px-3.5 py-2.5 text-small text-destructive">
-                    {error} No money was taken.
+                  <div role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-background px-3.5 py-2.5 text-small">
+                    <p className="font-semibold text-destructive">The payment did not go through. No money was taken.</p>
+                    {error && <p className="mt-0.5 text-foreground-2">{error}</p>}
                   </div>
                 )}
                 <div

@@ -56,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md supports-backdrop-filter:bg-background/70 print:hidden">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
-          <Link href="/app" aria-label="Nivar, home" className="rounded-md focus-ring">
+          <Link href="/app" aria-label="Nivar, home" className="flex h-11 items-center rounded-md focus-ring">
             <Logo size="sm" />
           </Link>
 

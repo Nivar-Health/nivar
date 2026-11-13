@@ -9,7 +9,6 @@ import {
   CloudOff,
   FilePenLine,
   Loader2,
-  PhoneOff,
   Pill,
   Plus,
   Send,
@@ -39,6 +38,7 @@ import {
   FOLLOW_UP_PICKS,
   FREQUENCIES,
   MEDICINES,
+  frequencyLabel,
   suggestedDiagnoses,
 } from "./clinical";
 import { useNow } from "./hooks";
@@ -141,8 +141,11 @@ const inputClass = "h-9 bg-card";
 // Prescription
 // ---------------------------------------------------------------------------
 
+/** Medicines listed in full in the publish dialog before the rest are counted. */
+const RX_PREVIEW = 5;
+
 const RX_GRID =
-  "md:grid md:grid-cols-[minmax(0,2.3fr)_minmax(0,0.9fr)_96px_minmax(0,0.9fr)_minmax(0,1.3fr)_36px] md:items-center md:gap-2";
+  "md:grid md:grid-cols-[minmax(0,2.3fr)_minmax(0,0.9fr)_176px_minmax(0,0.9fr)_minmax(0,1.3fr)_36px] md:items-center md:gap-2";
 
 function RxEditor({ rows, onChange, listId }: { rows: RxRow[]; onChange: (rows: RxRow[]) => void; listId: string }) {
   const update = (key: string, patch: Partial<RxRow>) =>
@@ -200,7 +203,7 @@ function RxEditor({ rows, onChange, listId }: { rows: RxRow[]; onChange: (rows: 
                 className={selectClass}
               >
                 {FREQUENCIES.map((f) => (
-                  <option key={f.value} value={f.value} title={f.hint}>
+                  <option key={f.value} value={f.value}>
                     {f.label}
                   </option>
                 ))}
@@ -360,7 +363,7 @@ function findingsText(booking: Booking): string {
 // ---------------------------------------------------------------------------
 
 export function ReportEditor({ booking, report }: { booking: Booking; report: ReportDraft }) {
-  const { draft, setDraft, saveState, canDraft, canPublish, flush, publish, endCall, busy } = report;
+  const { draft, setDraft, saveState, canDraft, canPublish, flush, publish, busy } = report;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [diagnosisError, setDiagnosisError] = useState(false);
   const diagnosisRef = useRef<HTMLInputElement>(null);
@@ -368,7 +371,8 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
   const suggestions = suggestedDiagnoses(booking);
   const customer = populated(booking.customer);
   const inConsult = booking.status === "consult";
-  const rxCount = draft.prescription.filter((r) => r.medicine.trim()).length;
+  const medicines = draft.prescription.filter((r) => r.medicine.trim());
+  const rxCount = medicines.length;
 
   const requestPublish = () => {
     if (!draft.diagnosis.trim()) {
@@ -447,7 +451,8 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
             </div>
             {suggestions.size > 0 && (
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <Sparkles className="size-3 text-warning" /> Highlighted picks match the recorded vitals and ECG.
+                <Sparkles className="size-3 text-warning" /> Highlighted picks are suggested by the recorded vitals and
+                ECG.
               </p>
             )}
           </div>
@@ -532,16 +537,10 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
 
       {/* Action bar */}
       <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl border-t bg-card/95 px-5 py-3.5 backdrop-blur-md">
-        <div className="min-w-0 text-xs">
+        <div role="status" className="min-w-0 text-xs">
           <SaveIndicator state={saveState} />
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {inConsult && (
-            <Button variant="ghost" size="lg" onClick={() => void endCall()} disabled={busy !== null} className="px-3">
-              {busy === "ending" ? <Loader2 className="animate-spin" /> : <PhoneOff />}
-              End call, write report later
-            </Button>
-          )}
           <Button
             variant="outline"
             size="lg"
@@ -577,7 +576,25 @@ export function ReportEditor({ booking, report }: { booking: Booking; report: Re
             <dt className="text-muted-foreground">Diagnosis</dt>
             <dd className="font-medium">{draft.diagnosis.trim()}</dd>
             <dt className="text-muted-foreground">Prescription</dt>
-            <dd>{rxCount ? `${rxCount} ${rxCount === 1 ? "medicine" : "medicines"}` : "None"}</dd>
+            <dd>
+              {rxCount ? (
+                // The last look before an uneditable prescription goes out: show what is in it.
+                <ul className="flex flex-col gap-1">
+                  {medicines.slice(0, RX_PREVIEW).map((r) => (
+                    <li key={r.key}>
+                      <span className="font-medium">{r.medicine.trim()}</span>
+                      {[r.dosage.trim(), r.frequency && frequencyLabel(r.frequency), r.duration.trim()]
+                        .filter(Boolean)
+                        .map((part) => ` · ${part}`)
+                        .join("")}
+                    </li>
+                  ))}
+                  {rxCount > RX_PREVIEW && <li className="text-muted-foreground">+{rxCount - RX_PREVIEW} more</li>}
+                </ul>
+              ) : (
+                "None"
+              )}
+            </dd>
             <dt className="text-muted-foreground">Advice</dt>
             <dd>
               {draft.advice.length

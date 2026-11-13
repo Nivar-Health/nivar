@@ -9,6 +9,8 @@ interface Resource<T> {
   data: T | null;
   error: string | null;
   loading: boolean;
+  /** When the data last arrived (ms since epoch), for "Updated just now". */
+  fetchedAt: number | null;
   reload: () => void;
 }
 
@@ -17,10 +19,16 @@ interface Resource<T> {
  * `booking:updated` when `liveDebounceMs` is set, and after reconnects.
  */
 export function useAdminResource<T>(path: string | null, liveDebounceMs?: number): Resource<T> {
-  const [state, setState] = useState<{ path: string | null; data: T | null; error: string | null }>({
+  const [state, setState] = useState<{
+    path: string | null;
+    data: T | null;
+    error: string | null;
+    fetchedAt: number | null;
+  }>({
     path: null,
     data: null,
     error: null,
+    fetchedAt: null,
   });
   const [nonce, setNonce] = useState(0);
   const reload = useCallback(() => setNonce((n) => n + 1), []);
@@ -30,13 +38,14 @@ export function useAdminResource<T>(path: string | null, liveDebounceMs?: number
     const controller = new AbortController();
     api
       .get<T>(path, { signal: controller.signal })
-      .then((data) => setState({ path, data, error: null }))
+      .then((data) => setState({ path, data, error: null, fetchedAt: Date.now() }))
       .catch((err) => {
         if (controller.signal.aborted) return;
         setState((prev) => ({
           path,
           data: prev.path === path ? prev.data : null,
           error: errorMessage(err, "Couldn't load this data."),
+          fetchedAt: prev.path === path ? prev.fetchedAt : null,
         }));
       });
     return () => controller.abort();
@@ -61,6 +70,7 @@ export function useAdminResource<T>(path: string | null, liveDebounceMs?: number
     data: current?.data ?? null,
     error: current?.error ?? null,
     loading: Boolean(path) && !current,
+    fetchedAt: current?.fetchedAt ?? null,
     reload,
   };
 }

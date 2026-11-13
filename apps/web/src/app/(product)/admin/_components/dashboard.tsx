@@ -105,7 +105,7 @@ export function AdminDashboard() {
       <PageHeader
         eyebrow={format(new Date(), "EEEE, d MMMM")}
         title={`${greeting()}${user?.name ? `, ${user.name.split(" ")[0]}` : ""}`}
-        description="Bangalore operations at a glance. Everything on this page updates live."
+        description="Today's visits and care team at a glance. This page updates live."
       />
 
       {(stats.error || error) && (
@@ -159,7 +159,7 @@ export function AdminDashboard() {
           sub={
             derived.live.length
               ? [
-                  [derived.live.filter((b) => b.status === "en_route").length, "en route"],
+                  [derived.live.filter((b) => b.status === "en_route").length, "on the way"],
                   [derived.live.filter((b) => ["arrived", "testing", "consult"].includes(b.status)).length, "at home"],
                   [derived.live.filter((b) => b.status === "reporting").length, "reporting"],
                 ]

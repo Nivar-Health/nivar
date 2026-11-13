@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { api, errorMessage } from "@/lib/api";
 import { checksLabel, deviceOnIndiaTime, initials, testName } from "@/lib/format";
 import { SITE } from "@/lib/site-facts";
+import { istParts } from "@/server/time";
 import type { Booking, Catalog, Service, ServiceCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -398,6 +399,25 @@ export function EmergencyLine({ short = false, className }: { short?: boolean; c
   );
 }
 
+/** True while the team takes calls, by India's clock. */
+function openNowInIndia(): boolean {
+  const { minutes } = istParts();
+  return minutes >= SITE.hours.opensAt && minutes < SITE.hours.closesAt;
+}
+
+/** The callback promise holds only during working hours, so outside them it says when the call comes. */
+function CallbackNote() {
+  const open = useSyncExternalStore(subscribeToNothing, openNowInIndia, () => null);
+  if (open === null) return <>{SITE.hours.short}</>;
+  return open ? (
+    <>
+      {SITE.firstCall.whoCapital} calls you back within {SITE.callbackWithin}.
+    </>
+  ) : (
+    <>We are closed now. We will call you after {SITE.hours.opensAtLabel}.</>
+  );
+}
+
 const HELP_ROW =
   "flex min-h-16 items-center gap-3.5 px-4 py-3 transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset";
 
@@ -440,11 +460,7 @@ export function HelpCard({ about, className }: { about?: string; className?: str
         </a>
       )}
       <Link href="/#callback" className={HELP_ROW}>
-        <HelpRow
-          icon={PhoneIncoming}
-          title="Request a callback"
-          note={`${SITE.firstCall.whoCapital} calls back within ${SITE.callbackWithin}, ${SITE.hours.short}.`}
-        />
+        <HelpRow icon={PhoneIncoming} title="Request a callback" note={<CallbackNote />} />
       </Link>
       <Link href="/#faq" className={HELP_ROW}>
         <HelpRow icon={CircleHelp} title="Questions" note="Answers to common questions, on our website." />
