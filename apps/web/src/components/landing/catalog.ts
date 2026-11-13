@@ -1,5 +1,6 @@
 import { API_ORIGIN } from "@/lib/api";
 import type { Catalog, Package, Service } from "@/lib/types";
+import { unstable_rethrow } from "next/navigation";
 
 /**
  * Snapshot of the seeded catalogue, shown only when the API cannot be reached
@@ -49,6 +50,9 @@ export async function getCatalog(): Promise<LandingCatalog> {
       live: true,
     };
   } catch (err) {
+    // The build's static-render probe stops an uncached fetch by throwing: that one is the
+    // framework's to handle (the page is rendered per request), not an API failure to fall back from.
+    unstable_rethrow(err);
     console.warn("[catalog] API unreachable, showing the fallback snapshot:", err instanceof Error ? err.message : err);
     return { services: FALLBACK_SERVICES, packages: FALLBACK_PACKAGES, live: false };
   }
