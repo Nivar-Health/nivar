@@ -207,7 +207,7 @@ function HeroPhoto() {
   );
 }
 
-/* Phones get the 3:2 crop of the same frame (perf-09). */
+/* Phones get the 3:2 crop of the same frame, so the LCP carries only what shows. */
 const HERO_PHONE = [{ media: "(width < 40rem)", src: "/img/nurse-bp-home-3x2.jpg", sizes: "calc(100vw - 40px)" }] as const;
 
 /* Three rings, a third of a cycle apart. At rest (after six beats, or with motion off) they are three still circles. */

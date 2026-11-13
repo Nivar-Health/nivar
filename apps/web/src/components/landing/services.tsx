@@ -300,12 +300,12 @@ function CareNotes({ onRequest }: { onRequest: boolean }) {
   );
 }
 
-/** The pricing promises: a static 2×2 list on phones, the ruled row from sm (services.css). */
+/** The pricing promises: a static list on phones, ruled from sm (services.css). Named by the heading above it. */
 function PromiseList({ className }: { className?: string }) {
   return (
     <ul
       role="list"
-      aria-label="Pricing promises"
+      aria-labelledby="services-promises"
       {...revealProps(0)}
       className={cn(
         "nv-care-promise sm:grid-cols-2 sm:gap-0 sm:border-y sm:border-border lg:grid-cols-[repeat(4,auto)]",
@@ -483,7 +483,9 @@ export function Services({ catalog }: { catalog: Pick<Catalog, "packages" | "ser
           </>
         )}
 
-        <h3 className="nv-care-tier mt-8 sm:mt-12 lg:mt-16">With every visit</h3>
+        <h3 id="services-promises" className="nv-care-tier mt-8 sm:mt-12 lg:mt-16">
+          With every visit
+        </h3>
         <PromiseList className="mt-3 sm:mt-4" />
       </Container>
     </Section>

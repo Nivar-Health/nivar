@@ -81,3 +81,26 @@ export function hopTowards(target: HTMLElement): boolean {
   requestAnimationFrame(() => target.scrollIntoView({ block: "start", behavior: "smooth" }));
   return true;
 }
+
+/**
+ * Back and Forward within the page put the visitor back where they were at once. The browser restores
+ * the scroll just after popstate, and with CSS scroll-behavior on it would glide there, streaming the
+ * whole page past (Back from the form is a trip of 15 screens). Returns the cleanup.
+ */
+export function restoreInstantly(): () => void {
+  const root = document.documentElement;
+  let frame = 0;
+  const onPop = () => {
+    root.style.scrollBehavior = "auto";
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => root.style.removeProperty("scroll-behavior"));
+    });
+  };
+  window.addEventListener("popstate", onPop);
+  return () => {
+    window.removeEventListener("popstate", onPop);
+    cancelAnimationFrame(frame);
+    root.style.removeProperty("scroll-behavior");
+  };
+}

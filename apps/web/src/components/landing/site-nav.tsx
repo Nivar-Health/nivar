@@ -21,7 +21,15 @@ import { MenuGlyph } from "./bar-icons";
 import { BottomBar, modified } from "./bottom-bar";
 import { useChromeSignals } from "./chrome-signals";
 import { MotionToggle } from "./motion-toggle";
-import { arrivedAt, focusLanding, hopTowards, keepRouterState, motionOff, replaceHash } from "./page-history";
+import {
+  arrivedAt,
+  focusLanding,
+  hopTowards,
+  keepRouterState,
+  motionOff,
+  replaceHash,
+  restoreInstantly,
+} from "./page-history";
 import { buttonClass } from "./primitives";
 import { TOOL_ENABLED, TOOL_LABEL, TOOL_ORDER } from "./take-a-minute/config";
 import { openTakeAMinute, prefetchTakeAMinute } from "./take-a-minute/open";
@@ -183,9 +191,11 @@ function useCurrentSection(): { current: string | null; jumpTo: (hash: `#${strin
       requestAnimationFrame(() => hopTowards(target));
     };
     document.addEventListener("click", onClick);
+    const stopRestoring = restoreInstantly();
 
     return () => {
       document.removeEventListener("click", onClick);
+      stopRestoring();
       stopHold?.();
       mo.disconnect();
       io.disconnect();
@@ -200,7 +210,12 @@ function useCurrentSection(): { current: string | null; jumpTo: (hash: `#${strin
     const target = document.getElementById(hash.slice(1));
     if (!target) return false;
     const section = target.closest<HTMLElement>("main > section[id]");
-    const settled = () => focusLanding(target);
+    const settled = () => {
+      // Next's router writes the URL of the entry the sheet stepped back to once its own update commits,
+      // which can land after the jump began; the address should name where the visitor arrived.
+      if (location.hash !== hash) replaceHash(hash);
+      focusLanding(target);
+    };
     if (section) holdRef.current(section.id, settled, () => arrivedAt(target));
     replaceHash(hash);
     // A short trip glides by CSS scroll-behavior; reduced motion and the visitor's pause jump at once.
@@ -334,7 +349,7 @@ export function SiteNav() {
   }, []);
 
   useEffect(() => {
-    // a11y-01 (WCAG 2.4.11): Chrome leaves a focused text field where it is once part of it shows,
+    // WCAG 2.4.11: Chrome leaves a focused text field where it is once part of it shows,
     // ignoring its scroll-margin, so Shift+Tab can park the phone or Name field under the pill. A stop
     // wholly above the screen is left to Chrome, which centres it.
     const onFocusIn = (e: FocusEvent) => {

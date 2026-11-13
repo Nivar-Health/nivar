@@ -102,7 +102,7 @@ function attach(): () => void {
       const r = e.intersectionRatio;
       if (r >= 0.99) heroCta = "in";
       else if (!e.isIntersecting || r === 0) heroCta = e.boundingClientRect.top >= bottom ? "below" : "above";
-      else if (r >= 0.5) heroCta = "in"; // half in view: the hero's own button is the screen's one marigold (D4, §5's 50% rule)
+      else if (r >= 0.5) heroCta = "in"; // half in view: the hero's own button is the screen's one marigold
       else if (heroCta === null) {
         // The first report finds it cut by an edge: the fold's side is the pill's to carry, the pill's side the bar's.
         heroCta = e.boundingClientRect.bottom > bottom ? "below" : e.boundingClientRect.top < top ? "above" : "in";

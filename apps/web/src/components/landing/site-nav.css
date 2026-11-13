@@ -434,7 +434,7 @@
       height: 1.25rem;
     }
   }
-  /* Short phones: rows at §2.3's 48px minimum and the gaps between the groups closed up, so the seven
+  /* Short phones: rows at the 48px minimum and the gaps between the groups closed up, so the seven
      rows, the pause and the whole dock show without a scroll from 664px of height (a 390×844 phone in
      Safari, a 360×800 one in Chrome, each with its bars showing). */
   @media (width < 40rem) and (max-height: 47.5rem) {
@@ -889,7 +889,7 @@
   outline: none;
 }
 
-/* ---- The pill's "Request a callback": one marigold action per phone screen (D4) ----
+/* ---- The pill's "Request a callback": one marigold action per screen ----
    Unlayered: buttonClass's transition utility (in @layer utilities) beats the components layer and would
    drop the fade, so the transition here also lists the button's own properties. Hidden, its box stays,
    so nothing in the pill moves. */
@@ -961,6 +961,24 @@ html[data-nv-chrome] .nv-nav-cta:active {
   }
   @media (hover: hover) and (pointer: fine) {
     html[data-nv-zone="form"] .nv-nav-cta:hover {
+      background-color: var(--aqua);
+    }
+  }
+}
+/* Tablets and phones held sideways: the same while the hero's own button is in view below the pill, so
+   the first screen has one marigold. It turns marigold as the hero's slides under the pill. On desktop
+   the two sit a screen's width apart and both stay marigold. Before the first report (zone and CTA not
+   yet written) it counts as in view, as on a tall screen it is. */
+@media (40rem <= width < 64rem) {
+  html:not([data-nv-zone="mid"], [data-nv-zone="form"], [data-nv-cta="below"]) .nv-nav-cta {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+  html:not([data-nv-zone="mid"], [data-nv-zone="form"], [data-nv-cta="below"]) .nv-nav-cta:active {
+    background-color: var(--aqua);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    html:not([data-nv-zone="mid"], [data-nv-zone="form"], [data-nv-cta="below"]) .nv-nav-cta:hover {
       background-color: var(--aqua);
     }
   }

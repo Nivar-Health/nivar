@@ -105,20 +105,13 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
 
   /** The first good look at the phone has happened, or the visitor already picked a step. */
   const seen = useRef(false);
-  /** The latest value, for the observers set up once. */
-  const live = useRef({ auto });
   /** Time already played of the current run, so Play continues a paused step instead of restarting it. */
   const clock = useRef({ key: "", ms: 0 });
   const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
 
   useEffect(() => {
-    live.current = { auto };
-  }, [auto]);
-
-  useEffect(() => {
     const el = stageRef.current;
     if (!el) return;
-    let wasInView = false;
     const io = new IntersectionObserver(
       (entries) => {
         const e = entries[entries.length - 1];
@@ -127,27 +120,19 @@ export function VisitJourney({ steps }: { steps: readonly JourneyStep[] }) {
         const shown = e.isIntersecting ? Math.max(e.intersectionRatio, e.intersectionRect.height / screen) : 0;
         const nowInView = shown >= IN_VIEW;
         setInView(nowInView);
-        if (nowInView && !wasInView) {
-          if (!seen.current) {
-            // The first good look: the scene and its timer start together, from the first frame.
-            seen.current = true;
-            setStarted(true);
-            setRun((r) => r + 1);
-          } else if (live.current.auto) {
-            // Back in view mid-story: the current step plays again.
-            setRun((r) => r + 1);
-          }
+        // The first good look: the scene and its timer start together, from the first frame. Back in view
+        // later, the step simply resumes where its timer stopped: replaying the scene would flash an
+        // almost empty screen each time the phone is scrolled past.
+        if (nowInView && !seen.current) {
+          seen.current = true;
+          setStarted(true);
+          setRun((r) => r + 1);
         }
-        wasInView = nowInView;
       },
       { threshold: [0, 0.1, 0.2, IN_VIEW, 0.5, 0.75, 1] },
     );
     io.observe(el);
-    const onVisibility = () => {
-      const visible = document.visibilityState === "visible";
-      setTabVisible(visible);
-      if (visible && seen.current && live.current.auto) setRun((r) => r + 1);
-    };
+    const onVisibility = () => setTabVisible(document.visibilityState === "visible");
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       io.disconnect();
@@ -418,7 +403,8 @@ function Tick({ large = false, className }: { large?: boolean; className?: strin
 
 /**
  * The notification that ends a scene. It drops in over the scene's own title, and each scene starts its
- * content below where the card lands, so a finished scene never covers what it has just shown.
+ * content below where the card lands, so a finished scene never covers what it has just shown. It reaches
+ * 6px past the content box, so no corner of the title shows round its rounded corners.
  */
 function Banner({
   delay,
@@ -436,7 +422,7 @@ function Banner({
   return (
     <div
       className={cn(
-        "jn-drop absolute inset-x-0 top-0 z-10 flex items-center gap-2.5 rounded-2xl p-3 shadow-lg",
+        "jn-drop absolute -inset-x-1.5 -top-1.5 z-10 flex items-center gap-2.5 rounded-2xl p-3 shadow-lg",
         dark ? "bg-pond text-white" : "bg-white text-ink ring-1 ring-border",
       )}
       style={d(delay)}
@@ -525,8 +511,7 @@ function RequestScene() {
   const kannada = LANGUAGES[1];
   return (
     <div className="relative flex h-full flex-col text-[0.75rem]">
-      {/* Inset 4px, so the logo's corner stays hidden behind the rounded "Request sent" card. */}
-      <div className="jn-in flex items-center gap-2.5 pt-1 pl-1" style={d(0)}>
+      <div className="jn-in flex items-center gap-2.5" style={d(0)}>
         <LogoMark className="size-8" />
         <span>
           <span className="block text-[0.9375rem] font-semibold text-ink">Request a callback</span>
