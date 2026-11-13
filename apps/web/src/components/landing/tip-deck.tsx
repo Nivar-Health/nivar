@@ -5,11 +5,13 @@ import {
   ArrowRight,
   Check,
   CircleAlert,
+  Copy,
   Droplet,
   Footprints,
   Gauge,
   HeartPulse,
   Moon,
+  PhoneCall,
   Share,
   Soup,
   Wind,
@@ -18,6 +20,7 @@ import {
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -29,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { HealthSource, HealthTip, TipCategory } from "./health-content";
 import { buttonClass } from "./primitives";
+import { Pearl } from "./take-a-minute/pearl";
 import "./health-tips.css";
 
 const TIP_ICONS: Record<TipCategory, LucideIcon> = {
@@ -58,18 +62,28 @@ const SWIPE_MIN = 48;
 const FOLLOW = 0.35;
 /** How long Share shows "Copied" (K4). */
 const NOTE_MS = 2000;
+/** The blocks under the card glide to their new place for this long (health-tips.css), plus a margin. */
+const GLIDE_MS = 260;
 /** Pressed state (mobile addendum M2): a tint and scale .97, 90 ms in and 180 ms out; tint only when reduced. */
 const PRESS =
   "transition-[background-color,border-color,color,translate,scale] duration-180 active:scale-[0.97] active:bg-aqua active:duration-90 motion-reduce:active:scale-100";
 
 type ShareNote = "Copied" | "Couldn't copy";
+/** What the button can do here: open the phone's share sheet, copy, or nothing (then it stays hidden). */
+type ShareMode = "share" | "copy" | "none";
 
 const subscribeNever = () => () => {};
 
-/** Share needs Web Share or the async clipboard; without either the button stays hidden. */
-function canShareOrCopy() {
-  return typeof navigator.share === "function" || typeof navigator.clipboard?.writeText === "function";
+function shareMode(): ShareMode {
+  if (typeof navigator.share === "function") return "share";
+  return typeof navigator.clipboard?.writeText === "function" ? "copy" : "none";
 }
+
+function subscribeHash(notify: () => void) {
+  window.addEventListener("hashchange", notify);
+  return () => window.removeEventListener("hashchange", notify);
+}
+const readHash = () => window.location.hash;
 
 function motionPaused() {
   return (
@@ -78,15 +92,22 @@ function motionPaused() {
   );
 }
 
-/** "{title}: {text}" and its sources with their full labels. */
+/** The tip in full: its words, then its call-for-help sentence or its phone line where it has one. */
+function tipWords(tip: HealthTip) {
+  const phone = tip.phone && `${tip.phone.before} ${tip.phone.label} ${tip.phone.after}`;
+  return [tip.text, tip.urgent, phone].filter(Boolean).join(" ");
+}
+
+/** Title, words and the sources' short labels. The one link in a shared tip is the tip's own. */
 function shareText(tip: HealthTip) {
-  const sources = tip.sources.map((s) => `${s.label} ${s.url}`).join("; ");
-  return `${tip.title}: ${tip.text}\n${tip.sources.length > 1 ? "Sources" : "Source"}: ${sources}`;
+  const sources = tip.sources.map((s) => s.short ?? s.label).join("; ");
+  return `${tip.title}\n${tipWords(tip)}\n${tip.sources.length > 1 ? "Sources" : "Source"}: ${sources}`;
 }
 
 /** Web Share where the browser has it, otherwise a copy. Returns the note to show, or null for none. */
 async function shareTip(tip: HealthTip): Promise<ShareNote | null> {
-  const url = `${window.location.origin}/#health-tips`;
+  // The tip's own address: the deck shows whichever tip the hash names (see TipDeck).
+  const url = `${window.location.origin}/#${tip.id}`;
   const text = shareText(tip);
   if (typeof navigator.share === "function") {
     try {
@@ -106,8 +127,8 @@ async function shareTip(tip: HealthTip): Promise<ShareNote | null> {
 }
 
 /**
- * Underlined source link that opens in a new tab. Client twin of the one in health-facts.tsx. Inline, so
- * its press is a tint only.
+ * Underlined source link that opens in a new tab. Client twin of the one in health-facts.tsx (keep the
+ * two recipes the same). Inline, so its press is a tint only.
  */
 export function ExternalLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
   return (
@@ -116,7 +137,7 @@ export function ExternalLink({ href, className, children }: { href: string; clas
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "rounded-sm underline decoration-border-strong underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
+        "rounded-sm underline decoration-current/40 underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
         className,
       )}
     >
@@ -126,7 +147,30 @@ export function ExternalLink({ href, className, children }: { href: string; clas
   );
 }
 
-/** The card's sources, with their short labels ("All sources" and the Share text keep the full ones). */
+const MINUTE_LABEL = { breathe: "Breathe with a guide", rest: "Use the 5-minute rest timer" } as const;
+
+/**
+ * A quiet way into Take a minute from the advice it matches. Markup only: the corner island opens the
+ * tool for any [data-minute-open], the orb rises from this pearl, and focus comes back here on close.
+ */
+export function MinuteLauncher({ tool, className }: { tool: keyof typeof MINUTE_LABEL; className?: string }) {
+  return (
+    <button
+      type="button"
+      data-minute-open={tool}
+      aria-haspopup="dialog"
+      className={cn(
+        "nv-habits-minute flex min-h-11 w-fit max-w-full items-center gap-2 rounded-full bg-white py-1.5 pr-3.5 pl-2 text-left text-sm/[1.25] font-semibold text-balance text-primary shadow-xs ring-1 ring-border-strong ring-inset focus-ring transition-[background-color,scale] duration-180 hover:bg-aqua/50 active:scale-[0.97] active:bg-aqua active:duration-90 motion-reduce:active:scale-100 forced-colors:border forced-colors:border-[ButtonText] sm:gap-2.5 sm:pr-4 sm:pl-2.5 sm:text-[0.9375rem]",
+        className,
+      )}
+    >
+      <Pearl size={22} />
+      {MINUTE_LABEL[tool]}
+    </button>
+  );
+}
+
+/** The card's sources, with their short labels ("All sources" keeps the full ones). */
 function TipSources({
   sources,
   className,
@@ -137,7 +181,7 @@ function TipSources({
   style?: CSSProperties;
 }) {
   return (
-    <p className={cn("text-caption text-pretty text-ink-3", className)} style={style}>
+    <p className={cn("text-sm text-pretty text-ink-3", className)} style={style}>
       {sources.length > 1 ? "Sources: " : "Source: "}
       {sources.map((s, i) => (
         <span key={s.url}>
@@ -167,34 +211,54 @@ function TipCategoryMark({ tip }: { tip: HealthTip }) {
 
 /**
  * Tip of the day (IST calendar day), then any other tip by Previous / Next or a swipe. Never
- * auto-advances. The card fits the tip it shows; the arrows sit in the header, above anything whose
- * height changes, so the control being tapped never moves. A text-only polite status names each new tip
- * and confirms a copy (the tip itself is not a live region, so modals can hide it).
+ * auto-advances. A link to one tip (/#tip-salt, which is what Share sends) shows that tip: the page
+ * can't know the hash when it renders, so the deck switches to it once it is running. The card fits
+ * the tip it shows; the arrows sit in the header, above anything whose height changes, so the control
+ * being tapped never moves. A text-only polite status names each new tip and confirms a copy (the tip
+ * itself is not a live region, so modals can hide it).
  */
 export function TipDeck({
   tips,
-  initialIndex,
+  todayIndex,
   dateLabel,
   className,
 }: {
   tips: readonly HealthTip[];
-  initialIndex: number;
+  /** The tip of the day: the deck opens on it, and only it carries that name and the date. */
+  todayIndex: number;
   dateLabel: string;
   className?: string;
 }) {
-  const [index, setIndex] = useState(initialIndex);
+  const [index, setIndex] = useState(todayIndex);
   const [dir, setDir] = useState<1 | -1>(1);
   const [touched, setTouched] = useState(false);
   const [note, setNote] = useState<{ text: ShareNote; at: number } | null>(null);
   /** The polite status: set by a step or a copy only, so the note running out never re-announces the tip. */
   const [status, setStatus] = useState("");
   const titleId = useId();
-  const shareable = useSyncExternalStore(subscribeNever, canShareOrCopy, () => true);
+  const mode = useSyncExternalStore(subscribeNever, shareMode, (): ShareMode => "share");
+  const cardRef = useRef<HTMLElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: number; x: number; y: number; axis: "x" | "y" | null } | null>(null);
   const swipedAt = useRef(Number.NEGATIVE_INFINITY);
+  /** Where the block under the card sat when a step began (null: nothing to glide from). */
+  const stepFrom = useRef<number | null>(null);
+
+  // A tip's link. The hash is read once the deck runs and again whenever it changes; each new hash is
+  // acted on once, so stepping away from a linked tip is never undone.
+  const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
+  const [seenHash, setSeenHash] = useState("");
+  if (hash !== seenHash) {
+    setSeenHash(hash);
+    const linked = tips.findIndex((t) => `#${t.id}` === hash);
+    if (linked >= 0 && linked !== index) {
+      setIndex(linked);
+      setNote(null);
+    }
+  }
+
   const tip = tips[index];
-  const isToday = index === initialIndex;
+  const isToday = index === todayIndex;
   const count = tips.length;
 
   useEffect(() => {
@@ -203,8 +267,31 @@ export function TipDeck({
     return () => window.clearTimeout(t);
   }, [note]);
 
+  // A step changes the card's height, and everything under it would jump. On phones the next block down
+  // (and all that follows it) starts from where it was and glides to its new place: a transform, so no
+  // layout is animated. Beside the card (from md) that block doesn't move, and nothing happens.
+  useLayoutEffect(() => {
+    const from = stepFrom.current;
+    stepFrom.current = null;
+    const card = cardRef.current;
+    const grid = card?.parentElement;
+    const below = card?.nextElementSibling;
+    if (from === null || !grid || !below) return;
+    grid.removeAttribute("data-tip-glide");
+    const shift = from - below.getBoundingClientRect().top;
+    if (Math.abs(shift) < 1) return;
+    grid.style.setProperty("--nv-habits-tip-shift", `${shift}px`);
+    grid.setAttribute("data-tip-glide", "from");
+    below.getBoundingClientRect(); // the start pose has to be styled before the glide can leave it
+    grid.setAttribute("data-tip-glide", "to");
+    const done = window.setTimeout(() => grid.removeAttribute("data-tip-glide"), GLIDE_MS);
+    return () => window.clearTimeout(done);
+  }, [index]);
+
   const go = (step: 1 | -1) => {
     const next = (index + step + count) % count;
+    const below = cardRef.current?.nextElementSibling;
+    stepFrom.current = below && !motionPaused() ? below.getBoundingClientRect().top : null;
     setDir(step);
     setTouched(true);
     setNote(null);
@@ -255,7 +342,7 @@ export function TipDeck({
       follow(0, true);
     }
   };
-  // A swipe that ends on a link must not open it.
+  // A swipe that ends on a link or a button must not open it.
   const onClickCapture = (e: ReactMouseEvent<HTMLDivElement>) => {
     if (e.timeStamp - swipedAt.current < 400) {
       e.preventDefault();
@@ -271,30 +358,35 @@ export function TipDeck({
       {index + 1} of {count}
     </>
   );
+  const ShareIcon = mode === "copy" ? Copy : Share;
 
   return (
     <article
+      ref={cardRef}
+      id="tip"
       aria-labelledby={titleId}
       className={cn(
-        "nv-habits-tip flex flex-col rounded-3xl bg-card p-4 shadow-[0_18px_40px_-32px_rgb(1_43_54/0.45)] ring-1 ring-ink/6 sm:p-8",
+        "nv-habits-tip relative flex flex-col rounded-3xl bg-card p-4 shadow-[0_18px_40px_-32px_rgb(1_43_54/0.45)] ring-1 ring-ink/6 sm:p-8",
         className,
       )}
     >
-      {/* Header: what this is on the left (the date drops under the chip on phones), the pager on the right.
-          Below 360 the chip, the counter and both arrows can't share a row, so the counter joins the
-          date's line; only one of the two counters is ever displayed. */}
-      <div className="flex min-h-11 items-center gap-3 max-sm:min-h-[3.125rem]">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
-          <p className="rounded-full bg-aqua px-3 py-1 text-sm font-semibold whitespace-nowrap text-primary">
-            {isToday ? "Tip of the day" : "Health tip"}
-          </p>
-          {isToday && <p className="text-caption/[1.35] font-medium whitespace-nowrap text-ink-3">{dateLabel}</p>}
-          <span className="hidden min-w-12 text-caption/[1.35] font-semibold whitespace-nowrap text-ink-3 tabular-nums max-[22.5rem]:block">
-            {counter}
-          </span>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="min-w-12 text-center text-caption font-semibold whitespace-nowrap text-ink-3 tabular-nums max-[22.5rem]:hidden">
+      {/* Where each tip's link lands: the browser scrolls here by itself, before the deck is running. */}
+      {tips.map((t) => (
+        <span key={t.id} id={t.id} className="nv-habits-tip-anchor" />
+      ))}
+
+      {/* Header (health-tips.css): what this is, then the pager. Phones give the date and the counter a
+          line of their own under the chip and the arrows; only one of the two counters is ever displayed. */}
+      <div className="nv-habits-tip-head">
+        <p className="nv-habits-tip-chip rounded-full bg-aqua px-3 py-1 text-sm font-semibold whitespace-nowrap text-primary">
+          {isToday ? "Tip of the day" : "Health tip"}
+        </p>
+        <p className="nv-habits-tip-meta flex items-baseline gap-3 text-sm/[1.35] whitespace-nowrap text-ink-3">
+          {isToday && <span className="font-medium">{dateLabel}</span>}
+          <span className="ml-auto font-semibold tabular-nums sm:hidden">{counter}</span>
+        </p>
+        <div className="nv-habits-tip-pager flex items-center gap-2">
+          <span className="min-w-14 text-center text-sm font-semibold whitespace-nowrap text-ink-3 tabular-nums max-sm:hidden">
             {counter}
           </span>
           <button type="button" aria-label="Previous tip" onClick={() => go(-1)} className={arrowClass}>
@@ -326,6 +418,27 @@ export function TipDeck({
               </h3>
             </div>
             <p className="mt-2.5 max-w-[34rem] text-small/[1.5] text-pretty text-ink-2 sm:mt-3 sm:text-body">{tip.text}</p>
+            {/* When to call for help: the tip's own last sentence, apart from the advice so it is not
+                missed. The numbers stay plain text here; the call buttons are in the note below the deck. */}
+            {tip.urgent && (
+              <p className="mt-3 flex max-w-[34rem] items-start gap-2.5 text-small/[1.5] text-pretty text-ink sm:text-body">
+                <PhoneCall aria-hidden className="mt-[0.1875rem] size-4 shrink-0 text-danger sm:mt-1.5" strokeWidth={2.25} />
+                <span>{tip.urgent}</span>
+              </p>
+            )}
+            {tip.phone && (
+              <p className="mt-2 max-w-[34rem] text-small/[1.5] text-pretty text-ink-2 sm:text-body">
+                {tip.phone.before}{" "}
+                <a
+                  href={`tel:${tip.phone.tel}`}
+                  className="relative rounded-sm font-semibold whitespace-nowrap text-ink tabular-nums underline decoration-current/40 underline-offset-[3px] transition-colors duration-180 before:absolute before:-inset-x-2 before:-inset-y-3 hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90"
+                >
+                  {tip.phone.label}
+                </a>{" "}
+                {tip.phone.after}
+              </p>
+            )}
+            {tip.minute && <MinuteLauncher tool={tip.minute} className="mt-3.5 sm:mt-5" />}
           </div>
         </div>
       </div>
@@ -338,7 +451,7 @@ export function TipDeck({
           className={cn("min-w-0 flex-1", animate)}
           style={{ "--dir": dir } as CSSProperties}
         />
-        {shareable && (
+        {mode !== "none" && (
           <button
             type="button"
             onClick={share}
@@ -356,11 +469,12 @@ export function TipDeck({
               <>
                 {/* Both labels share one cell, so the button keeps its width when it says "Copied". */}
                 <span aria-hidden className="grid [&>*]:[grid-area:1/1]">
-                  <Share className={cn(note && "invisible")} />
+                  <ShareIcon className={cn(note && "invisible")} />
                   <Check className={cn(!note && "invisible")} strokeWidth={2.5} />
                 </span>
                 <span className="grid [&>*]:[grid-area:1/1] max-[22.5rem]:sr-only">
-                  <span className={cn(note && "invisible")}>Share tip</span>
+                  {/* The label says what the button does here: a phone shares, a desktop browser copies. */}
+                  <span className={cn(note && "invisible")}>{mode === "copy" ? "Copy tip" : "Share tip"}</span>
                   <span className={cn(!note && "invisible")}>Copied</span>
                 </span>
               </>

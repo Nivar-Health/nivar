@@ -1,4 +1,4 @@
-/* SnapRow (snap-row.tsx): a scroll-snap row on phones that can become a plain grid from a breakpoint.
+/* SnapRow (snap-row.tsx): a scroll-snap row on phones that becomes a plain grid from md.
    In a layer, so the Tailwind classes callers pass (basis, gap, grid columns) win over these defaults. */
 @layer components {
   .nv-snap-wrap {
@@ -70,12 +70,11 @@
     flex: none;
     width: 8px;
   }
+  /* One flick moves one card. */
   .nv-snap-item {
     flex: none;
     min-width: 0;
     scroll-snap-align: start;
-  }
-  .nv-snap[data-snap-stop="always"] .nv-snap-item {
     scroll-snap-stop: always;
   }
 
@@ -169,33 +168,9 @@
     display: none;
   }
 
-  /* gridFrom: a plain grid, with no scroller, fades, cue or buttons. */
-  @media (min-width: 40rem) {
-    .nv-snap-wrap[data-grid-from="sm"] > .nv-snap {
-      margin: 0;
-      padding: 0;
-      overflow: visible;
-      scroll-snap-type: none;
-      -webkit-mask-image: none;
-      mask-image: none;
-    }
-    .nv-snap-wrap[data-grid-from="sm"] .nv-snap-track {
-      display: grid;
-      padding: 0;
-    }
-    .nv-snap-wrap[data-grid-from="sm"] .nv-snap-track::after {
-      content: none;
-    }
-    .nv-snap-wrap[data-grid-from="sm"] .nv-snap-ctrl {
-      display: none;
-    }
-    /* The sliding cards must not widen the page. */
-    .nv-snap-wrap[data-grid-from="sm"][data-reveal] {
-      overflow-x: clip;
-    }
-  }
+  /* From md: a plain grid, with no scroller, fades, cue or buttons. */
   @media (min-width: 48rem) {
-    .nv-snap-wrap[data-grid-from="md"] > .nv-snap {
+    .nv-snap-wrap > .nv-snap {
       margin: 0;
       padding: 0;
       overflow: visible;
@@ -203,42 +178,18 @@
       -webkit-mask-image: none;
       mask-image: none;
     }
-    .nv-snap-wrap[data-grid-from="md"] .nv-snap-track {
+    .nv-snap-track {
       display: grid;
       padding: 0;
     }
-    .nv-snap-wrap[data-grid-from="md"] .nv-snap-track::after {
+    .nv-snap-track::after {
       content: none;
     }
-    .nv-snap-wrap[data-grid-from="md"] .nv-snap-ctrl {
+    .nv-snap-ctrl {
       display: none;
     }
     /* The sliding cards must not widen the page. */
-    .nv-snap-wrap[data-grid-from="md"][data-reveal] {
-      overflow-x: clip;
-    }
-  }
-  @media (min-width: 64rem) {
-    .nv-snap-wrap[data-grid-from="lg"] > .nv-snap {
-      margin: 0;
-      padding: 0;
-      overflow: visible;
-      scroll-snap-type: none;
-      -webkit-mask-image: none;
-      mask-image: none;
-    }
-    .nv-snap-wrap[data-grid-from="lg"] .nv-snap-track {
-      display: grid;
-      padding: 0;
-    }
-    .nv-snap-wrap[data-grid-from="lg"] .nv-snap-track::after {
-      content: none;
-    }
-    .nv-snap-wrap[data-grid-from="lg"] .nv-snap-ctrl {
-      display: none;
-    }
-    /* The sliding cards must not widen the page. */
-    .nv-snap-wrap[data-grid-from="lg"][data-reveal] {
+    .nv-snap-wrap[data-reveal] {
       overflow-x: clip;
     }
   }

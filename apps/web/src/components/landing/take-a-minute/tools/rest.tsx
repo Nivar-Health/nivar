@@ -9,19 +9,25 @@ import {
   OrbWord,
   PromptLine,
   RichText,
-  SafetyLine,
+  SafetyFull,
   TimeLeft,
   ToolControls,
+  safetySlots,
   useToolSession,
   type MainAction,
+  type SideAction,
 } from "./parts";
 import { SeatedFigure } from "./seated-figure";
 
-/* Rest (spec §3.12, §5.6): five quiet minutes before a blood pressure reading. Unpaced: the orb
-   stays still and never scales. Wall-clock time (pauseWhenHidden false), so after a tab switch it
-   shows the true time left, or done. The ticks only light the drawing; Start never waits for them. */
+/* Rest: five quiet minutes before a blood pressure reading. Unpaced: the orb stays still and never
+   scales, so the clock ticks on a timer and only the ring glides. Wall-clock time (pauseWhenHidden
+   false), so after a tab switch it shows the true time left, or done, and the end chime still sounds
+   while the page is hidden. The ticks only light the drawing; Start never waits for them. The emergency
+   line opens from a text button before and during the rest, and stands in full, with its call buttons,
+   beside the reading guidance when the rest is done. */
 
 const LENGTH_MS = 5 * 60_000;
+const TICK_MS = 250;
 
 /** -1 is the first line; then the prompt for 4:00, 3:00, 2:00 and 1:00 left. */
 function promptIndex(secondsLeft: number): number {
@@ -41,6 +47,7 @@ export function Rest({ api, Layout }: ToolProps) {
     api,
     tone: TOOL_TONE.rest,
     pauseWhenHidden: false,
+    tick: TICK_MS,
     onDone(a) {
       if (a.sound.enabled) a.sound.chime("done");
       if (a.haptics.enabled) a.haptics.buzz("done");
@@ -84,8 +91,8 @@ export function Rest({ api, Layout }: ToolProps) {
   let prompt;
   let options = null;
   let main: MainAction;
-  let onStop: (() => void) | undefined;
-  let onDone: (() => void) | undefined;
+  let beside: SideAction | undefined;
+  let under: SideAction | undefined;
   if (phase === "idle") {
     orb = <SeatedFigure lit={lit} />;
     readout = (
@@ -111,15 +118,18 @@ export function Rest({ api, Layout }: ToolProps) {
   } else if (phase === "done") {
     orb = <SeatedFigure lit={lit} />;
     readout = <p className="nv-tool-lead">{REST.doneTitle}</p>;
+    // The reading first; then, under its own label, what to do with a high one, the emergency line among it.
     prompt = (
       <div className="nv-tool-notes">
-        {REST.doneBody.map((t) => (
-          <p key={t}>{t}</p>
-        ))}
+        <p>{REST.doneBody[0]}</p>
+        <p className="nv-tool-notes-label">{REST.highLabel}</p>
+        <p>{REST.doneBody[1]}</p>
+        <SafetyFull text={REST.always} />
+        <p>{REST.doneBody[2]}</p>
       </div>
     );
-    main = { label: COMMON.again, run: start };
-    onDone = api.close;
+    main = { label: COMMON.done, run: api.close };
+    under = { label: REST.again, run: start };
   } else {
     orb =
       phase === "leadin" ? (
@@ -136,8 +146,8 @@ export function Rest({ api, Layout }: ToolProps) {
           {s.pausedByVisibility ? COMMON.away : line}
         </PromptLine>
       );
-    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause };
-    onStop = stop;
+    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause, quiet: phase !== "paused" };
+    beside = { label: COMMON.stop, run: stop };
   }
 
   return (
@@ -146,13 +156,15 @@ export function Rest({ api, Layout }: ToolProps) {
       readout={<div className="nv-tool-readout">{readout}</div>}
       prompt={prompt}
       options={options}
-      always={<SafetyLine emergency text={REST.always} />}
-      controls={<ToolControls main={main} mainRef={primary} onStop={onStop} onDone={onDone} />}
+      {...safetySlots(REST.always, phase === "done" ? { shown: true } : { more: { label: REST.alwaysLabel, text: REST.always } })}
+      controls={<ToolControls main={main} mainRef={primary} beside={beside} under={under} />}
+      dock={phase === "done" ? "flow" : "sticky"}
       fine={
         <p className="nv-tool-fine">
           <RichText parts={REST.sources} />
         </p>
       }
+      fineTitle={COMMON.sources}
     />
   );
 }

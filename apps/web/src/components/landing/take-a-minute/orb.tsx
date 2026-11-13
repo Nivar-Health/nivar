@@ -2,26 +2,28 @@ import { memo, type RefCallback } from "react";
 import { Ring, type RingController } from "./ring";
 import type { Tone } from "./types";
 
-/* The stage (spec §5.7): halo, the landing ripple, the time-left ring, the orb and its text layer.
+/* The stage: the mint pool, the halo, the ripple, the time-left ring, the orb and its text layer.
    It belongs to the shell, not to a tool, so the orb stays put across tabs and only its tone light
    crossfades. The orb has two transforms: the flight (from the launcher's pearl and back) wraps
    the tools' own scale (.62 at rest, 1 at a full breath). The text layer never scales.
 
-   Orb layers: body (a lit sphere), one tone light per tool, an inner light that setGlow drives,
-   and the pearl skin, which makes the orb look exactly like the pearl it left at the start of the
-   flight and fades as it grows. Every layer moves by transform and opacity only, bound to motion
-   values in motion's frame loop (anim.ts bindStyle). No filters. */
+   Orb layers: body (a lit sphere), one tone light per tool, an inner light and a rim shade that
+   setGlow drives (reduced motion's breath), and the pearl skin, which makes the orb look exactly like
+   the pearl it left at the start of the flight and fades as it grows. Every layer moves by transform
+   and opacity only, bound to motion values in motion's frame loop (anim.ts bindStyle). No filters. */
 
 export const TONES: readonly Tone[] = ["mint", "sky", "rose", "pearl"];
 
 type Bind = (el: HTMLElement | SVGElement | null) => (() => void) | undefined;
 
 export type StageBinds = {
+  pool: Bind;
   halo: Bind;
   ripple: Bind;
   fly: Bind;
   glow: Bind;
   light: Bind;
+  shade: Bind;
   skin: Bind;
   mint: Bind;
   sky: Bind;
@@ -30,7 +32,7 @@ export type StageBinds = {
 };
 
 export const Stage = memo(function Stage({
-  binds: { halo, ripple, fly, glow, light, skin, mint, sky, rose, pearl },
+  binds: { pool, halo, ripple, fly, glow, light, shade, skin, mint, sky, rose, pearl },
   attachStage,
   attachOrb,
   attachText,
@@ -46,6 +48,7 @@ export const Stage = memo(function Stage({
 }) {
   return (
     <div ref={attachStage} className="nv-minute-stage">
+      <span ref={pool} aria-hidden className="nv-minute-pool-mint" />
       <span ref={halo} aria-hidden className="nv-minute-halo" />
       <span ref={ripple} aria-hidden className="nv-minute-ripple" />
       <div data-nv-in="ring" className="nv-minute-ringbox">
@@ -61,11 +64,12 @@ export const Stage = memo(function Stage({
             <span ref={rose} className="nv-minute-orb-tone" data-tone="rose" />
             <span ref={pearl} className="nv-minute-orb-tone" data-tone="pearl" />
             <span ref={light} className="nv-minute-orb-light" />
+            <span ref={shade} className="nv-minute-orb-shade" />
             <span ref={skin} className="nv-minute-orb-skin" />
           </span>
         </div>
       </div>
-      {/* The tool's word, numeral or figure is portaled here (Layout), or the Pulse tap pad. */}
+      {/* The tool's word, dots or figure is portaled here (Layout), or the Pulse tap pad. */}
       <div ref={attachText} className="nv-minute-orb-text" />
     </div>
   );

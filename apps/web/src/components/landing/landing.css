@@ -153,12 +153,13 @@
     radial-gradient(640px 460px at 6% 4%, var(--aqua), transparent 64%),
     linear-gradient(180deg, #eef5f7 0%, #f6fafb 55%, #ffffff 100%);
 }
+/* One slow drift out and back, then it rests where it started: nothing on the first screen loops for ever. */
 .hero-orb {
   position: absolute;
   border-radius: 9999px;
   filter: blur(60px);
   pointer-events: none;
-  animation: drift 28s var(--curve-breath) infinite alternate;
+  animation: drift 28s var(--curve-breath) 2 alternate;
 }
 /* Page-load sequence (once). The H1, lede, CTAs and photo never fade, so LCP is never delayed. */
 .hero-in {
@@ -446,8 +447,9 @@ html:not([data-motion="paused"]) [data-nv-revealed] .ecg-draw { animation: draw 
     display: none;
   }
 }
-/* White behind the safe areas, the overscroll and the bar's home-indicator strip. */
-html:has([data-landing]),
-html:has([data-landing]) > body {
+/* White behind the safe areas, the overscroll and the bar's home-indicator strip. The class is on
+   <html> while the site is mounted (SiteRoot, chrome-signals.ts). */
+html.nv-site,
+html.nv-site > body {
   background-color: #ffffff;
 }

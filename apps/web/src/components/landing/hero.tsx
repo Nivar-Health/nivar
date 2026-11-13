@@ -2,10 +2,10 @@ import type { CSSProperties, ReactNode } from "react";
 import {
   ArrowDown,
   BadgeCheck,
-  BriefcaseMedical,
   FileText,
   Gauge,
   House,
+  MapPin,
   PackageCheck,
   Video,
   type LucideIcon,
@@ -37,10 +37,11 @@ const CHIPS: { icon: LucideIcon; text: ReactNode; key: string }[] = [
 ];
 
 /**
- * The first screen, nurse first. On phones the photo leads (16:10) and the H1, lede and callback button
- * fit the first screen down to 360×640 (Safari's visible 390×664 too); from sm the photo is an arch
- * beside or below the copy. The H1, lede, CTAs and photo never fade (the photo is the LCP). Only the
- * pill, the chips and, on large screens, the sample card arrive, once.
+ * The first screen, nurse first. On phones the photo leads (16:10) and the H1, lede, callback button and
+ * the line that says who calls and when fit the first screen of a 360×800 phone with its browser bars
+ * (360×672); the button itself fits down to 360×640 and Safari's visible 390×664. From sm the photo is an
+ * arch beside or below the copy. The H1, lede, CTAs and photo never fade (the photo is the LCP). Only the
+ * badge, the chips and the sample cards arrive, once, and on a phone nothing moves after that.
  */
 export function Hero() {
   return (
@@ -51,7 +52,8 @@ export function Hero() {
         className="hero-orb motion-loop -top-40 -left-32 -z-10 hidden size-[520px] bg-[radial-gradient(closest-side,rgb(142_211_224/0.45),transparent)] lg:block"
       />
 
-      <Container className="nv-hero-pad pt-[5.25rem] pb-10 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-28">
+      {/* Phones: 16px between the pill and the photo, so their two white edges read as two shapes. */}
+      <Container className="nv-hero-pad pt-[5.75rem] pb-10 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-28">
         {/* Side by side from md, so tablets and landscape phones see the nurse beside the headline. */}
         <div className="nv-hero-grid grid grid-cols-1 items-center gap-x-8 gap-y-3 sm:gap-y-14 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-x-12">
           <div className="@container">
@@ -60,8 +62,9 @@ export function Hero() {
               className="hero-in inline-flex max-w-full items-center gap-2 rounded-[1.25rem] border border-white bg-white/80 py-1 pr-3 pl-1 text-[0.8125rem] font-medium text-balance text-ink-2 shadow-[0_6px_18px_-12px_rgb(1_43_54/0.4)] max-[379px]:gap-1.5 max-[379px]:pr-2.5 sm:gap-2.5 sm:py-1.5 sm:pr-4 sm:pl-2 sm:text-sm"
               style={delay(0)}
             >
+              {/* A place, so a pin. Still: a pulsing dot would say "live", which the sentence does not. */}
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-aqua text-primary sm:size-6">
-                <span aria-hidden className="live-dot size-1.5 text-primary motion-loop" />
+                <MapPin aria-hidden className="size-3 sm:size-3.5" strokeWidth={2.25} />
               </span>
               Now visiting homes in {SITE.area}
             </p>
@@ -73,11 +76,12 @@ export function Hero() {
 
             <p className="nv-hero-lede mt-3 max-w-[50ch] text-lede text-pretty text-ink-2 sm:mt-6">
               For injections, IV drips, wound dressings, <span className="whitespace-nowrap">check-ups</span> and blood
-              tests, at home. A Nivar doctor joins on video when needed, and we tell you the price before we confirm.
+              tests. A Nivar doctor joins on video when needed. We tell you the price before you book.
             </p>
 
             {/* Phones read down: the CTA, who calls and when, then the way into the services (8px and 4px
-                apart, so no target sits next to the CTA). From sm the link sits beside the CTA, the line under both. */}
+                apart, so no target sits next to the CTA). From sm the link sits beside the CTA, the line under
+                both; in the narrow md column, where the link wraps under the CTA, the line stays next to it. */}
             <div className="nv-hero-actions mt-4 flex flex-col items-start sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-3">
               <div data-nv-hero-cta className="w-full sm:w-auto">
                 <ContactCtas
@@ -85,8 +89,8 @@ export function Hero() {
                   buttonClassName="nv-hero-cta h-14 w-full px-8 text-[1.0625rem] sm:w-auto"
                 />
               </div>
-              <p className="mt-2 text-small text-balance text-ink-2 sm:order-last sm:mt-0 sm:basis-full">
-                A care coordinator calls back within {SITE.callbackWithin}, {SITE.hours.short}.
+              <p className="mt-2 text-small text-balance text-ink-2 sm:order-last sm:mt-0 sm:basis-full md:max-lg:order-none">
+                {SITE.firstCall.whoCapital} calls back within {SITE.callbackWithin}, {SITE.hours.short}.
               </p>
               <a href="#services-nursing" className="nv-hero-link mt-1 sm:mt-0">
                 See what a nurse can do
@@ -120,10 +124,11 @@ export function Hero() {
 /**
  * Phones: a 16:10 photo above the copy (its own 3:2 file, so the LCP carries only what shows), with the
  * reading the nurse is taking and the caption on it.
- * From sm: the arch inside slow heartbeat ripples, with sample cards that float beside it: the
- * doctor always, the blood pressure reading where the arch is wide enough (not in the narrow md
- * column), the nurse's update on large screens. Cards sit on the wall, the lap and the floor, never
- * on a face. All of it is decoration, so it stays out of the accessibility tree.
+ * From sm: the arch inside slow heartbeat ripples, with two sample cards that float beside it, each tied
+ * to what the photo shows: the doctor always, the blood pressure reading where the arch is wide enough
+ * (not in the narrow md column). They sit on the lap and the floor, never on a face. The ripples and
+ * the float come to rest by themselves after about half a minute (hero.css). All of it is decoration,
+ * so it stays out of the accessibility tree.
  */
 function HeroPhoto() {
   return (
@@ -172,13 +177,10 @@ function HeroPhoto() {
           </div>
         </div>
 
-        <FloatCard position="top-[8%] -right-[2%] hidden lg:block xl:-right-[10%]" enter={500} float="8s" floatDelay="-1s">
-          <StatusCard icon={BriefcaseMedical} title="Your nurse is on the way" sub="Sample update" />
-        </FloatCard>
         <FloatCard
           position="top-[54%] -right-[8%] hidden w-[220px] sm:block md:max-lg:hidden lg:-right-[2%] xl:-right-[12%]"
           className="px-4 py-3"
-          enter={750}
+          enter={500}
           float="7.5s"
           floatDelay="-3s"
         >
@@ -186,7 +188,7 @@ function HeroPhoto() {
         </FloatCard>
         <FloatCard
           position="bottom-[5%] -left-8 hidden sm:block md:-left-4 lg:-left-10"
-          enter={1000}
+          enter={750}
           float="9s"
           floatDelay="-5s"
         >
@@ -208,7 +210,7 @@ function HeroPhoto() {
 /* Phones get the 3:2 crop of the same frame (perf-09). */
 const HERO_PHONE = [{ media: "(width < 40rem)", src: "/img/nurse-bp-home-3x2.jpg", sizes: "calc(100vw - 40px)" }] as const;
 
-/* Three rings, a third of a cycle apart. With motion off they rest as three still circles. */
+/* Three rings, a third of a cycle apart. At rest (after six beats, or with motion off) they are three still circles. */
 const RIPPLES = [
   { start: "0s", rest: 0.96 },
   { start: "1.8s", rest: 1.08 },

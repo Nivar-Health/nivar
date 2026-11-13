@@ -46,8 +46,25 @@ export type StethMonitorProps = {
   idle?: boolean;
   /** Grow past `height` when larger text needs the room (`minHeight` instead of `height`). Default false. */
   growWithText?: boolean;
-  /** "landing" raises the 10-11px labels (and the S1/S2 marks) to 12px. Default "console". */
+  /** "landing" raises the 10-11px labels (and the S1/S2 marks) to 12px, and gives Listen a 44px target. Default "console". */
   labelScale?: LabelScale;
+  /** The status chip's word while the trace runs. Default "LIVE". */
+  badgeLabel?: string;
+  /** The trace's accessible name. Default "Live heart sound waveform". */
+  canvasLabel?: string;
+  /**
+   * A captured frame (envelope 0..1, at the feed's sample rate) for a monitor that demonstrates rather
+   * than measures, as on the public site. The frame is on screen before any data arrives, newest at
+   * the right edge, and the trace carries on from it; the heart rate reads `heartRate`, and the monitor
+   * never says it is waiting for a device. Default: none.
+   */
+  demoFrame?: readonly number[];
+  /** Draw at most this many frames a second. Default: every animation frame. */
+  maxFps?: number;
+  /** Cap on the canvas's device pixel ratio. Default 3. */
+  maxDpr?: number;
+  /** Disable Listen (and end a listening session) while the caller has nothing playing. Default false. */
+  listenDisabled?: boolean;
 };
 
 const NO_SIGNAL_MS = 1800;
@@ -68,15 +85,30 @@ export function StethMonitor({
   idle = false,
   growWithText = false,
   labelScale = "console",
+  badgeLabel,
+  canvasLabel = "Live heart sound waveform",
+  demoFrame,
+  maxFps,
+  maxDpr,
+  listenDisabled = false,
 }: StethMonitorProps) {
-  const [hasSignal, setHasSignal] = useState(false);
+  /** A demo frame stands in for a signal from the first paint, and for as long as the monitor lives. */
+  const seeded = Boolean(demoFrame && demoFrame.length > 0);
+  const [hasSignal, setHasSignal] = useState(seeded);
   const [listening, setListening] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  // Listen cannot stay pressed once it is disabled: the session ends with what it was following.
+  if (listenDisabled && listening) setListening(false);
 
   const hrPropRef = useRef<number | null | undefined>(heartRate);
   useEffect(() => {
     hrPropRef.current = heartRate;
   }, [heartRate]);
+  /** Read by setup(), which runs from resize and feed callbacks, never during render. */
+  const demoFrameRef = useRef(demoFrame);
+  useEffect(() => {
+    demoFrameRef.current = demoFrame;
+  }, [demoFrame]);
 
   const playerRef = useRef(new SamplePlayer(1000, 0.25));
   const chunkHrRef = useRef<number | null>(null);
@@ -86,7 +118,7 @@ export function StethMonitor({
   /** Set only while frozen: the frame painter, so a resize can repaint instead of leaving a blank canvas. */
   const drawRef = useRef<(() => void) | null>(null);
   /** Mirrors hasSignal for the draw loop, so a restarted (or frozen) loop keeps the current state. */
-  const signalRef = useRef(false);
+  const signalRef = useRef(seeded);
   /** Whether the last draw-loop run was frozen (paused or idle), to detect the frozen -> playing transition. */
   const wasPausedRef = useRef(paused || idle);
 
@@ -95,6 +127,8 @@ export function StethMonitor({
     grid: null as HTMLCanvasElement | null,
     buf: new Float32Array(0),
     total: 0, // samples written so far (absolute index)
+    /** A sample from the feed has been drawn. Until then a demo frame is repainted whole on a resize. */
+    started: false,
     markers: [] as Marker[],
     // burst detector
     armed: true,
@@ -115,12 +149,18 @@ export function StethMonitor({
       v.buf = new Float32Array(cap);
       v.total = 0;
       v.markers = [];
+      if (demoFrameRef.current && !v.started) {
+        // The captured frame, its newest sample at the right edge; the trace carries on from there.
+        const frame = demoFrameRef.current.slice(-cap);
+        v.buf.set(frame);
+        v.total = frame.length;
+      }
     }
     // While frozen no loop is running: repaint once so the resized canvas is not left blank.
     drawRef.current?.();
   };
 
-  const { containerRef, canvasRef } = useHiDpiCanvas((size) => setup(size));
+  const { containerRef, canvasRef } = useHiDpiCanvas((size) => setup(size), maxDpr);
 
   useEffect(() => {
     if (!feed) return;
@@ -151,6 +191,13 @@ export function StethMonitor({
     };
   }, []);
 
+  // And when Listen is disabled.
+  useEffect(() => {
+    if (!listenDisabled) return;
+    soundRef.current?.stop();
+    soundRef.current = null;
+  }, [listenDisabled]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -168,6 +215,7 @@ export function StethMonitor({
       const v = view.current;
       const cap = v.buf.length;
       if (cap === 0) return;
+      v.started = true;
       v.buf[v.total % cap] = val;
       const idx = v.total;
       v.total++;
@@ -296,13 +344,21 @@ export function StethMonitor({
       ctx.fillRect(0, 0, 36, h);
     };
 
+    // A capped monitor skips the frames that come sooner than its interval; 4ms of slack keeps a 60Hz
+    // screen on every second frame.
+    const minFrameMs = maxFps ? 1000 / maxFps - 4 : 0;
+
     const loop = (now: number) => {
       const dt = now - last;
+      if (minFrameMs && dt < minFrameMs) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       last = now;
       const player = playerRef.current;
       if (view.current.buf.length > 0) player.take(dt, write);
 
-      const nowSignal = player.lastDataAt > 0 && now - player.lastDataAt < NO_SIGNAL_MS;
+      const nowSignal = seeded || (player.lastDataAt > 0 && now - player.lastDataAt < NO_SIGNAL_MS);
       if (nowSignal !== signal) {
         signal = nowSignal;
         signalRef.current = nowSignal;
@@ -355,7 +411,7 @@ export function StethMonitor({
       cancelAnimationFrame(raf);
       drawRef.current = null;
     };
-  }, [canvasRef, paused, idle, labelScale]);
+  }, [canvasRef, paused, idle, labelScale, seeded, maxFps]);
 
   const toggleListen = async () => {
     if (listening) {
@@ -414,12 +470,12 @@ export function StethMonitor({
           <span className="truncate rounded border border-[#E6E6E1]/25 px-1.5 py-px font-medium text-[#F7D88E]">{site}</span>
           <span className="hidden text-[#8F8F89] sm:inline">20 to 400 Hz</span>
         </div>
-        <LiveBadge live={live && !paused} paused={paused} labelScale={labelScale} />
+        <LiveBadge live={live && !paused} label={badgeLabel} paused={paused} labelScale={labelScale} />
       </div>
 
       <div className="flex min-h-0 flex-1">
         <div ref={containerRef} className="relative min-w-0 flex-1">
-          <canvas ref={canvasRef} className="absolute inset-0 block" aria-label="Live heart sound waveform" role="img" />
+          <canvas ref={canvasRef} className="absolute inset-0 block" aria-label={canvasLabel} role="img" />
           <MonitorOverlay show={overlay !== null}>{overlay}</MonitorOverlay>
         </div>
 
@@ -431,7 +487,7 @@ export function StethMonitor({
               className="mt-0.5 font-mono text-[34px] leading-none font-semibold tracking-tight text-[#E6E6E1] tabular-nums sm:text-[40px]"
               style={{ textShadow: "0 0 16px rgba(242,193,78,0.3)" }}
             >
-              --
+              {seeded && heartRate ? Math.round(heartRate) : "--"}
             </span>
             <span className={cn("mt-1 tracking-wider text-[#8F8F89]", landing ? "text-xs" : "text-[10px]")}>bpm</span>
           </div>
@@ -442,8 +498,11 @@ export function StethMonitor({
                 type="button"
                 onClick={toggleListen}
                 aria-pressed={listening}
+                disabled={listenDisabled}
                 className={cn(
-                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#E6E6E1]/60",
+                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#E6E6E1]/60 disabled:pointer-events-none disabled:opacity-50",
+                  // A 44px target around the 32px button, so the monitor keeps its height.
+                  landing && "relative before:absolute before:inset-x-0 before:-inset-y-1.5",
                   listening
                     ? "border-[#E6E6E1] bg-[#E6E6E1] text-[#132321] hover:bg-[#FFFFFF]"
                     : "border-[#E6E6E1]/40 bg-transparent text-[#F7D88E] hover:bg-[#E6E6E1]/10",

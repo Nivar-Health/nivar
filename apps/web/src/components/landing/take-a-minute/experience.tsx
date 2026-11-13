@@ -18,16 +18,15 @@ import {
   useState,
   useSyncExternalStore,
   type FC,
-  type ReactNode,
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { Disclosure } from "../disclosure";
 import { useMotionPaused, usePrefersReducedMotion } from "../motion";
-import { bindStyle, spring, stopAll, tween, type Ease } from "./anim";
-import { ENABLED_TOOLS, TOOL_DURATION, TOOL_ENABLED, TOOL_LABEL, TOOL_SPOKEN, TOOL_TONE, isToolId } from "./config";
+import { bindStyle, settle, spring, stopAll, tween, type Ease } from "./anim";
+import { ENABLED_TOOLS, READING_TOOLS, TOOL_ENABLED, TOOL_LABEL, TOOL_SPOKEN, TOOL_TONE, isToolId } from "./config";
 import { onSessionDone } from "./engine";
-import { Field, createMotes, moteCount } from "./field";
+import { Field } from "./field";
 import { canVibrate, vibrate } from "./haptics";
 import { isMinuteEntry, pushMinuteEntry } from "./history";
 import { Stage, TONES } from "./orb";
@@ -36,22 +35,24 @@ import { createRing } from "./ring";
 import { sound } from "./sound";
 import { attachSwipe } from "./swipe";
 import { TOOLS } from "./tools";
+import { COMMON } from "./tools/copy";
 import type { ExperienceApi, LayoutSlots, Prefs, Tone, ToolId, ToolProps } from "./types";
 import "./experience.css";
 
-/* Take a minute, the lazy chunk (spec §5). A Base UI modal dialog portaled into [data-landing] and
-   drawn by motion values: the launcher's pearl blooms into a pond, flies up into the orb, lands
-   with one ripple, and the time-left ring draws in (§5.8); closing plays it back into the pearl
-   (§5.9). Every spring retargets from its current value and velocity, so Esc mid-flight simply
-   turns the motion around. The tools (tools/) render through Layout and drive the stage
-   through the ExperienceApi; nothing they do goes through React state per frame.
-   Mobile pass (mobile spec U8): the title, switcher and Start are in by 480 ms while the flight
-   finishes, repeat opens play at ×0.8, a close hands off within 350 ms, and on portrait phones the
-   safety line and the controls dock at the bottom of the sheet. */
+/* Take a minute, the lazy chunk. A Base UI modal dialog portaled into [data-landing] and drawn by
+   motion values: the launcher's pearl blooms into a pond, flies up into the orb and lands with one
+   ripple; closing plays it back into the pearl. Every spring retargets from its current value and
+   velocity, so Esc mid-flight simply turns the motion around. The tools (tools/) render through Layout
+   and drive the stage through the ExperienceApi; nothing they do goes through React state per frame.
+   One quiet room: the title, Sound and Close share one sticky row, the tabs are one slim line of
+   names, and the dock under a tool holds its buttons and at most one quiet line. A session shows only
+   itself, and its ending is given a few quiet seconds before the tabs return.
+   On phones the title, switcher and Start are in by 480 ms while the flight finishes, repeat opens
+   play at ×0.8, a close hands off within 350 ms, and the controls dock at the bottom of the sheet. */
 
 export type ExperienceProps = {
   open: boolean;
-  /** The tool to show, already resolved by the cluster (enabled; "" mapped to the last used). */
+  /** The tool to show, already resolved by the cluster (enabled; the general entry is Breathe). */
   tool: ToolId;
   onToolChange(tool: ToolId): void;
   /** false: the close has started (its timeline then hands off within 280ms, ×0.85 on phones). */
@@ -68,11 +69,13 @@ type CloseStyle = { kind: "orb" } | { kind: "swipe"; speed: number };
 type Phase = "closed" | "opening" | "open" | "closing";
 type Origin = { x: number; y: number; size: number; pearl: HTMLElement | null };
 
-const DESCRIPTION = `Timers for your body: ${[
-  "a breathing guide",
-  "a five-minute rest before a blood pressure reading",
-  ...(TOOL_ENABLED.pulse ? ["a pulse count"] : []),
-].join(", ")} and a 20-second eye break.`;
+const DESCRIPTION = `Short guided pauses: a breathing guide, a 20-second eye break${
+  TOOL_ENABLED.pulse ? ", a five-minute rest before a blood pressure reading and a pulse count" : " and a five-minute rest before a blood pressure reading"
+}.`;
+
+/** Shown by the Sound control for 4 s after it is switched on, and announced. */
+const SOUND_HINT = "No sound? Check your volume and your phone's silent switch.";
+const SOUND_HINT_MS = 4000;
 
 /** Curves from globals.css. */
 const CALM: Ease = [0.22, 1, 0.36, 1];
@@ -87,105 +90,19 @@ const BLOOM = 56;
 const TONE_LIGHT = 0.24;
 /** The same phase word is announced at most once per 5 seconds. */
 const ANNOUNCE_GAP_MS = 5000;
-/** Room kept between what a scroll brings into view and the top bar or the screen's bottom edge. */
-const CLEAR = 12;
+/** After a session ends by itself the tabs and the fine print stay away this long, so the ending has the screen to itself. */
+const SETTLE_MS = 2500;
+/** How far the resting orb dims at an empty breath when its light, not its size, paces Breathe (reduced motion). */
+const ORB_DIM = 0.72;
+/** The orb gives a little under a press on it (the idle tap that starts a session). */
+const PRESS_SCALE = 0.97;
 /** Closing (×0.85 on phones): the orb is checked against its pearl from LAND_MS, handed off by CLOSE_MS. */
 const LAND_MS = 220;
 const CLOSE_MS = 280;
 /** Every open after the first in a page view plays at this pace, flight and all. */
 const REPEAT_PACE = 0.8;
-/** A phone on its side (experience.css): the stage takes the left column and the controls dock alone. */
-const SHORT_LANDSCAPE = "(orientation: landscape) and (max-height: 520px)";
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-
-/** The part of the sheet that shows: below the sticky top bar, above the screen's bottom edge. */
-type View = { top: number; bottom: number };
-
-/** The controls while they dock at the bottom of the sheet (portrait phones, short landscape), else null. */
-function stickyDock(panel: HTMLElement | null | undefined): HTMLElement | null {
-  const controls = panel?.querySelector<HTMLElement>(".nv-minute-controls");
-  return controls && getComputedStyle(controls).position === "sticky" ? controls : null;
-}
-
-/**
- * Where the sheet scrolls when a session starts (K3): the stage (the orb on its ring), the time left, a
- * prompt with words in it (the lead-in line), a safety line in the flow (short landscape) and the first
- * control (Pause) fully in view, by the shortest move; null when they already are. Rest's ticks or a short
- * screen can leave them scrolled away. A sticky stage (short landscape) is in view already, and a docked
- * Pause always is: then the rest must clear the dock, and where it cannot all fit above it (Rest's long
- * safety line at 320×568) the words win over the top of the ring but not over the orb itself, and the time
- * left never goes under the top bar.
- */
-function stageScroll(sheet: HTMLElement, view: View): number | null {
-  const stage = sheet.querySelector<HTMLElement>(".nv-minute-stage");
-  const flowStage = stage && getComputedStyle(stage).position !== "sticky" ? stage : null;
-  const panel = sheet.querySelector<HTMLElement>(".nv-minute-panel");
-  const controls = panel?.querySelector<HTMLElement>(".nv-minute-controls");
-  const dock = stickyDock(panel);
-  const floor = dock ? view.bottom - dock.offsetHeight : view.bottom;
-  const readout = panel?.querySelector<HTMLElement>(".nv-minute-readout")?.getBoundingClientRect();
-  const prompt = panel?.querySelector<HTMLElement>(".nv-minute-prompt");
-  const words = prompt?.textContent?.trim() ? prompt.getBoundingClientRect() : null;
-  const alwaysEl = panel?.querySelector<HTMLElement>(".nv-minute-always");
-  const flowAlways = alwaysEl && !controls?.contains(alwaysEl) ? alwaysEl.getBoundingClientRect() : null;
-  const parts = [
-    flowStage?.getBoundingClientRect(),
-    readout,
-    words,
-    flowAlways,
-    dock
-      ? null
-      : (controls?.querySelector<HTMLElement>(".nv-minute-primary") ?? controls?.querySelector<HTMLElement>("button"))?.getBoundingClientRect(),
-  ].flatMap((r) => (r ? [r] : []));
-  if (!parts.length) return null;
-  const top = Math.min(...parts.map((r) => r.top)) - (view.top + CLEAR);
-  // A dock's own 24px fade is the room kept above it.
-  const bottom = Math.max(...parts.map((r) => r.bottom)) - (dock ? floor : floor - CLEAR);
-  if (dock && readout && bottom > top) {
-    const need = Math.max(readout.bottom, words?.bottom ?? 0, flowAlways?.bottom ?? 0) - floor;
-    // The orb stays below the bar (K3) unless the time left needs that room to clear the dock.
-    const orb = flowStage?.querySelector<HTMLElement>(".nv-minute-orb")?.getBoundingClientRect();
-    const orbRoom = orb ? Math.max(orb.top - view.top, readout.bottom - floor) : need;
-    return sheet.scrollTop + Math.min(need, orbRoom, readout.top - (view.top + CLEAR));
-  }
-  if (top < 0) return sheet.scrollTop + top;
-  if (bottom > 0) return sheet.scrollTop + Math.min(bottom, top);
-  return null;
-}
-
-/**
- * Where the sheet scrolls when a session ends and the tabs come back (a11y-16). To the top if the focused
- * control still shows there; otherwise just far enough to show it, and then never with the tabs half under
- * the top bar: past them if focus allows, else back to them. Focus itself never moves. A control in the
- * docked controls shows wherever the sheet is scrolled.
- */
-function tabsScroll(sheet: HTMLElement, view: View): number | null {
-  const tabs = sheet.querySelector<HTMLElement>(".nv-minute-tabs")?.getBoundingClientRect();
-  if (!tabs) return null;
-  const now = sheet.scrollTop;
-  const max = sheet.scrollHeight - sheet.clientHeight;
-  const active = document.activeElement;
-  const dock = stickyDock(sheet.querySelector<HTMLElement>(".nv-minute-panel"));
-  const focus =
-    active instanceof HTMLElement && sheet.contains(active) && !dock?.contains(active) ? active.getBoundingClientRect() : null;
-  // A rect measured now sits at rect.y + now - s once the sheet is scrolled to s.
-  const shows = (s: number) => !focus || (focus.top + now - s >= view.top && focus.bottom + now - s <= view.bottom);
-  let s = 0;
-  if (!shows(0)) {
-    s = now;
-    if (focus && focus.bottom > view.bottom - CLEAR) s = now + focus.bottom - (view.bottom - CLEAR);
-    else if (focus && focus.top < view.top + CLEAR) s = now + focus.top - (view.top + CLEAR);
-    s = Math.max(0, Math.min(max, s));
-    if (tabs.top + now - s < view.top && tabs.bottom + now - s > view.top) {
-      const past = Math.ceil(now + tabs.bottom - view.top) + 1;
-      const back = Math.max(0, now + tabs.top - (view.top + CLEAR));
-      if (past <= max && shows(past)) s = past;
-      else if (shows(back)) s = back;
-    }
-  }
-  return Math.abs(s - now) < 1 ? null : s;
-}
 
 function useMedia(query: string): boolean {
   const subscribe = useCallback(
@@ -242,7 +159,6 @@ function createScene() {
     fieldIn: mv(0),
     breath: mv(0.12),
     fieldDim: mv(0),
-    ringDraw: mv(0),
     haloIn: mv(0),
     haloScale: mv(0.6),
     glow: mv(1),
@@ -277,22 +193,30 @@ function createScene() {
     bloom: bindStyle({ scale: v.bloom, opacity: v.bloomFade }),
     field: {
       fade: bindStyle({ opacity: fieldFade }),
-      breath: bindStyle({ opacity: v.breath }),
       dim: bindStyle({ opacity: v.fieldDim }),
     },
     stage: {
-      halo: bindStyle({ opacity: transformValue(() => v.haloIn.get() * 0.6 * v.glow.get()), scale: v.haloScale }),
+      // The mint pool sits in the stage but belongs to the field: it comes and goes with it, and the
+      // eye break's dimmer takes it down too.
+      pool: bindStyle({ opacity: transformValue(() => v.breath.get() * fieldFade.get() * (1 - v.fieldDim.get())) }),
+      halo: bindStyle({ opacity: transformValue(() => v.haloIn.get() * 0.6 * (0.15 + 0.85 * v.glow.get())), scale: v.haloScale }),
       ripple: bindStyle({ opacity: v.rippleOpacity, scale: v.rippleScale }),
       fly: bindStyle({ x: v.flyX, y: v.flyY, scale: v.flyScale }),
       glow: bindStyle({ opacity: v.skin }),
       light: bindStyle({ opacity: transformValue(() => 0.25 + 0.75 * v.glow.get()) }),
+      // The rim darkens as the light goes: the lit part of the orb seems to draw in without anything moving.
+      shade: bindStyle({ opacity: transformValue(() => 1 - v.glow.get()) }),
       skin: bindStyle({ opacity: v.skin }),
       mint: bindStyle({ opacity: v.mint }),
       sky: bindStyle({ opacity: v.sky }),
       rose: bindStyle({ opacity: v.rose }),
       pearl: bindStyle({ opacity: v.pearl }),
     },
-    orb: { scale: v.scale, y: v.lift, opacity: transformValue(() => v.orbIn.get() * v.orbDim.get()) },
+    orb: {
+      scale: v.scale,
+      y: v.lift,
+      opacity: transformValue(() => v.orbIn.get() * v.orbDim.get() * (ORB_DIM + (1 - ORB_DIM) * v.glow.get())),
+    },
     // The word appears as the orb arrives under it, whatever the timeline: within 28px of home.
     text: {
       opacity: transformValue(
@@ -302,6 +226,12 @@ function createScene() {
   };
   return { values, tones, binds, all: Object.values(values) };
 }
+
+/** The first tab of the pair for just before a reading: a hairline sets it apart from the calm pair. */
+const FIRST_READING = ENABLED_TOOLS.find((id) => READING_TOOLS.includes(id));
+
+/** Sound left on starts with the first press inside the sheet (a touch grants it at the click). */
+const wakeSound = () => sound.wake();
 
 /** The tools re-render only when the api or the shell changes, not when the dialog opens. */
 const TOOL_VIEWS: Partial<Record<ToolId, FC<ToolProps>>> = Object.fromEntries(
@@ -314,22 +244,16 @@ type Shell = {
   compactHeight: boolean;
   /** Below 640px: "About this exercise" stays a closed disclosure at every height. */
   phone: boolean;
-  /** The safety line docks with the controls (everywhere but short landscape). */
-  dockAlways: boolean;
-  /** A session is running (or paused): the Sound and Vibration toggles leave the content. */
-  session: boolean;
-  /** The Sound and Vibration toggles, shown under the dock on phones (experience.css). */
-  toggles: ReactNode;
   setArmed(on: boolean): void;
+  /** A finger or the mouse is down on the resting orb: it gives a little, and comes back on release. */
+  pressOrb(down: boolean): void;
 };
 const ShellContext = createContext<Shell>({
   textHost: null,
   compactHeight: false,
   phone: false,
-  dockAlways: false,
-  session: false,
-  toggles: null,
   setArmed: () => {},
+  pressOrb: () => {},
 });
 
 /**
@@ -356,11 +280,26 @@ function attachDock(el: HTMLDivElement | null) {
 }
 
 /**
- * The tools' slot layout (spec §5.2; mobile spec U8 Behaviour 1): readout, prompt, options, the safety
- * line, the controls, then what sits under them. The orb slot is portaled into the shell's stage.
+ * The tools' slot layout: readout, prompt, options, safety guidance in full where a state calls for it,
+ * then the dock (the controls and at most one quiet line), then what sits under it. The orb slot is
+ * portaled into the shell's stage.
  */
-function Layout({ orb, orbButton, readout, prompt, options, always, controls, after, fine }: LayoutSlots) {
-  const { textHost, compactHeight, phone, dockAlways, session, toggles, setArmed } = useContext(ShellContext);
+function Layout({
+  orb,
+  orbButton,
+  onOrbTap,
+  readout,
+  prompt,
+  options,
+  safety,
+  controls,
+  quiet,
+  dock = "sticky",
+  after,
+  fine,
+  fineTitle = COMMON.about,
+}: LayoutSlots) {
+  const { textHost, compactHeight, phone, setArmed, pressOrb } = useContext(ShellContext);
   const aboutId = useId();
   const padRef = useRef<HTMLButtonElement>(null);
   const pressRef = useRef(orbButton?.onPress);
@@ -397,15 +336,33 @@ function Layout({ orb, orbButton, readout, prompt, options, always, controls, af
     >
       {orb}
     </button>
+  ) : onOrbTap ? (
+    <>
+      {orb}
+      {/* The resting orb looks pressable, so a tap on it starts too. A pointer shortcut only: it has no
+          name and takes no focus, and Start stays the control for everyone else. It fires on the click,
+          never on touch-down. */}
+      <span
+        aria-hidden
+        className="nv-minute-orbtap"
+        onClick={onOrbTap}
+        onPointerDown={(e) => {
+          if (e.button === 0) pressOrb(true);
+        }}
+        onPointerUp={() => pressOrb(false)}
+        onPointerLeave={() => pressOrb(false)}
+        onPointerCancel={() => pressOrb(false)}
+      />
+    </>
   ) : (
     orb
   );
 
   return (
-    <div className="nv-minute-layout">
+    <div className="nv-minute-layout" data-dock={dock}>
       {textHost ? createPortal(face, textHost) : null}
-      {/* Everything down to the controls. On portrait phones it reaches the screen's bottom edge, so the
-          dock rests there in the thumb zone and what follows it starts below the fold. */}
+      {/* Everything down to the controls. On portrait phones it reaches the screen's bottom edge while the
+          controls dock, so they rest there in the thumb zone and what follows starts below the fold. */}
       <div className="nv-minute-main">
         {readout ? (
           <div data-nv-in="readout" className="nv-minute-readout">
@@ -422,16 +379,17 @@ function Layout({ orb, orbButton, readout, prompt, options, always, controls, af
             {options}
           </div>
         ) : null}
-        {always && !dockAlways ? (
-          <div data-nv-in="always" className="nv-minute-always">
-            {always}
+        {safety ? (
+          <div data-nv-in="safety" className="nv-minute-safety">
+            {safety}
           </div>
         ) : null}
-        {/* The dock: it sticks to the bottom of the sheet whenever the content runs past it, and on
-            portrait phones it always rests there (experience.css). */}
+        {/* The dock: the controls and one quiet line, never a box. It sticks to the bottom of the sheet
+            whenever the content runs past it (portrait phones rest it there); in "flow" it simply follows
+            the content (experience.css). */}
         <div ref={attachDock} data-nv-in="controls" className="nv-minute-controls">
-          {always && dockAlways ? <div className="nv-minute-always">{always}</div> : null}
           {controls}
+          {quiet ? <div className="nv-minute-quietline">{quiet}</div> : null}
         </div>
         <span aria-hidden className="nv-minute-dock-end" />
       </div>
@@ -440,15 +398,10 @@ function Layout({ orb, orbButton, readout, prompt, options, always, controls, af
           {after}
         </div>
       ) : null}
-      {session ? null : (
-        <div data-nv-in="toggles" className="nv-minute-toggles nv-minute-toggles-under">
-          {toggles}
-        </div>
-      )}
       {fine ? (
         phone || compactHeight ? (
           <div data-nv-in="fine" className="nv-minute-about">
-            <Disclosure id={`nv-minute-about${aboutId}`} variant="dark" title="About this exercise">
+            <Disclosure id={`nv-minute-about${aboutId}`} variant="dark" title={fineTitle}>
               {fine}
             </Disclosure>
           </div>
@@ -473,6 +426,8 @@ type SheetProps = {
   onHandoff(completed: boolean): void;
   /** Bumped after every close: the tools remount fresh for the next open. */
   generation: number;
+  /** Hands the dialog the running session's answer to Back (true: it paused instead), or null. */
+  setBack(ask: (() => boolean) | null): void;
 };
 
 /**
@@ -489,6 +444,7 @@ function Sheet({
   closeStyle,
   onHandoff,
   generation,
+  setBack,
 }: SheetProps) {
   const reducedMotion = usePrefersReducedMotion();
   // The OS setting or the visitor's pause: opening and closing are the 160 ms crossfade (§1.15). Everything
@@ -497,18 +453,17 @@ function Sheet({
   const coarse = useMedia("(pointer: coarse)");
   const compactHeight = useMedia("(height < 700px)");
   const phone = useMedia("(width < 40rem)");
-  // The safety line docks with the controls, except in short landscape, where it stays in the flow just
-  // above them so the little height there is left to the content.
-  const dockAlways = !useMedia(SHORT_LANDSCAPE);
   const [prefs, setPrefsState] = useState<Prefs>(loadPrefs);
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const [textHost, setTextHost] = useState<HTMLDivElement | null>(null);
   const [vibrationOk] = useState(canVibrate);
   const [ring] = useState(createRing);
-  const [motes] = useState(() => createMotes(moteCount(coarse, reducedMotion)));
   const [scene] = useState(createScene);
   const { values: v, tones, binds } = scene;
   const sessionActive = activeTool === tool;
+  // The top bar's Sound belongs to the tool on screen: Breathe's pacing chimes, or the others' end chime.
+  const soundOn = prefs.toolSound[tool];
+  const [soundHint, setSoundHint] = useState(false);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const uiRef = useRef<HTMLDivElement>(null);
@@ -516,13 +471,15 @@ function Sheet({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const orbRef = useRef<HTMLDivElement | null>(null);
   const bloomRef = useRef<HTMLDivElement | null>(null);
-  const fieldRef = useRef<HTMLDivElement>(null);
   const liveRef = useRef<HTMLParagraphElement>(null);
   const phaseRef = useRef<Phase>("closed");
   const toneRef = useRef<Tone>(TOOL_TONE[tool]);
   const armedRef = useRef(false);
   const sessionRef = useRef(false);
   const completedRef = useRef(false);
+  /** When the last session ended by itself (performance.now()), 0 once its quiet seconds are spent. */
+  const doneAtRef = useRef(0);
+  const hintTimerRef = useRef(0);
   const hiddenPearlRef = useRef<{ el: HTMLElement; visibility: string } | null>(null);
   const lastAnnounceRef = useRef({ text: "", at: 0 });
   const timersRef = useRef<number[]>([]);
@@ -560,7 +517,19 @@ function Sheet({
     [reducedMotion, tones],
   );
 
-  /* ---- Opening (§5.8) ------------------------------------------------------------------- */
+  // One mint ripple from the orb's edge: when it lands at the opening, and at a session's end. Once
+  // faded, the ring shrinks back so its 2.4 D box stops reaching past the sheet.
+  const ripple = useCallback(
+    (k: number) => {
+      v.rippleScale.jump(REST_SCALE);
+      v.rippleOpacity.jump(0.45);
+      tween(v.rippleScale, 2.4, 1.4 * k, CALM).finished.then(() => v.rippleScale.jump(REST_SCALE));
+      tween(v.rippleOpacity, 0, 1.4 * k, CALM);
+    },
+    [v],
+  );
+
+  /* ---- Opening --------------------------------------------------------------------------- */
   const playOpen = useCallback(
     (retarget: boolean) => {
       const stage = stageRef.current;
@@ -578,18 +547,17 @@ function Sheet({
       phaseRef.current = "opening";
       ring.setStepped(reducedMotion);
       ring.measure();
-      // Neither is needed for the first frame: the history entry (Back closes) and the motes'
-      // canvas (the field fades in from 400ms).
+      // Not needed for the first frame: the history entry (Back closes).
       requestAnimationFrame(() => {
         if (phaseRef.current === "opening" || phaseRef.current === "open") pushMinuteEntry();
       });
-      later(120, () => motes.prepare());
-      // Sound left on last time: the press that opened Take a minute still counts as a gesture. A deep
-      // link or Back has none, so sound waits for the first press inside (the captures below).
-      if (loadPrefs().sound) {
-        sound.on = true;
-        sound.wake();
-      }
+      // The sheet stays mounted between opens and would keep its scroll: every open starts at the top,
+      // before the stage is measured, with nothing left over from the last ending.
+      ui.scrollTop = 0;
+      ui.scrollLeft = 0;
+      ui.removeAttribute("data-scrolled");
+      ui.removeAttribute("data-settling");
+      doneAtRef.current = 0;
 
       // The same choreography on every open, a little quicker after the first (the CSS stagger reads --nv-k).
       if (!retarget) opens += 1;
@@ -599,8 +567,6 @@ function Sheet({
       const cx = box.left + box.width / 2;
       const cy = box.top + box.height / 2;
       const d = orbEl.offsetWidth || 1;
-      fieldRef.current?.style.setProperty("--nv-pool-x", `${cx}px`);
-      fieldRef.current?.style.setProperty("--nv-pool-y", `${cy}px`);
       const from = retarget ? null : readOrigin(origin?.());
 
       if (!retarget) {
@@ -612,10 +578,10 @@ function Sheet({
       }
 
       if (quietOpen) {
-        // A 160ms crossfade of the finished scene: no bloom, flight, ripple, stagger or motes.
+        // A 160ms crossfade of the finished scene: no bloom, flight, ripple or stagger.
         stopAll(scene.all);
         if (!retarget) {
-          ring.refill(1, 0);
+          ring.refill(0, 0);
           v.glow.jump(1);
           v.breath.jump(0.12);
           v.fieldDim.jump(0);
@@ -638,7 +604,6 @@ function Sheet({
         v.skin.jump(0);
         v.orbIn.jump(1);
         v.textIn.jump(1);
-        v.ringDraw.jump(1);
         if (!retarget) v.root.jump(0);
         tween(v.root, 1, 0.16, "linear");
         ui.dataset.ui = "in";
@@ -652,9 +617,9 @@ function Sheet({
       if (retarget) spring(v.surfaceY, 0, 0.42 * k, 0);
       else v.surfaceY.jump(0);
       if (!retarget) {
-        // A fresh stage: whatever the last session left (an empty ring, a receded orb, a dimmed
+        // A fresh stage: whatever the last session left (a part-drawn ring, a receded orb, a dimmed
         // field) is reset before the first frame.
-        ring.refill(1, 0);
+        ring.refill(0, 0);
         v.glow.jump(1);
         v.breath.jump(0.12);
         v.fieldDim.jump(0);
@@ -670,7 +635,6 @@ function Sheet({
         v.haloScale.jump(0.6);
         v.rippleOpacity.jump(0);
         v.textIn.jump(0);
-        v.ringDraw.jump(0);
         if (from) {
           // The clone sits exactly on the launcher's pearl, so the first frame changes nothing.
           v.flyX.jump(from.x - cx);
@@ -724,7 +688,6 @@ function Sheet({
       tweenK(v.haloIn, 1, 0.8, CALM, retarget ? 0 : 0.26);
       tweenK(v.haloScale, 1, 0.8, CALM, retarget ? 0 : 0.26);
       tweenK(v.fieldIn, 1, 1.2, "easeOut", retarget ? 0 : 0.4);
-      tweenK(v.ringDraw, 1, 0.7, CALM, retarget ? 0.2 : 0.72);
       tweenK(v.textIn, 1, 0.45, CALM, retarget ? 0.2 : 0.72);
 
       // The stagger runs on CSS transitions (experience.css), so a close reverses each in place. Measuring the
@@ -735,12 +698,7 @@ function Sheet({
       // One mint ripple when the orb lands (its rise settles within 2px at about 950ms).
       if (!retarget) {
         later((flies ? 950 : 640) * k, () => {
-          if (phaseRef.current === "closing") return;
-          v.rippleScale.jump(REST_SCALE);
-          v.rippleOpacity.jump(0.45);
-          // Once faded, the ring shrinks back so its 2.4 D box stops widening the sheet's scroll area.
-          tween(v.rippleScale, 2.4, 1.4 * k, CALM).finished.then(() => v.rippleScale.jump(REST_SCALE));
-          tween(v.rippleOpacity, 0, 1.4 * k, CALM);
+          if (phaseRef.current !== "closing") ripple(k);
         });
       }
       later(1600 * k, () => {
@@ -749,10 +707,10 @@ function Sheet({
         ui.dataset.ready = "";
       });
     },
-    [clearTimers, later, motes, origin, quietOpen, reducedMotion, ring, scene, titleRef, v],
+    [clearTimers, later, origin, quietOpen, reducedMotion, ring, ripple, scene, titleRef, v],
   );
 
-  /* ---- Closing (§5.9; mobile spec U8: the handoff within 350ms) -------------------------- */
+  /* ---- Closing (the handoff within 350ms) -------------------------------------------------- */
   const playClose = useCallback(() => {
     const stage = stageRef.current;
     const orbEl = orbRef.current;
@@ -762,7 +720,8 @@ function Sheet({
     clearTimers();
     phaseRef.current = "closing";
     const token = ++closeTokenRef.current;
-    motes.setMoving(false);
+    window.clearTimeout(hintTimerRef.current);
+    setSoundHint(false);
     const k = pace();
     if (ui) {
       ui.style.setProperty("--nv-k", String(k));
@@ -863,7 +822,7 @@ function Sheet({
       };
       wait();
     });
-  }, [clearTimers, closeStyle, later, motes, onHandoff, origin, quietOpen, scene, showPearl, v]);
+  }, [clearTimers, closeStyle, later, onHandoff, origin, quietOpen, scene, showPearl, v]);
 
   // Only a change of `open` plays a timeline; the latest closures are read through a ref.
   const playRef = useRef({ open: playOpen, close: playClose });
@@ -879,23 +838,31 @@ function Sheet({
   useEffect(
     () => () => {
       clearTimers();
+      window.clearTimeout(hintTimerRef.current);
       stopAll(scene.all);
       ring.dispose();
-      motes.setMoving(false);
       showPearl();
     },
-    [clearTimers, motes, ring, scene, showPearl],
+    [clearTimers, ring, scene, showPearl],
   );
-
-  useEffect(() => v.ringDraw.on("change", (x) => ring.setDraw(x)), [ring, v]);
 
   useEffect(
     () =>
       onSessionDone(() => {
         completedRef.current = true;
+        doneAtRef.current = performance.now();
       }),
     [],
   );
+
+  // The page's one audio context follows the Sound of the tool on screen while the sheet is open. A
+  // launcher's press still counts as a gesture, so sound left on starts with the opening; after a deep
+  // link or Back it waits for the first press inside (the captures on the sheet).
+  useEffect(() => {
+    if (!open) return;
+    if (soundOn) sound.enable();
+    else sound.disable();
+  }, [open, soundOn]);
 
   // A modal keeps focus: if something outside takes it while the scene is open (another
   // dialog's focus return, the nav sheet's for one), it comes back to the title.
@@ -922,8 +889,8 @@ function Sheet({
     return () => sheet.removeEventListener("scroll", onScroll);
   }, []);
 
-  // The sheet scrolls by itself only around a session and after a tool switch from a link: smoothly,
-  // or at once under reduced motion.
+  // The sheet scrolls by itself only to return to the top (a session's start and end, a change of tool):
+  // smoothly, or at once under reduced motion.
   const scrollSheet = useCallback(
     (top: number) => {
       const sheet = uiRef.current;
@@ -934,37 +901,38 @@ function Sheet({
     [reducedMotion],
   );
 
-  // A session's start brings its stage into view; its end settles the returning tabs (stageScroll,
-  // tabsScroll). Measured a frame after the commit, once the tool's controls have changed. For the session,
-  // the prompt keeps the height it starts with: phones reserve no lines for it (tools.css), so a line that
-  // empties (the lead-in) would otherwise lift a docked dock off the screen's bottom edge once scrolled.
+  // A session's start and its end both bring the sheet back to the top: the session view is the stage and
+  // its controls, and a result is read from its first line. After a session that ended by itself (not
+  // Stop), the tabs, the fine print and the sign-off stay away for SETTLE_MS from that end, so the ending
+  // has the screen to itself; data-settling carries that (experience.css). A layout effect, so the tabs
+  // never show for a frame between the two attributes.
   const sessionWasRef = useRef(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const was = sessionWasRef.current;
     sessionWasRef.current = sessionActive;
-    if (was === sessionActive || (phaseRef.current !== "opening" && phaseRef.current !== "open")) return;
-    const raf = requestAnimationFrame(() => {
-      const sheet = uiRef.current;
-      const bar = zoneRef.current;
-      if (!sheet || !bar) return;
-      const prompt = sheet.querySelector<HTMLElement>(".nv-minute-panel .nv-minute-prompt");
-      if (prompt) prompt.style.minHeight = sessionActive ? `${prompt.offsetHeight}px` : "";
-      const view = { top: bar.getBoundingClientRect().bottom, bottom: sheet.getBoundingClientRect().top + sheet.clientHeight };
-      const to = sessionActive ? stageScroll(sheet, view) : tabsScroll(sheet, view);
-      if (to !== null) scrollSheet(to);
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [sessionActive, scrollSheet]);
+    const sheet = uiRef.current;
+    if (!sheet || was === sessionActive || (phaseRef.current !== "opening" && phaseRef.current !== "open")) return;
+    scrollSheet(0);
+    if (sessionActive) {
+      sheet.removeAttribute("data-settling");
+      return;
+    }
+    const wait = doneAtRef.current ? SETTLE_MS - (performance.now() - doneAtRef.current) : 0;
+    doneAtRef.current = 0;
+    if (wait <= 0) return;
+    sheet.setAttribute("data-settling", "");
+    later(wait, () => sheet.removeAttribute("data-settling"));
+  }, [sessionActive, scrollSheet, later]);
 
-  // A new tool gets a fresh stage: its tone, a full ring and the orb at rest. Before the scene is
-  // open (a launcher that names another tool), the tone simply starts as the tool's.
+  // A new tool gets a fresh stage: its tone, the bare ring and the orb at rest, from the top of the
+  // sheet. Before the scene is open (a launcher that names another tool), the tone simply starts as
+  // the tool's.
   useEffect(() => {
-    savePrefs({ tool });
     const instant = phaseRef.current !== "open";
     toneTo(TOOL_TONE[tool], instant);
     if (instant) return;
-    ring.refill(1, 600);
-    motes.setMoving(false);
+    if (!sessionRef.current) scrollSheet(0);
+    ring.refill(0, 600);
     if (!reducedMotion) spring(v.scale, REST_SCALE, 0.6, 0);
     spring(v.lift, 0, 0.6, 0);
     tween(v.textRecede, 1, 0.3);
@@ -972,7 +940,7 @@ function Sheet({
     tween(v.glow, 1, 0.3);
     tween(v.fieldDim, 0, 0.4);
     tween(v.breath, 0.12, 0.4);
-  }, [tool, toneTo, ring, motes, reducedMotion, v]);
+  }, [tool, toneTo, ring, reducedMotion, scrollSheet, v]);
 
   useEffect(() => {
     const onResize = () => {
@@ -1033,7 +1001,10 @@ function Sheet({
     return {
       orb: {
         setScale(x) {
-          if (live() && !reducedMotion) v.scale.set(x);
+          if (!live() || reducedMotion) return;
+          // A frame's own value wins over a spring still easing the orb toward rest.
+          settle(v.scale);
+          v.scale.set(x);
         },
         spring(x, o) {
           if (live() && !reducedMotion) spring(v.scale, x, o?.visualDuration ?? 0.5, o?.bounce ?? 0);
@@ -1061,10 +1032,13 @@ function Sheet({
         flash() {
           if (live()) tween(tones[toneRef.current], [TONE_LIGHT, 0.9, TONE_LIGHT], 0.26, "easeOut", { times: [0, 0.3, 1] });
         },
+        ripple() {
+          if (live() && !reducedMotion) ripple(1);
+        },
       },
       ring: {
-        setRemaining(f) {
-          if (live()) ring.setRemaining(f);
+        setRemaining(f, glideMs) {
+          if (live()) ring.setRemaining(f, glideMs);
         },
         refill(f, ms) {
           if (live()) ring.refill(f, ms);
@@ -1077,9 +1051,6 @@ function Sheet({
         setDim(x) {
           if (live()) tween(v.fieldDim, clamp01(x), reducedMotion ? 0.4 : 1.4, CALM);
         },
-        setMotes(on) {
-          motes.setMoving(on && live());
-        },
         brighten() {
           if (!live()) return;
           tween(v.fieldDim, 0, 0.6, CALM);
@@ -1087,15 +1058,12 @@ function Sheet({
         },
       },
       sound: {
-        enabled: prefs.sound,
+        enabled: soundOn,
         chime(kind) {
           if (live()) sound.chime(kind);
         },
         tick() {
           if (live()) sound.tick();
-        },
-        cue(kind) {
-          if (live() && (prefs.sound || prefs.eyesChime)) sound.cue(kind);
         },
       },
       haptics: {
@@ -1108,22 +1076,22 @@ function Sheet({
       announce(text, o) {
         if (live()) announce(text, o);
       },
-      setSessionActive(active) {
+      setSessionActive(active, o) {
+        setBack(active ? (o?.onBack ?? null) : null);
         setActiveTool(active ? tool : null);
       },
       reducedMotion,
       coarse,
       compactHeight,
-      prefs: { ...prefs, tool },
+      prefs,
       setPrefs,
       switchTool(id) {
         if (!TOOL_ENABLED[id] || sessionRef.current) return;
         onToolChange(id);
-        // The link that asked leaves with its panel: focus goes to the new tool's tab, never the page,
-        // and the sheet scrolls up to it.
+        // The link that asked leaves with its panel: focus goes to the new tool's tab, never the page
+        // (the sheet returns to the top with the new tool).
         requestAnimationFrame(() => {
           uiRef.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
-          scrollSheet(0);
         });
       },
       close() {
@@ -1134,14 +1102,15 @@ function Sheet({
     announce,
     coarse,
     compactHeight,
-    motes,
     onToolChange,
     prefs,
     reducedMotion,
     requestClose,
     ring,
-    scrollSheet,
+    ripple,
+    setBack,
     setPrefs,
+    soundOn,
     tones,
     tool,
     toneTo,
@@ -1153,45 +1122,44 @@ function Sheet({
     armedRef.current = on;
   }, []);
 
-  const toggleSound = useCallback(() => {
-    const on = !prefs.sound;
-    if (on) sound.enable();
-    else {
-      sound.disable();
-      // The Eyes chime still sounds with Sound off: this press keeps its context running.
-      if (prefs.eyesChime && tool === "eyes") sound.prime();
-    }
-    setPrefs({ sound: on });
-  }, [prefs.sound, prefs.eyesChime, tool, setPrefs]);
-  const toggleVibration = useCallback(() => {
-    const on = !prefs.vibration;
-    if (on) vibrate("tap");
-    setPrefs({ vibration: on });
-  }, [prefs.vibration, setPrefs]);
-
-  // Toggle buttons: a constant name with aria-pressed; the icon shows the state (a11y-13). Rendered in
-  // the top bar from 640px and under the dock on phones (experience.css shows one of the two).
-  const toggles = useMemo(
-    () => (
-      <>
-        <button type="button" aria-pressed={prefs.sound} className="nv-minute-toggle" onClick={toggleSound}>
-          {prefs.sound ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
-          Sound
-        </button>
-        {vibrationOk ? (
-          <button type="button" aria-pressed={prefs.vibration} className="nv-minute-toggle" onClick={toggleVibration}>
-            {prefs.vibration ? <Vibrate aria-hidden /> : <VibrateOff aria-hidden />}
-            Vibration
-          </button>
-        ) : null}
-      </>
-    ),
-    [prefs.sound, prefs.vibration, toggleSound, toggleVibration, vibrationOk],
+  // The resting orb gives under a press and comes back on release. Once a session has the orb, its own
+  // scale is the only one.
+  const pressOrb = useCallback(
+    (down: boolean) => {
+      if (reducedMotion || sessionRef.current || (phaseRef.current !== "opening" && phaseRef.current !== "open")) return;
+      spring(v.scale, REST_SCALE * (down ? PRESS_SCALE : 1), down ? 0.09 : 0.18, 0);
+    },
+    [reducedMotion, v],
   );
 
+  // Sound, switched on: the "in" chime plays at once, and for a few seconds a line by the control says
+  // where to look if nothing was heard. Never a sound or a buzz while a pulse is being counted; the
+  // control itself still switches.
+  const toggleSound = useCallback(() => {
+    const on = !soundOn;
+    const counting = tool === "pulse" && sessionRef.current;
+    window.clearTimeout(hintTimerRef.current);
+    if (on) {
+      if (counting) sound.enable();
+      else sound.preview();
+      setSoundHint(true);
+      hintTimerRef.current = window.setTimeout(() => setSoundHint(false), SOUND_HINT_MS);
+      announce(SOUND_HINT, { force: true });
+    } else {
+      sound.disable();
+      setSoundHint(false);
+    }
+    setPrefs({ toolSound: { ...prefs.toolSound, [tool]: on } });
+  }, [announce, prefs.toolSound, setPrefs, soundOn, tool]);
+  const toggleVibration = useCallback(() => {
+    const on = !prefs.vibration;
+    if (on && !(tool === "pulse" && sessionRef.current)) vibrate("tap");
+    setPrefs({ vibration: on });
+  }, [prefs.vibration, setPrefs, tool]);
+
   const shell = useMemo<Shell>(
-    () => ({ textHost, compactHeight, phone, dockAlways, session: sessionActive, toggles, setArmed }),
-    [textHost, compactHeight, phone, dockAlways, sessionActive, toggles, setArmed],
+    () => ({ textHost, compactHeight, phone, setArmed, pressOrb }),
+    [textHost, compactHeight, phone, setArmed, pressOrb],
   );
 
   const {
@@ -1236,47 +1204,53 @@ function Sheet({
     [bloomStyle],
   );
 
-  // Sound left on last time starts with the first press inside (a touch grants it at the click). The
-  // Eyes chime primes the context from the same presses, so the Start tap lets it sound with Sound off.
-  const wake = () => {
-    sound.wake();
-    if (prefs.eyesChime && tool === "eyes") sound.prime();
-  };
-
   return (
     <div ref={attachRoot} className="nv-minute-root">
       <div ref={dimBind} aria-hidden className="nv-minute-dim" />
       <div ref={surfaceBind} className="nv-minute-surface">
         <div ref={attachBloom} aria-hidden className="nv-minute-bloom" />
-        <div ref={fieldRef} className="nv-minute-fieldbox">
-          <Field binds={fieldBinds} attachCanvas={motes.attach} />
+        <div className="nv-minute-fieldbox">
+          <Field binds={fieldBinds} />
         </div>
         <div
           ref={uiRef}
           className="theme-pine nv-minute-sheet"
           data-session={sessionActive ? "" : undefined}
-          onPointerDownCapture={wake}
-          onClickCapture={wake}
-          onKeyDownCapture={wake}
+          onPointerDownCapture={wakeSound}
+          onClickCapture={wakeSound}
+          onKeyDownCapture={wakeSound}
         >
           <div ref={zoneRef} data-nv-in="top" className="nv-minute-top">
             <span aria-hidden className="nv-minute-handle" />
+            {/* One sticky row: the title (first in the markup, as the dialog's heading), then Sound and
+                Vibration, then Close. Icon buttons on phones, labelled from 640px (experience.css). */}
             <div className="nv-minute-bar">
-              <div className="nv-minute-toggles nv-minute-toggles-bar">{toggles}</div>
-              {/* Phones, during a session: the one Sound toggle, as an icon left of Close. */}
-              <button type="button" aria-pressed={prefs.sound} className="nv-minute-sound" onClick={toggleSound}>
-                {prefs.sound ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
-                <span className="sr-only">Sound</span>
-              </button>
+              <Dialog.Title ref={titleRef} tabIndex={-1} data-nv-in="title" className="nv-minute-title">
+                Take a minute.
+              </Dialog.Title>
+              {/* Toggle buttons: a constant name with aria-pressed; the icon shows the state. */}
+              <div className="nv-minute-toggles">
+                <button type="button" aria-pressed={soundOn} className="nv-minute-toggle" onClick={toggleSound}>
+                  {soundOn ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
+                  <span className="nv-minute-toggle-name">Sound</span>
+                </button>
+                {vibrationOk ? (
+                  <button type="button" aria-pressed={prefs.vibration} className="nv-minute-toggle" onClick={toggleVibration}>
+                    {prefs.vibration ? <Vibrate aria-hidden /> : <VibrateOff aria-hidden />}
+                    <span className="nv-minute-toggle-name">Vibration</span>
+                  </button>
+                ) : null}
+              </div>
               <Dialog.Close aria-label="Close" className="nv-minute-close">
                 <X aria-hidden />
               </Dialog.Close>
             </div>
+            {/* The live region says it once; this is its visible twin, beside the control. */}
+            <p aria-hidden className="nv-minute-hint" data-on={soundHint ? "" : undefined}>
+              {SOUND_HINT}
+            </p>
           </div>
           <div className="nv-minute-col">
-            <Dialog.Title ref={titleRef} tabIndex={-1} data-nv-in="title" className="nv-minute-title">
-              Take a minute.
-            </Dialog.Title>
             <Dialog.Description className="sr-only">{DESCRIPTION}</Dialog.Description>
             <ShellContext.Provider value={shell}>
               <Tabs.Root
@@ -1288,19 +1262,19 @@ function Sheet({
               >
                 <div data-nv-in="tabs" className="nv-minute-tabsbox">
                   <Tabs.List aria-label="Timers" className="nv-minute-tabs" inert={sessionActive}>
-                    {/* Name over duration; screen readers hear the spoken name alone (TOOL_SPOKEN). */}
+                    {/* Names only. Each tab's accessible name starts with that name and adds the length
+                        (TOOL_SPOKEN); the panel takes its own name from the tab. */}
                     {ENABLED_TOOLS.map((id) => (
-                      <Tabs.Tab key={id} value={id} className="nv-minute-tab">
-                        <span aria-hidden className="nv-minute-tab-name">
-                          {TOOL_LABEL[id]}
-                        </span>
-                        <span aria-hidden className="nv-minute-tab-time">
-                          {TOOL_DURATION[id]}
-                        </span>
-                        <span className="sr-only">{TOOL_SPOKEN[id]}</span>
+                      <Tabs.Tab
+                        key={id}
+                        value={id}
+                        aria-label={TOOL_SPOKEN[id]}
+                        data-gap={id === FIRST_READING ? "" : undefined}
+                        className="nv-minute-tab"
+                      >
+                        {TOOL_LABEL[id]}
                       </Tabs.Tab>
                     ))}
-                    <Tabs.Indicator aria-hidden className="nv-minute-tab-pill" />
                   </Tabs.List>
                 </div>
                 <Stage
@@ -1346,6 +1320,7 @@ export function Experience({
   const actionsRef = useRef<Dialog.Root.Actions | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const styleRef = useRef<CloseStyle>({ kind: "orb" });
+  const backRef = useRef<(() => boolean) | null>(null);
   const [generation, setGeneration] = useState(0);
 
   const openRef = useRef(open);
@@ -1354,7 +1329,8 @@ export function Experience({
   });
 
   // ✕, Esc, Done and swipe close at once and step back over our history entry; Back closes from
-  // popstate. Every close goes through Base UI's onOpenChange below.
+  // popstate, unless a session that can pause takes it first. Every close goes through Base UI's
+  // onOpenChange below.
   const requestClose = useCallback((style: CloseStyle) => {
     styleRef.current = style;
     actionsRef.current?.close();
@@ -1363,13 +1339,20 @@ export function Experience({
   useEffect(() => {
     if (!open) return;
     const onPop = () => {
-      if (openRef.current && !isMinuteEntry()) actionsRef.current?.close();
+      if (!openRef.current || isMinuteEntry()) return;
+      // A stray Back gesture mid-session pauses it rather than throwing it away: the entry Back just
+      // consumed goes back on, and the next Back closes.
+      if (backRef.current?.()) pushMinuteEntry();
+      else actionsRef.current?.close();
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [open]);
 
   const closeStyle = useCallback(() => styleRef.current, []);
+  const setBack = useCallback((ask: (() => boolean) | null) => {
+    backRef.current = ask;
+  }, []);
   const onHandoff = useCallback(
     (completed: boolean) => {
       styleRef.current = { kind: "orb" };
@@ -1415,6 +1398,7 @@ export function Experience({
             closeStyle={closeStyle}
             onHandoff={onHandoff}
             generation={generation}
+            setBack={setBack}
           />
         </Dialog.Popup>
       </Dialog.Portal>

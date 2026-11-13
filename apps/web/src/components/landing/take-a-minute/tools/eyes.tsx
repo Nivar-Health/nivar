@@ -10,20 +10,21 @@ import {
   OrbNum,
   OrbWord,
   PromptLine,
-  SafetyLine,
-  SwitchRow,
   TimeLeft,
   ToolControls,
+  safetySlots,
   useToolSession,
   type MainAction,
+  type SideAction,
 } from "./parts";
 
-/* Eyes (spec §3.12, §5.6): a 20-second look-away, the one screen that asks you not to watch it. While
-   it runs the orb recedes and the field dims; at the end the field always brightens, and a chime (the
-   switch, off by default, or Sound) or a vibration says it's time to look back. The switch shows before
-   a break and after one, since Again starts the next break at once. */
+/* Eyes: a 20-second look-away, the one screen that asks you not to watch it. While it runs the orb
+   recedes and the field dims; at the end the field always brightens, and a chime (the top bar's Sound,
+   on by default for this tool) or a vibration says it's time to look back. Nothing paces it, so the
+   clock ticks on a timer. Back pauses it first rather than closing the sheet. */
 
 const LENGTH_MS = 20_000;
+const TICK_MS = 250;
 const DIM = 0.6;
 
 export function Eyes({ api, Layout }: ToolProps) {
@@ -34,11 +35,13 @@ export function Eyes({ api, Layout }: ToolProps) {
     api,
     tone: TOOL_TONE.eyes,
     pauseWhenHidden: true,
+    tick: TICK_MS,
+    backPauses: true,
     onDone(a) {
       a.orb.recede(false);
       a.field.setDim(0);
       a.field.brighten();
-      a.sound.cue("look-back");
+      if (a.sound.enabled) a.sound.chime("look-back");
       if (a.haptics.enabled) a.haptics.buzz("done");
       a.announce(EYES.announceDone, { force: true });
     },
@@ -75,19 +78,12 @@ export function Eyes({ api, Layout }: ToolProps) {
     primary.current?.focus();
   };
 
-  const chime = (
-    <SwitchRow checked={api.prefs.eyesChime} onChange={(on) => api.setPrefs({ eyesChime: on })}>
-      {EYES.chime}
-    </SwitchRow>
-  );
-
   let orb = null;
   let readout;
   let prompt;
-  let options = null;
   let main: MainAction;
-  let onStop: (() => void) | undefined;
-  let onDone: (() => void) | undefined;
+  let beside: SideAction | undefined;
+  let under: SideAction | undefined;
   if (phase === "idle") {
     orb = (
       <>
@@ -96,19 +92,18 @@ export function Eyes({ api, Layout }: ToolProps) {
       </>
     );
     readout = <p className="nv-tool-sub nv-tool-sub-wide">{EYES.idleBody}</p>;
-    options = chime;
     main = { label: EYES.start, run: start };
   } else if (phase === "done") {
     readout = <p className="nv-tool-lead">{EYES.done}</p>;
-    options = chime;
-    main = { label: COMMON.again, run: start };
-    onDone = api.close;
+    main = { label: COMMON.done, run: api.close };
+    under = { label: COMMON.again, run: start };
   } else {
     if (phase === "leadin") orb = <LeadInOrb left={s.leadInLeft} />;
     else if (phase === "paused") orb = <OrbWord>{COMMON.paused}</OrbWord>;
     readout = <TimeLeft seconds={s.secondsLeft} of={EYES.left} />;
     // "Look away now" only once the 20 seconds run. Both lines keep their place, so nothing moves.
-    const line = phase === "leadin" ? EYES.leadIn : s.pausedByVisibility ? COMMON.away : EYES.running;
+    const line =
+      phase === "leadin" ? EYES.leadIn : s.pausedByBack ? COMMON.backPaused : s.pausedByVisibility ? COMMON.away : EYES.running;
     prompt = (
       <>
         <PromptLine strong swapKey={line}>
@@ -117,8 +112,8 @@ export function Eyes({ api, Layout }: ToolProps) {
         <PromptLine swapKey="leadin">{phase === "leadin" ? COMMON.leadInLine : null}</PromptLine>
       </>
     );
-    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause };
-    onStop = stop;
+    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause, quiet: phase !== "paused" };
+    beside = { label: COMMON.stop, run: stop };
   }
 
   return (
@@ -126,10 +121,11 @@ export function Eyes({ api, Layout }: ToolProps) {
       orb={<span className="nv-tool-orb">{orb}</span>}
       readout={<div className="nv-tool-readout">{readout}</div>}
       prompt={prompt}
-      options={options}
-      always={<SafetyLine text={EYES.always} />}
-      controls={<ToolControls main={main} mainRef={primary} onStop={onStop} onDone={onDone} />}
+      {...safetySlots(EYES.always, phase === "idle" || phase === "done" ? { line: EYES.always } : {})}
+      controls={<ToolControls main={main} mainRef={primary} beside={beside} under={under} />}
+      dock={phase === "done" ? "flow" : "sticky"}
       fine={<FineLines lines={EYES.fine} />}
+      fineTitle={COMMON.sources}
     />
   );
 }

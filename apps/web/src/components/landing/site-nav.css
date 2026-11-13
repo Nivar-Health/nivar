@@ -1,7 +1,8 @@
 /* Site nav (site-nav.tsx, bottom-bar.tsx): the floating pill, its scroll-spy bar, the menu sheet on phones and
    tablets, and the phone bar. Which of them shows is CSS on <html>'s chrome signals (chrome-signals.ts):
-   data-nv-zone (hero · mid · form; absent reads as hero), data-nv-cta, data-nv-typing, and
-   data-nv-chrome, which turns the transitions on two frames after the first report.
+   data-nv-zone (hero · mid · form; absent reads as hero), data-nv-cta, data-nv-typing, data-nv-dir (a
+   phone held sideways only), and data-nv-chrome, which turns the transitions on two frames after the
+   first report.
    In a layer, so Tailwind classes on the same elements (buttonClass, focus-ring) still win. */
 @layer components {
   /* ---- The bar ---- */
@@ -132,23 +133,43 @@
     transition: opacity 160ms var(--curve-standard);
   }
 
-  /* ---- Menu button ---- */
+  /* ---- The pill's right-hand group: Log in (from 640px), the action, the menu button (below 1024px).
+     Laid out here rather than with utilities, because phones re-seat it as a grid (below). ---- */
+  .nv-nav-end {
+    display: flex;
+    align-items: center;
+    justify-self: end;
+    gap: 0.5rem;
+  }
+
+  /* ---- Menu button: the word beside the bar's own glyph, 48px tall, so this and the bar's Menu tab
+     read as one control. The sheet's Close is its twin, in the same place. ---- */
   .nv-nav-menu {
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
+    gap: 0.5rem;
+    min-width: 3rem;
+    height: 3rem;
+    padding-inline: 0.8125rem;
     border-radius: 9999px;
+    font-size: 0.9375rem;
+    font-weight: 600;
     color: var(--foreground);
+    -webkit-tap-highlight-color: transparent;
     transition:
       transform 180ms var(--curve-standard),
       background-color 180ms var(--curve-standard);
   }
+  /* The word's outer side gets the breathing room a glyph does not need. */
+  .nv-nav-menu > span {
+    padding-inline-start: 0.1875rem;
+  }
   .nv-nav-menu svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    flex: none;
+    width: 1.375rem;
+    height: 1.375rem;
   }
   @media (hover: hover) and (pointer: fine) {
     .nv-nav-menu:hover {
@@ -194,7 +215,7 @@
     background: var(--background);
     color: var(--foreground);
     outline: none;
-    transition: transform 420ms var(--curve-calm);
+    transition: transform 340ms var(--curve-calm);
   }
   .nv-nav-sheet[data-starting-style],
   .nv-nav-sheet[data-ending-style] {
@@ -287,25 +308,92 @@
     }
   }
 
-  /* The actions sit in an aqua dock at the bottom, in thumb reach. */
+  /* A setting under the places: one quiet row for the page's Pause animations (motion-toggle.tsx). */
+  .nv-nav-quiet {
+    padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+  }
+  .nv-nav-quiet:empty {
+    display: none;
+  }
+  @media (min-width: 40rem) {
+    .nv-nav-quiet {
+      padding-inline: max(1.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-right));
+    }
+  }
+  .nv-nav-pause {
+    min-height: 3rem;
+    padding-inline: 1rem;
+    border-radius: 1rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--foreground-2);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 180ms var(--curve-standard),
+      background-color 180ms var(--curve-standard);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nv-nav-pause:hover {
+      background-color: var(--aqua);
+    }
+  }
+
+  /* The actions sit in an aqua dock under the rows, in thumb reach: the callback first, then Take a
+     minute and Log in side by side, then the emergency line. It never sticks: on a screen too short for
+     the rows and the dock together the sheet scrolls, every row shows first, and the dock's cut edge
+     says there is more. */
   .nv-nav-dock {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
     margin: auto var(--nv-nav-gr) 0.75rem var(--nv-nav-gl);
-    padding: 1rem;
+    padding: 0.75rem;
     border-radius: 1.75rem;
     background: var(--aqua);
+  }
+  .nv-nav-dock > * {
+    grid-column: 1 / -1;
+  }
+  .nv-nav-dock > .nv-nav-dock-half {
+    grid-column: auto;
   }
   /* The emergency line, and on phones a second Close beside it, under the thumb that tapped Menu. */
   .nv-nav-dock-end {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    min-height: 3rem;
   }
-  .nv-nav-dock-end > p {
+  .nv-nav-sos {
     flex: 1;
     min-width: 0;
+    padding-inline: 0.25rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--foreground-2);
+    text-wrap: pretty;
+  }
+  /* 112 and 108 dial. Each target is 44px or more: it reaches up into the gap above the line and down
+     over the next one, further on its outer side than towards the other number, so 8px stays free
+     between the two and nothing of the buttons above is covered. */
+  .nv-nav-tel {
+    position: relative;
+    border-radius: 0.125rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration-line: underline;
+    text-underline-offset: 2px;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 180ms var(--curve-standard);
+  }
+  .nv-nav-tel::before {
+    content: "";
+    position: absolute;
+    inset: -0.625rem -0.5rem -1rem -1.25rem;
+  }
+  .nv-nav-tel ~ .nv-nav-tel::before {
+    inset-inline: -0.5rem -0.875rem;
   }
   .nv-nav-close {
     display: none;
@@ -313,7 +401,7 @@
 
   /* Phones: the rows and the dock sit low, in thumb reach. The nav is the sheet's flex item (its list is
      in block flow inside it), and the dock's own auto margin would otherwise share the free space. A
-     screen too short for them scrolls the sheet as before. */
+     screen too short for them scrolls the sheet. */
   @media (width < 40rem) {
     /* Keyboard focus scrolls a row clear of the sticky head (0.75rem + 4rem + 0.25rem), landscape too. */
     .nv-nav-sheet {
@@ -346,26 +434,21 @@
       height: 1.25rem;
     }
   }
-  /* Short phones: rows at §2.3's 48px minimum, and the actions stay in thumb reach while the rows scroll beneath them. */
+  /* Short phones: rows at §2.3's 48px minimum and the gaps between the groups closed up, so the seven
+     rows, the pause and the whole dock show without a scroll from 664px of height (a 390×844 phone in
+     Safari, a 360×800 one in Chrome, each with its bars showing). */
   @media (width < 40rem) and (max-height: 47.5rem) {
+    .nv-nav-sheet-head {
+      padding-bottom: 0;
+    }
+    .nv-nav-rows {
+      padding-block: 0;
+    }
     .nv-nav-row {
       min-height: 3rem;
     }
     .nv-nav-dock {
-      gap: 0.5rem;
-      padding-block: 0.75rem;
-    }
-  }
-  @media (width < 40rem) and (min-height: 30rem) {
-    .nv-nav-dock {
-      position: sticky;
-      bottom: 0.75rem;
-      z-index: 1;
-    }
-    /* Keyboard focus scrolls a row clear of the sticky dock (WCAG 2.4.11): its height with Log in, plus
-       its 0.75rem offset. Without Log in the rows simply stop a little higher. */
-    .nv-nav-sheet {
-      scroll-padding-bottom: 16rem;
+      margin-block: 0.25rem 0.5rem;
     }
   }
 
@@ -373,7 +456,8 @@
   .nv-nav-logo:active,
   .nv-nav-link:active,
   .nv-nav-menu:active,
-  .nv-nav-row:active {
+  .nv-nav-row:active,
+  .nv-nav-pause:active {
     background-color: var(--aqua);
     transform: scale(0.98);
     transition-duration: 90ms;
@@ -382,8 +466,12 @@
     transform: scale(0.97);
   }
   .nv-nav-row[aria-current]:active,
-  .nv-nav-close:active {
+  .nv-nav-close:active,
+  .nv-nav-tel:active {
     background-color: var(--aqua-2);
+  }
+  .nv-nav-tel:active {
+    transition-duration: 90ms;
   }
   .nv-nav-close:active {
     scale: 0.97;
@@ -406,7 +494,8 @@
     }
   }
 
-  /* Opening: the panel slides in, then its rows settle a beat later. */
+  /* Opening: the panel slides in and its rows settle close behind, 20ms apart. The dock has no --i, so
+     the callback arrives with the first row and everything is at rest inside half a second. */
   @keyframes nv-nav-in {
     from {
       opacity: 0;
@@ -414,12 +503,26 @@
     }
   }
   .nv-nav-sheet[data-open] .nv-nav-stagger {
-    animation: nv-nav-in 480ms var(--curve-calm) backwards;
-    animation-delay: calc(90ms + var(--i, 0) * 30ms);
+    animation: nv-nav-in 340ms var(--curve-calm) backwards;
+    animation-delay: calc(60ms + var(--i, 0) * 20ms);
   }
 
   /* ---- Phones: the pill rises away mid-page and while a keyboard is up; the bar takes over ---- */
   @media (width < 40rem) {
+    /* The pill's own action keeps its box when hidden (nothing in the pill moves), which leaves no room
+       beside it for the word "Menu". So the menu button lies over that box, right-aligned: the whole
+       word and glyph while the action is hidden, its 48px glyph alone, clear of it, while it shows. */
+    .nv-nav-end {
+      display: grid;
+      grid-template-columns: auto 3rem;
+    }
+    .nv-nav-end > .nv-nav-cta {
+      grid-area: 1 / 1;
+    }
+    .nv-nav-end > .nv-nav-menu {
+      grid-area: 1 / 1 / auto / -1;
+      justify-self: end;
+    }
     html:is([data-nv-zone="mid"], [data-nv-typing]) .nv-nav {
       visibility: hidden;
       opacity: 0;
@@ -456,6 +559,50 @@
         translate 280ms var(--curve-calm) 40ms,
         opacity 280ms var(--curve-calm) 40ms,
         visibility 0s;
+    }
+  }
+
+  /* ---- A phone held sideways (640px or wider, 520px or shorter): there is no bar here, and a fixed pill
+     would hold a fifth of the screen for the whole page. So it leaves on the way down and returns on the
+     first move up (data-nv-dir, chrome-signals.ts); never at the top of the page, and never while a
+     keyboard user is in it. The menu's rows drop to 44px, so more of them show at once. ---- */
+  @media (width >= 40rem) and (max-height: 32.5rem) {
+    html[data-nv-dir="down"]:is([data-nv-zone="mid"], [data-nv-zone="form"]) .nv-nav {
+      visibility: hidden;
+      opacity: 0;
+      translate: 0 calc(-100% - 1rem - env(safe-area-inset-top, 0px));
+    }
+    html[data-nv-dir="down"]:is([data-nv-zone="mid"], [data-nv-zone="form"]) .nv-nav .nv-nav-bar {
+      pointer-events: none;
+    }
+    html .nv-nav:has(:focus-visible) {
+      visibility: visible;
+      opacity: 1;
+      translate: none;
+    }
+    html .nv-nav:has(:focus-visible) .nv-nav-bar {
+      pointer-events: auto;
+    }
+    html[data-nv-chrome] .nv-nav {
+      transition:
+        translate 280ms var(--curve-calm),
+        opacity 280ms var(--curve-calm),
+        visibility 0s;
+    }
+    html[data-nv-chrome][data-nv-dir="down"]:is([data-nv-zone="mid"], [data-nv-zone="form"]) .nv-nav {
+      transition:
+        translate 240ms var(--curve-exit),
+        opacity 200ms var(--curve-exit),
+        visibility 0s linear 240ms;
+    }
+    html[data-nv-chrome] .nv-nav:has(:focus-visible) {
+      transition:
+        translate 280ms var(--curve-calm),
+        opacity 280ms var(--curve-calm),
+        visibility 0s;
+    }
+    .nv-nav-row {
+      min-height: 2.75rem;
     }
   }
 
@@ -532,7 +679,7 @@
     .nv-tabbar-list > li {
       display: grid;
     }
-    /* The whole cell is the target. No inline padding, so "Health tips" fits at 320; the bottom padding
+    /* The whole cell is the target. No inline padding, so "Your nurse" fits at 320; the bottom padding
        keeps the indicator clear of a label that wraps. */
     .nv-tabbar-cell {
       position: relative;
@@ -592,7 +739,7 @@
     .nv-tabbar-cell[data-on] [data-kind="menu"] > svg {
       stroke-width: 2.25;
     }
-    /* The mark crossfades between tabs; it never slides (it could jump 1 → 5 across the key). */
+    /* The mark crossfades between tabs; it never slides (its path would cross the key). */
     .nv-tabbar-ind {
       position: absolute;
       bottom: 4px;
@@ -760,18 +907,34 @@ html[data-nv-chrome] .nv-nav-cta:active {
   transition-duration: 90ms, 90ms, 90ms, 90ms, 90ms, 160ms, 0s;
 }
 /* Phones: only while the hero's own button is below the fold (a hidden child would show through a
-   hidden pill, so not while typing either), or while a keyboard user is on it. */
+   hidden pill, so not while typing either), or while a keyboard user is on it. The menu button is
+   then its glyph alone: the word and the action cannot share the pill. */
 @media (width < 40rem) {
+  /* 14px sides, so the wordmark keeps its place beside the box down to 360px. */
   .nv-nav-cta {
     --nv-cta-hold: 160ms;
     visibility: hidden;
     opacity: 0;
+    padding-inline: 0.875rem;
   }
   html[data-nv-zone="hero"][data-nv-cta="below"]:not([data-nv-typing]) .nv-nav-cta,
   .nv-nav-cta:focus-visible {
     --nv-cta-hold: 0s;
     visibility: visible;
     opacity: 1;
+  }
+  html[data-nv-zone="hero"][data-nv-cta="below"]:not([data-nv-typing]) .nv-nav-end > .nv-nav-menu > span,
+  .nv-nav-cta:focus-visible + .nv-nav-menu > span {
+    display: none;
+  }
+  /* The word comes back once the action has faded from under it. */
+  html[data-nv-chrome] .nv-nav-end > .nv-nav-menu > span {
+    transition: opacity 160ms var(--curve-calm) 120ms;
+  }
+  @starting-style {
+    html[data-nv-chrome] .nv-nav-end > .nv-nav-menu > span {
+      opacity: 0;
+    }
   }
 }
 /* Before the first report (no JS yet, or none): a short screen starts with the hero's button below the
@@ -781,12 +944,26 @@ html[data-nv-chrome] .nv-nav-cta:active {
     visibility: visible;
     opacity: 1;
   }
+  html:not([data-nv-cta]) .nv-nav-end > .nv-nav-menu > span {
+    display: none;
+  }
 }
-/* Every width: at the form and the footer the form's submit is the action. */
-html[data-nv-zone="form"] .nv-nav-cta:not(:focus-visible) {
-  --nv-cta-hold: 160ms;
-  visibility: hidden;
-  opacity: 0;
+/* From 640px, at the form and the footer: the form's submit is the page's one marigold there, so the
+   pill's action turns into a quiet outline. It stays, so the pill keeps its balance and its way back
+   to the form. */
+@media (width >= 40rem) {
+  html[data-nv-zone="form"] .nv-nav-cta {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+  html[data-nv-zone="form"] .nv-nav-cta:active {
+    background-color: var(--aqua);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    html[data-nv-zone="form"] .nv-nav-cta:hover {
+      background-color: var(--aqua);
+    }
+  }
 }
 
 /* Reduced motion: the bar jumps between links, presses only tint, and the sheet simply appears. The
@@ -796,7 +973,8 @@ html[data-nv-zone="form"] .nv-nav-cta:not(:focus-visible) {
   .nv-nav-logo:active,
   .nv-nav-link:active,
   .nv-nav-menu:active,
-  .nv-nav-row:active {
+  .nv-nav-row:active,
+  .nv-nav-pause:active {
     transform: none;
   }
   html[data-nv-chrome] :is(.nv-tabbar, .nv-nav) {
@@ -831,10 +1009,23 @@ html[data-nv-zone="form"] .nv-nav-cta:not(:focus-visible) {
     scale: none;
   }
 }
+/* A phone held sideways: the pill fades in at once on the way up, and out before it hides on the way down. */
+@media (prefers-reduced-motion: reduce) and (width >= 40rem) and (max-height: 32.5rem) {
+  html[data-nv-chrome] .nv-nav {
+    transition:
+      opacity 160ms linear,
+      visibility 0s !important;
+  }
+  html[data-nv-chrome][data-nv-dir="down"]:is([data-nv-zone="mid"], [data-nv-zone="form"]) .nv-nav {
+    transition:
+      opacity 160ms linear,
+      visibility 0s linear 160ms !important;
+  }
+}
 html[data-motion="paused"] .nv-nav-ind {
   transition: none;
 }
-html[data-motion="paused"] :is(.nv-nav-logo, .nv-nav-link, .nv-nav-menu, .nv-nav-row):active {
+html[data-motion="paused"] :is(.nv-nav-logo, .nv-nav-link, .nv-nav-menu, .nv-nav-row, .nv-nav-pause):active {
   transform: none;
 }
 /* The visitor's own pause: the chrome fades without travelling, and presses only tint. */

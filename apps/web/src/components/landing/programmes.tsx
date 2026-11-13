@@ -1,4 +1,6 @@
+import { FileText } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
+import { SITE } from "@/lib/site-facts";
 import type { Package } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Disclosure } from "./disclosure";
@@ -6,15 +8,18 @@ import { ProgrammeGlyph, programmeStyle } from "./programme-glyphs";
 import { inr, revealProps } from "./primitives";
 import { CareCta } from "./whatsapp";
 
-/** Plain names for the tests a programme includes: the chips on the cards, from 640px. */
-const TEST_NAMES: Record<string, string> = {
+/**
+ * The page's plain names for the catalogue's codes: the chips on the cards and the single checks' rows.
+ * One name per reading and device, the same as the nurse's bag and the readings panel use.
+ */
+const CHECK_NAMES: Record<string, string> = {
   BP: "Blood pressure",
   ECG: "Smart ECG",
   SUGAR: "Blood sugar",
   HR: "Heart rate",
-  SPO2: "Oxygen",
-  STETH: "Stethoscope",
-  CONSULT: "Doctor consult",
+  SPO2: "Blood oxygen",
+  STETH: "Digital stethoscope",
+  CONSULT: "Doctor's video call",
 };
 
 /** Short words for the phone row's contents line. */
@@ -27,21 +32,28 @@ const SHORT: Record<string, string> = {
   STETH: "stethoscope",
 };
 
-const word = (names: Record<string, string>, code: string) => (Object.hasOwn(names, code) ? names[code] : code);
+const word = (names: Record<string, string>, code: string, fallback = code) =>
+  Object.hasOwn(names, code) ? names[code] : fallback;
+
+/** The page's name for a catalogue code. A code it does not know keeps the catalogue's own name. */
+export const checkName = (code: string, catalogueName: string) => word(CHECK_NAMES, code, catalogueName);
 
 /**
  * What a package includes, from its catalogue codes in their order: "BP, ECG, stethoscope, heart rate +
- * doctor consult". The consult is never counted as a check; an unknown code shows as itself.
- * Lines break only between items: "heart rate" and "+ doctor consult" each wrap as one piece (no-break
- * spaces), so no line ends on "heart" or "+".
+ * doctor's video call". The call is never counted as a check; an unknown code shows as itself.
+ * Lines break only between items, or before "video call" on the narrowest phones: "heart rate" wraps as
+ * one piece and "+" stays with "doctor's" (no-break spaces), so no line ends on "heart" or "+".
  */
 export function packageContents(codes: readonly string[]): string {
   const checks = codes.filter((c) => c !== "CONSULT").map((c) => word(SHORT, c).replaceAll(" ", "\u00a0"));
   const consult = codes.includes("CONSULT");
-  if (checks.length === 0) return consult ? "Doctor consult" : "";
+  if (checks.length === 0) return consult ? CHECK_NAMES.CONSULT : "";
   const list = checks.join(", ");
-  return `${list.charAt(0).toUpperCase()}${list.slice(1)}${consult ? " +\u00a0doctor\u00a0consult" : ""}`;
+  return `${list.charAt(0).toUpperCase()}${list.slice(1)}${consult ? " +\u00a0doctor's video\u00a0call" : ""}`;
 }
+
+/** When and how a check-up's report arrives, from the site's facts: the last line of an open phone row. */
+const REPORT_LINE = `Doctor's written report ${SITE.report.channel}, ${SITE.report.checkup}.`;
 
 /** "Most booked" stays off until the team confirms it from real bookings (spec §3.6). */
 const SHOW_POPULAR_BADGE: boolean = false;
@@ -56,9 +68,10 @@ const LG_COLS: Record<number, string> = {
 
 /**
  * The check-up packages and, last, `after` (the single checks' row). Below 640px one ruled group, each
- * package a closed row that already shows its price and what it includes; from 640px cards in a grid
- * (spec U6). Catalogue-driven, so admin edits and deactivations show up here; `packages` arrives sorted
- * by sortOrder. One price per check-up; no reference ("usual") price is shown.
+ * package a closed row that already shows its price and what it includes, and opens to what happens,
+ * when the report arrives and the way to ask for it; from 640px cards in a grid (spec U6).
+ * Catalogue-driven, so admin edits and deactivations show up here; `packages` arrives sorted by
+ * sortOrder. One price per check-up; no reference ("usual") price is shown.
  */
 export function Programmes({ packages, after }: { packages: Package[]; after?: ReactNode }) {
   if (packages.length === 0 && !after) return null;
@@ -98,17 +111,31 @@ function PackageRow({ pkg: p }: { pkg: Package }) {
         bodyClassName="nv-chk-body"
       >
         <p className="nv-chk-tagline">{p.tagline}</p>
+        {/* Phones only: the closed row already listed the checks, so the open one says what happens and
+            what arrives afterwards. The cards from 640px show the checks as chips instead. */}
+        <p className="nv-chk-about sm:hidden">{p.description}</p>
+        <p className="nv-chk-report sm:hidden">
+          <FileText aria-hidden strokeWidth={2} />
+          {REPORT_LINE}
+        </p>
         <ul aria-label={`Included in ${p.name}`} className="nv-chk-tests flex flex-wrap gap-1.5 max-sm:hidden">
           {p.serviceCodes.map((c) => (
             <li
               key={c}
-              className="rounded-full bg-white/75 px-2.5 py-[3px] text-[0.8125rem] leading-[1.125rem] font-medium text-ink-2"
+              className="rounded-full bg-white/75 px-2.5 py-[3px] text-[0.875rem] leading-[1.25rem] font-medium text-ink-2"
             >
-              {word(TEST_NAMES, c)}
+              {word(CHECK_NAMES, c)}
             </li>
           ))}
         </ul>
-        <CareCta name={p.name} ask={`the ${p.name} package`} from={p.price} priceLabel={price} className="nv-chk-cta" />
+        {/* A full-width 48px button on phones, where it is the row's one control. */}
+        <CareCta
+          name={p.name}
+          ask={`the ${p.name} package`}
+          from={p.price}
+          priceLabel={price}
+          className="nv-chk-cta max-sm:h-12 max-sm:w-full"
+        />
       </Disclosure>
     </li>
   );
@@ -130,7 +157,7 @@ function PackageHead({ pkg: p, price }: { pkg: Package; price: string }) {
         </h3>
         <p className="nv-chk-price">
           {SHOW_POPULAR_BADGE && p.popular && (
-            <span className="rounded-full bg-white px-3 py-1 text-[0.8125rem] font-semibold text-primary">
+            <span className="rounded-full bg-white px-3 py-1 text-[0.875rem] font-semibold text-primary">
               Most booked
             </span>
           )}

@@ -1,5 +1,6 @@
 import type { Viewport } from "next";
 import type { ReactNode } from "react";
+import { SiteRoot } from "@/components/landing/chrome-signals";
 import { SiteFooter } from "@/components/landing/closing";
 import { DisclosureHash } from "@/components/landing/disclosure-hash";
 import { RevealObserver } from "@/components/landing/reveal";
@@ -18,6 +19,8 @@ export const viewport: Viewport = {
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <div data-landing className="flex min-h-dvh flex-1 flex-col bg-background">
+      {/* First, so <html> is marked as the site before anything paints. */}
+      <SiteRoot />
       {/* Appears just under the nav pill (h-16, capped at 1220px) and lines up with its left edge, so it covers none of the nav's targets. */}
       <a
         href="#main"

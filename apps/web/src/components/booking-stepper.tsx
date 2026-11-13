@@ -80,6 +80,25 @@ function buildSteps(booking: Pick<Booking, "status" | "timeline" | "createdAt">)
   });
 }
 
+/** Each step's state in a word, for people who cannot see the tick, the ring or the colour. */
+const STATE_WORD: Record<StepState, string> = {
+  done: "Done",
+  current: "Now",
+  upcoming: "Next",
+  cancelled: "Cancelled",
+};
+
+/** True when a note only says the step's name again ("Nurse is on the way" under "Nurse on the way"). */
+function repeatsLabel(note: string, label: string): boolean {
+  const plain = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/\b(is|the)\b/g, " ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  return plain(note) === plain(label);
+}
+
 function StepNode({ step, size }: { step: StepView; size: "sm" | "md" }) {
   const Icon = step.icon;
   const dims = size === "sm" ? "size-7" : "size-8";
@@ -119,17 +138,24 @@ function StepNode({ step, size }: { step: StepView; size: "sm" | "md" }) {
  * Journey of a booking from "Booked" to "Done", with timestamps from the
  * timeline. Horizontal when its container is wide (>= 36rem), vertical
  * otherwise; force either with `orientation`.
+ *
+ * `audience="patient"` shows what happened and when, in larger type: it leaves out who made each
+ * change (often an operations name the patient has never met) and any note that only repeats the
+ * step's name.
  */
 export function BookingStepper({
   booking,
   orientation = "auto",
+  audience = "staff",
   className,
 }: {
   booking: Pick<Booking, "status" | "timeline" | "createdAt">;
   orientation?: "auto" | "horizontal" | "vertical";
+  audience?: "staff" | "patient";
   className?: string;
 }) {
   const steps = buildSteps(booking);
+  const forPatient = audience === "patient";
   const showHorizontal = orientation !== "vertical";
   const showVertical = orientation !== "horizontal";
 
@@ -181,6 +207,7 @@ export function BookingStepper({
                     step.state === "cancelled" && "text-destructive",
                   )}
                 >
+                  <span className="sr-only">{STATE_WORD[step.state]}: </span>
                   {step.label}
                 </span>
                 <span
@@ -203,6 +230,8 @@ export function BookingStepper({
           {steps.map((step, idx) => {
             const last = idx === steps.length - 1;
             const nextReached = !last && steps[idx + 1].state !== "upcoming";
+            const note = forPatient && step.note && repeatsLabel(step.note, step.longLabel) ? undefined : step.note;
+            const by = forPatient || step.state === "upcoming" ? undefined : step.by;
             return (
               <li
                 key={step.key}
@@ -229,19 +258,20 @@ export function BookingStepper({
                         step.state === "cancelled" && "text-destructive",
                       )}
                     >
+                      <span className="sr-only">{STATE_WORD[step.state]}: </span>
                       {step.longLabel}
                     </span>
                     {step.at && (
-                      <span className="tabular text-xs text-muted-foreground">
+                      <span className={cn("tabular text-muted-foreground", forPatient ? "text-sm" : "text-xs")}>
                         {formatDateTime(step.at)}
                       </span>
                     )}
                   </div>
-                  {(step.note || (step.by && step.state !== "upcoming")) && (
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                      {step.note}
-                      {step.note && step.by ? " · " : ""}
-                      {step.by ? `by ${step.by}` : ""}
+                  {(note || by) && (
+                    <p className={cn("mt-0.5 leading-relaxed text-muted-foreground", forPatient ? "text-sm" : "text-xs")}>
+                      {note}
+                      {note && by ? " · " : ""}
+                      {by ? `by ${by}` : ""}
                     </p>
                   )}
                 </div>

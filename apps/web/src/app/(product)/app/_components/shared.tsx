@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import Link from "next/link";
 import {
   Activity,
+  ChevronRight,
   CircleAlert,
+  CircleHelp,
   Droplet,
   Gauge,
   HeartPulse,
+  MessageCircle,
+  Phone,
+  PhoneIncoming,
   RefreshCw,
   Stethoscope,
   Video,
@@ -15,7 +21,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage } from "@/lib/api";
-import { initials } from "@/lib/format";
+import { checksLabel, deviceOnIndiaTime, initials, testName } from "@/lib/format";
+import { SITE } from "@/lib/site-facts";
 import type { Booking, Catalog, Service, ServiceCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -79,23 +86,59 @@ export function serviceMap(catalog: Catalog | null): Partial<Record<ServiceCode,
   return map;
 }
 
-/** "BP, ECG, Sugar" from service codes, using short names when the catalog is loaded. */
-export function testsLabel(codes: ServiceCode[], catalog: Catalog | null, max = 4): string {
-  const map = serviceMap(catalog);
-  const names = codes.map((c) => map[c]?.shortName ?? c);
-  if (names.length <= max) return names.join(", ");
-  return `${names.slice(0, max).join(", ")} +${names.length - max} more`;
+/**
+ * What a booking covers, in the plain names of lib/format.ts: "Blood pressure, blood sugar +
+ * doctor's video call" while the checks fit on a line or two, otherwise the count ("6 checks +
+ * doctor's video call"). The video call is never counted as a check.
+ */
+export function testsLabel(codes: readonly ServiceCode[], max = 3): string {
+  const checks = codes.filter((c) => c !== "CONSULT");
+  if (checks.length === 0 || checks.length > max) return checksLabel(codes);
+  const list = checks.map((c, i) => (i === 0 ? testName(c) : lowerFirst(testName(c)))).join(", ");
+  return codes.includes("CONSULT") ? `${list} + doctor's video call` : list;
 }
 
-/** Package name for a booking, if it was booked as a package. */
+/** "Heart tracing (ECG)" -> "heart tracing (ECG)": only the first letter, so abbreviations keep their capitals. */
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
+/**
+ * Keeps a hyphenated word such as "check-up" on one line, so a narrow phone never shows "check-"
+ * and "up" on two lines. For headings and titles. It returns several nodes: inside a flex row,
+ * wrap it in one element so the words stay one item.
+ */
+export function Unbroken({ children }: { children: string }) {
+  const parts = children.split(/(\S+-\S+)/);
+  if (parts.length === 1) return children;
+  return parts.map((part, i) =>
+    i % 2 ? (
+      <span key={i} className="whitespace-nowrap">
+        {part}
+      </span>
+    ) : (
+      <Fragment key={i}>{part}</Fragment>
+    ),
+  );
+}
+
+/**
+ * The booking page with a past booking's check-up chosen again: `?package=` (the package id) and
+ * `?services=` (every test of the visit, comma-separated). The wizard reads both and drops the tests
+ * the package already covers, so the format lives here and in book-wizard.tsx only.
+ */
+export function bookAgainHref(booking: Pick<Booking, "packageId" | "serviceCodes">): string {
+  const params = new URLSearchParams();
+  if (booking.packageId) params.set("package", booking.packageId);
+  if (booking.serviceCodes.length) params.set("services", booking.serviceCodes.join(","));
+  return params.size ? `/app/book?${params}` : "/app/book";
+}
+
+/** What a booking is called: its package's name, the plain name of a single test, or the number of tests. */
 export function bookingTitle(booking: Pick<Booking, "packageId" | "serviceCodes">, catalog: Catalog | null): string {
   const pkg = booking.packageId ? catalog?.packages.find((p) => p.id === booking.packageId) : null;
   if (pkg) return pkg.name;
   const n = booking.serviceCodes.length;
-  if (n === 1) {
-    const s = serviceMap(catalog)[booking.serviceCodes[0]];
-    return s?.name ?? "Home check-up";
-  }
+  if (n === 0) return "Home check-up";
+  if (n === 1) return testName(booking.serviceCodes[0]);
   return `${n} tests at home`;
 }
 
@@ -190,7 +233,7 @@ export function PersonAvatar({
   className,
 }: {
   name: string | null | undefined;
-  /** ink: black on white text (nurses). outline: white with a 1px border (doctors). muted: grey. */
+  /** ink: white initials on the brand colour (nurses). outline: white with a 1px border (doctors). muted: grey. */
   tone?: "ink" | "outline" | "muted";
   size?: "xs" | "sm" | "md" | "lg";
   className?: string;
@@ -204,7 +247,7 @@ export function PersonAvatar({
         size === "sm" && "size-9 text-xs",
         size === "md" && "size-12 text-sm",
         size === "lg" && "size-14 text-base",
-        tone === "ink" && "bg-foreground text-background",
+        tone === "ink" && "bg-primary text-primary-foreground",
         tone === "outline" && "border border-border bg-card text-foreground",
         tone === "muted" && "bg-muted text-foreground",
         className,
@@ -215,18 +258,45 @@ export function PersonAvatar({
   );
 }
 
-/** Friendly inline error with a retry button. */
+/**
+ * Friendly inline error with a retry button. `compact` is one row for a part of a screen that
+ * failed while the rest loaded.
+ */
 export function ErrorState({
   title = "Something went wrong",
   message,
   onRetry,
+  compact = false,
   className,
 }: {
   title?: string;
   message?: string | null;
   onRetry?: () => void;
+  compact?: boolean;
   className?: string;
 }) {
+  const retry = onRetry && (
+    <Button variant="outline" onClick={onRetry} className="h-11 shrink-0 rounded-full px-4 text-sm font-semibold">
+      <RefreshCw aria-hidden /> Try again
+    </Button>
+  );
+  if (compact) {
+    return (
+      <div
+        role="alert"
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-2xl border border-dashed border-border bg-card px-4 py-3.5",
+          className,
+        )}
+      >
+        <p className="flex min-w-0 flex-1 basis-40 items-start gap-2.5 text-small text-foreground">
+          <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+          <span>{title}</span>
+        </p>
+        {retry}
+      </div>
+    );
+  }
   return (
     <div
       role="alert"
@@ -235,18 +305,14 @@ export function ErrorState({
         className,
       )}
     >
-      <span className="grid size-11 place-items-center rounded-full border border-border bg-card text-danger">
+      <span className="grid size-11 place-items-center rounded-full border border-border bg-card text-destructive">
         <CircleAlert className="size-5" aria-hidden />
       </span>
       <div className="space-y-1">
-        <p className="font-medium">{title}</p>
-        {message && <p className="max-w-sm text-sm text-muted-foreground">{message}</p>}
+        <p className="font-semibold">{title}</p>
+        {message && <p className="max-w-sm text-small text-muted-foreground">{message}</p>}
       </div>
-      {onRetry && (
-        <Button variant="outline" size="lg" onClick={onRetry} className="mt-1 rounded-full px-4">
-          <RefreshCw /> Try again
-        </Button>
-      )}
+      {retry && <div className="mt-1">{retry}</div>}
     </div>
   );
 }
@@ -254,19 +320,28 @@ export function ErrorState({
 export function SectionTitle({
   children,
   action,
+  id,
   className,
 }: {
   children: ReactNode;
   action?: ReactNode;
+  /** Put on the heading, for a section's `aria-labelledby`. */
+  id?: string;
   className?: string;
 }) {
   return (
     <div className={cn("mb-3 flex items-end justify-between gap-3", className)}>
-      <h2 className="text-[15px] font-semibold tracking-tight">{children}</h2>
+      <h2 id={id} className="text-base font-semibold tracking-tight">
+        {children}
+      </h2>
       {action}
     </div>
   );
 }
+
+/** A quiet link beside a section title ("See all"), with a tap area a thumb can hit. */
+export const sectionLinkClass =
+  "relative shrink-0 rounded-sm text-sm font-semibold text-primary underline-offset-4 before:absolute before:-inset-x-3 before:-inset-y-3.5 hover:underline focus-ring";
 
 /** Rounded white surface used across the patient app. */
 export function Surface({ className, children, ...props }: React.ComponentProps<"div">) {
@@ -274,6 +349,108 @@ export function Surface({ className, children, ...props }: React.ComponentProps<
     <div className={cn("rounded-2xl border border-border bg-card shadow-soft", className)} {...props}>
       {children}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Times, help and the emergency line
+// ---------------------------------------------------------------------------
+
+const subscribeToNothing = () => () => {};
+
+/**
+ * Visit dates and times are India's (lib/format.ts). This says so, and only on a device set to
+ * another time zone: someone booking for a parent from abroad.
+ */
+export function IndiaTimeNote({ className }: { className?: string }) {
+  const elsewhere = useSyncExternalStore(
+    subscribeToNothing,
+    () => !deviceOnIndiaTime(),
+    () => false,
+  );
+  if (!elsewhere) return null;
+  return <p className={cn("text-sm text-muted-foreground", className)}>Times are India time (IST).</p>;
+}
+
+/** 112 and 108 as phone links. Each tap area grows away from the other number, so the two never touch. */
+const EMERGENCY_NUMBER =
+  "relative rounded-sm font-semibold text-foreground underline underline-offset-2 focus-ring before:absolute before:-inset-y-3.5";
+const EMERGENCY_REACH: Record<string, string> = {
+  "112": "before:-left-5 before:-right-2",
+  "108": "before:-left-2 before:-right-5",
+};
+
+/** The emergency guidance from SITE, word for word, with its numbers as `tel:` links. */
+export function EmergencyLine({ short = false, className }: { short?: boolean; className?: string }) {
+  const text = short ? SITE.emergency.short : SITE.emergency.full;
+  return (
+    <p className={cn("text-small text-foreground-2", className)}>
+      {text.split(/(112|108)/).map((part, i) =>
+        part in EMERGENCY_REACH ? (
+          <a key={i} href={`tel:${part}`} className={cn(EMERGENCY_NUMBER, EMERGENCY_REACH[part])}>
+            {part}
+          </a>
+        ) : (
+          <Fragment key={i}>{part}</Fragment>
+        ),
+      )}
+    </p>
+  );
+}
+
+const HELP_ROW =
+  "flex min-h-16 items-center gap-3.5 px-4 py-3 transition-colors outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset";
+
+function HelpRow({ icon: Icon, title, note }: { icon: LucideIcon; title: string; note?: ReactNode }) {
+  return (
+    <>
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary">
+        <Icon className="size-[18px]" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-small font-semibold text-foreground">{title}</span>
+        {note && <span className="block text-sm text-muted-foreground">{note}</span>}
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+    </>
+  );
+}
+
+/**
+ * The ways to reach Nivar that exist today, all from SITE: a call and WhatsApp appear by themselves
+ * once site-facts.ts has a number; until then the callback form on the public site is the way in.
+ * `about` goes into the WhatsApp message ("my booking NV-1048").
+ */
+export function HelpCard({ about, className }: { about?: string; className?: string }) {
+  const whatsapp = SITE.whatsapp
+    ? `https://wa.me/${SITE.whatsapp.number}?text=${encodeURIComponent(
+        about ? `Hi Nivar, I need help with ${about}.` : "Hi Nivar, I need help with my booking.",
+      )}`
+    : null;
+  return (
+    <Surface className={cn("divide-y divide-border overflow-hidden", className)}>
+      {SITE.phone && (
+        <a href={`tel:${SITE.phone.tel}`} className={HELP_ROW}>
+          <HelpRow icon={Phone} title={`Call us on ${SITE.phone.display}`} note={SITE.hours.short} />
+        </a>
+      )}
+      {whatsapp && (
+        <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={HELP_ROW}>
+          <HelpRow icon={MessageCircle} title="Message us on WhatsApp" note="Opens WhatsApp" />
+        </a>
+      )}
+      <Link href="/#callback" className={HELP_ROW}>
+        <HelpRow
+          icon={PhoneIncoming}
+          title="Request a callback"
+          note={`${SITE.firstCall.whoCapital} calls back within ${SITE.callbackWithin}, ${SITE.hours.short}.`}
+        />
+      </Link>
+      <Link href="/#faq" className={HELP_ROW}>
+        <HelpRow icon={CircleHelp} title="Questions" note="Answers to common questions, on our website." />
+      </Link>
+      <EmergencyLine className="bg-muted/40 px-4 py-3.5" />
+    </Surface>
   );
 }
 
@@ -323,6 +500,6 @@ export const GENDER_LABEL: Record<string, string> = {
 export const METHOD_LABEL: Record<string, string> = {
   upi: "UPI",
   card: "Card",
-  netbanking: "Netbanking",
+  netbanking: "Net banking",
   cash: "Cash",
 };

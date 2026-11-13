@@ -100,9 +100,9 @@ html[data-motion="paused"] .nv-hero-link:active {
 
 /* Sample cards around the photo (hero.tsx). Each loop carries .motion-loop, so reduced motion and
    the visitor's own pause stop it on the rest pose written here (globals.css). Transform and
-   opacity only. */
+   opacity only. Neither loop runs for ever: after about half a minute the first screen is still. */
 .nv-hero-float {
-  animation: nv-hero-float var(--t, 8s) var(--curve-breath) var(--fd, 0s) infinite;
+  animation: nv-hero-float var(--t, 8s) var(--curve-breath) var(--fd, 0s) 4;
 }
 @keyframes nv-hero-float {
   0%,
@@ -114,12 +114,14 @@ html[data-motion="paused"] .nv-hero-link:active {
   }
 }
 
-/* Heartbeat ripples behind the arch: each ring swells and fades; at rest they hold still at
-   their own size. */
+/* Heartbeat ripples behind the arch: each ring swells and fades, six times; then it fades in once more
+   at its own size and holds still (the second animation starts as the last beat ends, at opacity 0). */
 .nv-hero-ripple {
   opacity: 0.32;
   transform: scale(var(--rest, 1.06));
-  animation: nv-hero-ripple 5.4s var(--curve-calm) var(--d, 0s) infinite backwards;
+  animation:
+    nv-hero-ripple 5.4s var(--curve-calm) var(--d, 0s) 6 backwards,
+    nv-hero-ripple-rest 1.6s var(--curve-calm) calc(var(--d, 0s) + 32.4s);
 }
 @keyframes nv-hero-ripple {
   0% {
@@ -132,6 +134,11 @@ html[data-motion="paused"] .nv-hero-link:active {
   100% {
     opacity: 0;
     transform: scale(1.32);
+  }
+}
+@keyframes nv-hero-ripple-rest {
+  from {
+    opacity: 0;
   }
 }
 

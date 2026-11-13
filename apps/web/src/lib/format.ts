@@ -1,12 +1,8 @@
-import {
-  differenceInCalendarDays,
-  format,
-  formatDistanceToNowStrict,
-  isValid,
-  parseISO,
-} from "date-fns";
+import { formatDistanceToNowStrict, isValid, parseISO } from "date-fns";
 import {
   Activity,
+  ArrowDown,
+  ArrowUp,
   BadgeCheck,
   CircleCheck,
   CircleX,
@@ -15,11 +11,13 @@ import {
   FilePenLine,
   House,
   Navigation,
+  TrendingUp,
   UserRoundCheck,
   Video,
   type LucideIcon,
 } from "lucide-react";
-import type { BookingStatus, SugarType } from "@/lib/types";
+import type { BookingStatus, ServiceCode, SugarType } from "@/lib/types";
+import { addDays, todayIST } from "@/server/time";
 
 // ---------------------------------------------------------------------------
 // Money
@@ -55,40 +53,109 @@ export function formatINRCompact(amount: number | null | undefined): string {
 
 // ---------------------------------------------------------------------------
 // Dates
+//
+// Every visit happens in India, so every date and time reads in India time (UTC+05:30, no daylight
+// saving) whatever the device's own zone: a son booking from London sees the same "Today, 9:00 AM"
+// as the nurse at the door.
 // ---------------------------------------------------------------------------
 
 type DateInput = string | number | Date | null | undefined;
 
+const IST_OFFSET_MS = 330 * 60_000;
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 function toDate(input: DateInput): Date | null {
   if (input === null || input === undefined || input === "") return null;
-  const d = input instanceof Date ? input : typeof input === "number" ? new Date(input) : parseISO(input);
+  const d =
+    input instanceof Date
+      ? input
+      : typeof input === "number"
+        ? new Date(input)
+        : // A date with no time is that calendar day in India.
+          DATE_ONLY.test(input)
+          ? new Date(`${input}T00:00:00+05:30`)
+          : parseISO(input);
   return isValid(d) ? d : null;
+}
+
+/** The calendar and clock fields of an instant, as read in India. */
+function india(d: Date) {
+  const s = new Date(d.getTime() + IST_OFFSET_MS);
+  const month = MONTHS[s.getUTCMonth()];
+  const weekday = WEEKDAYS[s.getUTCDay()];
+  return {
+    year: s.getUTCFullYear(),
+    month: month.slice(0, 3),
+    monthLong: month,
+    day: s.getUTCDate(),
+    weekday: weekday.slice(0, 3),
+    weekdayLong: weekday,
+    hour: s.getUTCHours(),
+    minute: s.getUTCMinutes(),
+  };
+}
+
+function clock(hour: number, minute: number): string {
+  return `${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
 }
 
 /** "Mon, 12 Oct" (adds the year when it is not the current year). */
 export function formatDate(input: DateInput): string {
   const d = toDate(input);
   if (!d) return "";
-  return format(d, d.getFullYear() === new Date().getFullYear() ? "EEE, d MMM" : "d MMM yyyy");
+  const f = india(d);
+  return f.year === india(new Date()).year ? `${f.weekday}, ${f.day} ${f.month}` : `${f.day} ${f.month} ${f.year}`;
 }
 
 /** "12 Oct 2026" */
 export function formatDateLong(input: DateInput): string {
   const d = toDate(input);
-  return d ? format(d, "d MMM yyyy") : "";
+  if (!d) return "";
+  const f = india(d);
+  return `${f.day} ${f.month} ${f.year}`;
+}
+
+/** "Monday, 12 October" */
+export function formatDayLong(input: DateInput): string {
+  const d = toDate(input);
+  if (!d) return "";
+  const f = india(d);
+  return `${f.weekdayLong}, ${f.day} ${f.monthLong}`;
+}
+
+/** The short weekday and the day of a date, for a date strip: { weekday: "Mon", day: "12 Oct" }. */
+export function formatDayParts(input: DateInput): { weekday: string; day: string } {
+  const d = toDate(input);
+  if (!d) return { weekday: "", day: "" };
+  const f = india(d);
+  return { weekday: f.weekday, day: `${f.day} ${f.month}` };
 }
 
 /** "9:42 AM" */
 export function formatTime(input: DateInput): string {
   const d = toDate(input);
-  return d ? format(d, "h:mm a") : "";
+  if (!d) return "";
+  const f = india(d);
+  return clock(f.hour, f.minute);
 }
 
-/** "12 Oct, 9:42 AM" */
+/** "12 Oct, 9:42 AM" (adds the year when it is not the current year). */
 export function formatDateTime(input: DateInput): string {
   const d = toDate(input);
   if (!d) return "";
-  return format(d, d.getFullYear() === new Date().getFullYear() ? "d MMM, h:mm a" : "d MMM yyyy, h:mm a");
+  const f = india(d);
+  const year = f.year === india(new Date()).year ? "" : ` ${f.year}`;
+  return `${f.day} ${f.month}${year}, ${clock(f.hour, f.minute)}`;
+}
+
+/** "12 Oct 2026, 9:42 AM": always with the year, for records such as the medical report. */
+export function formatDateTimeLong(input: DateInput): string {
+  const d = toDate(input);
+  if (!d) return "";
+  const f = india(d);
+  return `${f.day} ${f.month} ${f.year}, ${clock(f.hour, f.minute)}`;
 }
 
 /** "5 minutes ago", "in 2 hours". */
@@ -99,20 +166,26 @@ export function relative(input: DateInput): string {
   return formatDistanceToNowStrict(d, { addSuffix: true });
 }
 
-/** "Today", "Tomorrow", "Yesterday" or "Wed, 14 Oct" for a YYYY-MM-DD date. */
+/** "Today", "Tomorrow", "Yesterday" or "Wed, 14 Oct", by India's calendar. */
 export function dayLabel(input: DateInput): string {
   const d = toDate(input);
   if (!d) return "";
-  const diff = differenceInCalendarDays(d, new Date());
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Tomorrow";
-  if (diff === -1) return "Yesterday";
+  const day = todayIST(d);
+  const today = todayIST();
+  if (day === today) return "Today";
+  if (day === addDays(today, 1)) return "Tomorrow";
+  if (day === addDays(today, -1)) return "Yesterday";
   return formatDate(d);
 }
 
-/** Today's date as YYYY-MM-DD in local time. */
+/** Today's date in India as YYYY-MM-DD, the form `scheduledDate` uses. */
 export function todayISO(): string {
-  return format(new Date(), "yyyy-MM-dd");
+  return todayIST();
+}
+
+/** True when the device's own clock is on India time, so times need no "India time" note. */
+export function deviceOnIndiaTime(): boolean {
+  return new Date().getTimezoneOffset() === -330;
 }
 
 function parseHM(hm: string): { h: number; m: number } | null {
@@ -127,13 +200,23 @@ function hm12(h: number, m: number): { text: string; period: "AM" | "PM" } {
   return { text: `${hour}:${String(m).padStart(2, "0")}`, period };
 }
 
-/** "09:00-10:00" -> "9:00 - 10:00 AM"; "11:00-12:00" -> "11:00 AM - 12:00 PM". */
-/** Same-day visit where the nurse arrives within 60 minutes (API slot value). */
+/** Same-day visit by the next available nurse (API slot value). No arrival time is promised. */
 export const EXPRESS_SLOT = "express";
 
+/**
+ * How the same-day visit reads to patients. `title` and `note` name the choice while booking;
+ * `label` stands where a time slot would ("Today, Earliest available").
+ */
+export const EARLIEST_VISIT = {
+  title: "Earliest today",
+  note: "The next available nurse",
+  label: "Earliest available",
+} as const;
+
+/** "09:00-10:00" -> "9:00 - 10:00 AM"; "11:00-12:00" -> "11:00 AM - 12:00 PM". */
 export function slotLabel(slot: string | null | undefined): string {
   if (!slot) return "";
-  if (slot === EXPRESS_SLOT) return "Express, within 60 min";
+  if (slot === EXPRESS_SLOT) return EARLIEST_VISIT.label;
   const [startRaw, endRaw] = slot.split("-");
   const start = startRaw ? parseHM(startRaw) : null;
   const end = endRaw ? parseHM(endRaw) : null;
@@ -211,7 +294,7 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
   },
   confirmed: {
     patientLabel: "Confirmed",
-    patientDescription: "Booking confirmed. We are assigning your care team.",
+    patientDescription: "Booking confirmed. We are assigning your nurse and doctor.",
     staffLabel: "Needs assignment",
     icon: CircleCheck,
     badgeClass: "bg-background text-foreground ring-border",
@@ -255,7 +338,7 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
   },
   testing: {
     patientLabel: "Tests in progress",
-    patientDescription: "Your nurse is recording vitals. Readings appear here live.",
+    patientDescription: "Your nurse is taking your readings. They appear here as they are taken.",
     staffLabel: "Testing",
     icon: Activity,
     badgeClass: "bg-background text-foreground ring-border",
@@ -265,8 +348,8 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     live: true,
   },
   consult: {
-    patientLabel: "Doctor consult",
-    patientDescription: "Your doctor is ready. Join the video consult.",
+    patientLabel: "Doctor's video call",
+    patientDescription: "Your doctor is ready. Join the video call.",
     staffLabel: "In consult",
     icon: Video,
     badgeClass: "bg-background text-foreground ring-border",
@@ -323,7 +406,7 @@ export const BOOKING_STEPS: {
   { status: "en_route", label: "On the way", longLabel: "Nurse on the way", icon: Navigation },
   { status: "arrived", label: "Arrived", longLabel: "Nurse arrived", icon: House },
   { status: "testing", label: "Tests", longLabel: "Tests in progress", icon: Activity },
-  { status: "consult", label: "Consult", longLabel: "Video consult with doctor", icon: Video },
+  { status: "consult", label: "Consult", longLabel: "Video call with the doctor", icon: Video },
   { status: "reporting", label: "Report", longLabel: "Doctor preparing report", icon: FilePenLine },
   { status: "completed", label: "Done", longLabel: "Report ready", icon: FileHeart },
 ];
@@ -364,7 +447,7 @@ export const VITAL_INFO: Record<VitalKind, { label: string; unit: string; normal
   bp: { label: "Blood pressure", unit: "mmHg", normalRange: "Below 120/80" },
   sugar: { label: "Blood sugar", unit: "mg/dL", normalRange: "70-99 fasting, below 140 random" },
   heartRate: { label: "Heart rate", unit: "bpm", normalRange: "60-100" },
-  spo2: { label: "SpO2", unit: "%", normalRange: "95-100" },
+  spo2: { label: "Oxygen level (SpO2)", unit: "%", normalRange: "95-100" },
   temperature: { label: "Temperature", unit: "°F", normalRange: "97-99.5" },
 };
 
@@ -389,6 +472,13 @@ export const VITAL_LEVEL_META: Record<VitalLevel, { label: string; className: st
 export function vitalToneClass(a: VitalAssessment): string {
   if (a.label === "Elevated") return "bg-background text-saffron ring-saffron/35";
   return VITAL_LEVEL_META[a.level].className;
+}
+
+/** The shape that goes with a reading's word, so its status never rests on colour alone. */
+export function vitalShape(a: VitalAssessment): LucideIcon {
+  if (a.level === "normal") return CircleCheck;
+  if (a.level === "low") return ArrowDown;
+  return a.label === "Elevated" ? TrendingUp : ArrowUp;
 }
 
 export type BpValue = { systolic: number; diastolic: number };
@@ -447,4 +537,51 @@ export function vitalFlag(
   opts: { sugarType?: SugarType } = {},
 ): VitalLevel {
   return vitalAssessment(kind, value, opts).level;
+}
+
+// ---------------------------------------------------------------------------
+// Tests and prescriptions, in plain words
+// ---------------------------------------------------------------------------
+
+/** What each catalogue test is called for patients: the plain word first, the term in brackets. */
+export const TEST_NAME: Record<ServiceCode, string> = {
+  BP: "Blood pressure",
+  ECG: "Heart tracing (ECG)",
+  SUGAR: "Blood sugar",
+  HR: "Heart rate",
+  SPO2: "Oxygen level (SpO2)",
+  STETH: "Heart and lung sounds",
+  CONSULT: "Video call with the doctor",
+};
+
+/** The plain name of a test; a code this list does not know shows as itself. */
+export function testName(code: string): string {
+  return Object.hasOwn(TEST_NAME, code) ? TEST_NAME[code as ServiceCode] : code;
+}
+
+/**
+ * "4 checks + doctor's video call", "1 check", "Doctor's video call". The video call is never
+ * counted as a check, as on the public site.
+ */
+export function checksLabel(codes: readonly string[]): string {
+  const checks = codes.filter((c) => c !== "CONSULT").length;
+  const call = codes.includes("CONSULT");
+  if (checks === 0) return call ? "Doctor's video call" : "";
+  return `${checks} check${checks === 1 ? "" : "s"}${call ? " + doctor's video call" : ""}`;
+}
+
+/** The frequency codes the doctor's prescription editor stores, in its own plain words. */
+const FREQUENCY_WORDS: Record<string, string> = {
+  OD: "Once a day",
+  BD: "Twice a day",
+  TDS: "Three times a day",
+  HS: "At bedtime",
+  SOS: "When needed",
+};
+
+/** "BD" -> "Twice a day (BD)". Anything else the doctor wrote is shown as written. */
+export function frequencyInWords(frequency: string | null | undefined): string {
+  const raw = (frequency ?? "").trim();
+  const code = raw.toUpperCase();
+  return Object.hasOwn(FREQUENCY_WORDS, code) ? `${FREQUENCY_WORDS[code]} (${code})` : raw;
 }

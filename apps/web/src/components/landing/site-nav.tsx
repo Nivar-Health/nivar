@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { Menu, X } from "lucide-react";
+import { X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -16,12 +16,17 @@ import {
 import { Logo } from "@/components/brand/logo";
 import { bookingEnabled } from "@/lib/features";
 import { SITE } from "@/lib/site-facts";
+import { cn } from "@/lib/utils";
+import { MenuGlyph } from "./bar-icons";
 import { BottomBar, modified } from "./bottom-bar";
 import { useChromeSignals } from "./chrome-signals";
-import { focusLanding, keepRouterState, replaceHash } from "./page-history";
+import { MotionToggle } from "./motion-toggle";
+import { arrivedAt, focusLanding, hopTowards, keepRouterState, motionOff, replaceHash } from "./page-history";
 import { buttonClass } from "./primitives";
+import { TOOL_ENABLED, TOOL_LABEL, TOOL_ORDER } from "./take-a-minute/config";
 import { openTakeAMinute, prefetchTakeAMinute } from "./take-a-minute/open";
 import { Pearl } from "./take-a-minute/pearl";
+import { WhatsAppIcon, WhatsAppLink, whatsappHref } from "./whatsapp";
 import "./site-nav.css";
 
 type Item = { id: string; label: string };
@@ -31,18 +36,18 @@ const LINKS: readonly Item[] = [
   { id: "how-it-works", label: "How it works" },
   { id: "nurses", label: "Your nurse" },
   { id: "check-ups", label: "Check-ups" },
-  { id: "faq", label: "FAQ" },
+  { id: "faq", label: "Questions" },
 ];
 
-/** The sheet has room for every section a visitor looks for, so Compare and Health tips get their own rows. */
+/** The sheet has room for every section, in the page's own order and by the names their headings use. */
 const SHEET_LINKS: readonly Item[] = [
   { id: "services", label: "Services" },
   { id: "how-it-works", label: "How it works" },
   { id: "nurses", label: "Your nurse" },
-  { id: "compare", label: "Compare" },
+  { id: "compare", label: "How we compare" },
   { id: "check-ups", label: "Check-ups" },
+  { id: "faq", label: "Questions" },
   { id: "health-tips", label: "Health tips" },
-  { id: "faq", label: "FAQ" },
 ];
 
 /** The desktop link each section marks. Compare is the second half of "Your nurse"; the hero, Small habits and the form mark none. */
@@ -55,11 +60,13 @@ const LINK_FOR: Readonly<Record<string, string>> = {
   faq: "faq",
 };
 
+/** What "Take a minute" opens, for its accessible name: the tools that are on, by their current names. */
+const MINUTE_NAME = `Take a minute: ${TOOL_ORDER.filter((id) => TOOL_ENABLED[id])
+  .map((id) => TOOL_LABEL[id])
+  .join(", ")}`;
+
 /** Input that means the visitor has taken the scroll back. */
 const TAKEOVER = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
-
-/** A jump longer than this many screen heights arrives most of the way at once, then glides. */
-const LONG = 1.5;
 
 /**
  * Marks `id` and holds it while the page glides past the sections between. `onSettled` runs once, at
@@ -71,8 +78,9 @@ type Hold = (id: string, onSettled?: () => void, arrived?: () => boolean) => voi
 /**
  * The section crossing a thin band 40–45% down the screen, or null, and `jumpTo` for the bar and the
  * sheet. One IntersectionObserver over `main > section[id]`, collected again if main's children
- * change. An in-page link marks its section at once and holds it while the page glides past the ones
- * between, so the mark goes straight there.
+ * change. An in-page link marks its section at once and holds it while the page travels past the ones
+ * between, so the mark goes straight there; a long trip, whoever starts it, takes the short way
+ * (hopTowards, page-history.ts).
  */
 function useCurrentSection(): { current: string | null; jumpTo: (hash: `#${string}`) => boolean } {
   const [current, setCurrent] = useState<string | null>(null);
@@ -160,14 +168,19 @@ function useCurrentSection(): { current: string | null; jumpTo: (hash: `#${strin
     };
     holdRef.current = hold;
 
-    // Any other plain click on an in-page link: the logo, the desktop links, a card's call to action.
-    // The bar and the sheet jump themselves (preventDefault), so they are skipped here.
+    // Any other plain click on an in-page link: the logo, the desktop links, the hero's button, a card's
+    // call to action, the footer. The bar and the sheet jump themselves (preventDefault), so they are
+    // skipped here. The link stays the browser's: nothing is prevented, so its hash, its history entry
+    // and the position Back returns to are written as ever. One frame later, with that jump under way,
+    // a long one is cut short.
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || modified(e) || !(e.target instanceof Element)) return;
       const link = e.target.closest<HTMLAnchorElement>('a[href^="#"]');
       const target = link && link.hash.length > 1 ? document.getElementById(link.hash.slice(1)) : null;
-      const section = target?.closest<HTMLElement>("main > section[id]");
-      if (section && sections.includes(section)) hold(section.id);
+      if (!target) return;
+      const section = target.closest<HTMLElement>("main > section[id]");
+      if (section && sections.includes(section)) hold(section.id, undefined, () => arrivedAt(target));
+      requestAnimationFrame(() => hopTowards(target));
     };
     document.addEventListener("click", onClick);
 
@@ -187,31 +200,11 @@ function useCurrentSection(): { current: string | null; jumpTo: (hash: `#${strin
     const target = document.getElementById(hash.slice(1));
     if (!target) return false;
     const section = target.closest<HTMLElement>("main > section[id]");
-    const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
     const settled = () => focusLanding(target);
-    // Arrived: the target rests at its scroll margin, or the page can scroll no further towards it.
-    const arrived = () => {
-      const off = target.getBoundingClientRect().top - margin;
-      if (Math.abs(off) < 2) return true;
-      return off > 0
-        ? Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight
-        : scrollY <= 0;
-    };
-    if (section) holdRef.current(section.id, settled, arrived);
+    if (section) holdRef.current(section.id, settled, () => arrivedAt(target));
     replaceHash(hash);
-    const reduce =
-      matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.motion === "paused";
-    const top = target.getBoundingClientRect().top;
-    if (!reduce && Math.abs(top) > innerHeight * LONG) {
-      // A long trip: arrive most of the way at once, then glide the last 120px, so the page never
-      // streams every section, reveal and live trace past on a mid-range phone.
-      const y = scrollY + top - margin;
-      scrollTo({ top: top > 0 ? y - 120 : y + 120, behavior: "instant" });
-      requestAnimationFrame(() => target.scrollIntoView({ block: "start", behavior: "smooth" }));
-    } else {
-      // CSS scroll-behavior glides a short trip; reduced motion and the visitor's pause jump at once.
-      target.scrollIntoView(reduce ? { block: "start", behavior: "instant" } : { block: "start" });
-    }
+    // A short trip glides by CSS scroll-behavior; reduced motion and the visitor's pause jump at once.
+    if (!hopTowards(target)) target.scrollIntoView({ block: "start", behavior: motionOff() ? "instant" : "auto" });
     if (!section) requestAnimationFrame(settled);
     return true;
   }, []);
@@ -452,6 +445,7 @@ export function SiteNav() {
   };
 
   const desktopActive = current ? (LINK_FOR[current] ?? null) : null;
+  const wa = whatsappHref();
 
   return (
     <Dialog.Root
@@ -477,20 +471,23 @@ export function SiteNav() {
 
           <DesktopLinks active={desktopActive} />
 
-          <div className="flex items-center gap-2 justify-self-end">
+          <div className="nv-nav-end">
             {bookingEnabled && (
               <Link href="/login" className={buttonClass("ghost", "hidden hover:bg-aqua/70 sm:inline-flex", "sm")}>
                 Log in
               </Link>
             )}
-            {/* On phones it shows only while the hero's own button is below the fold; at the form and
-                the footer it fades at every width (site-nav.css). Its box always stays. */}
+            {/* On phones it shows only while the hero's own button is below the fold, and the menu button
+                beside it is then its glyph alone; from 640px it turns quiet at the form and the footer
+                (site-nav.css). Its box always stays. */}
             <a href="#callback" className={buttonClass("accent", "nv-nav-cta", "sm")}>
               Request a callback
             </a>
 
+            {/* The word and the bar's own glyph: this and the bar's Menu tab are one control in two places. */}
             <Dialog.Trigger ref={triggerRef} aria-label="Open menu" className="nv-nav-menu focus-ring lg:hidden">
-              <Menu aria-hidden />
+              <span>Menu</span>
+              <MenuGlyph />
             </Dialog.Trigger>
           </div>
         </div>
@@ -519,6 +516,7 @@ export function SiteNav() {
                 <Logo size="sm" />
               </a>
               <Dialog.Close ref={closeRef} aria-label="Close menu" className="nv-nav-menu focus-ring">
+                <span>Close</span>
                 <X aria-hidden />
               </Dialog.Close>
             </div>
@@ -550,29 +548,46 @@ export function SiteNav() {
             </ul>
           </nav>
 
-          <div className="nv-nav-dock nv-nav-stagger" style={{ "--i": SHEET_LINKS.length } as CSSProperties}>
+          {/* A setting, not a place: quieter than the rows. Empty (and gone) when the OS already asks for less motion. */}
+          <div className="nv-nav-quiet nv-nav-stagger" style={{ "--i": SHEET_LINKS.length } as CSSProperties}>
+            <MotionToggle className="nv-nav-pause" />
+          </div>
+
+          {/* The dock arrives with the first row: its callback is what most visitors opened the menu for. */}
+          <div className="nv-nav-dock nv-nav-stagger">
+            {wa && (
+              <WhatsAppLink href={wa} className={buttonClass("whatsapp", "h-14 text-[1.0625rem]", "lg")}>
+                <WhatsAppIcon className="size-5!" />
+                WhatsApp us
+              </WhatsAppLink>
+            )}
+            <a
+              href="#callback"
+              onClick={choose}
+              className={buttonClass(wa ? "secondary" : "accent", "h-14 text-[1.0625rem]", "lg")}
+            >
+              Request a callback
+            </a>
             <button
               type="button"
               aria-haspopup="dialog"
+              aria-label={MINUTE_NAME}
               onClick={takeAMinute}
               onPointerDown={prefetchQuietly}
               onFocus={prefetchQuietly}
-              className={buttonClass("secondary", "w-full", "lg")}
+              className={buttonClass("secondary", cn("px-2.5", bookingEnabled && "nv-nav-dock-half"))}
             >
               <Pearl size={20} />
               Take a minute
             </button>
-            <a href="#callback" onClick={choose} className={buttonClass("accent", "h-14 w-full text-[1.0625rem]", "lg")}>
-              Request a callback
-            </a>
             {bookingEnabled && (
-              <Link href="/login" onClick={logIn} className={buttonClass("ghost", "w-full hover:bg-white/60", "md")}>
+              <Link href="/login" onClick={logIn} className={buttonClass("secondary", "nv-nav-dock-half px-2.5")}>
                 Log in
               </Link>
             )}
             {/* On phones a second Close sits under the thumb, below where the bar's Menu tab is. */}
             <div className="nv-nav-dock-end">
-              <p className="px-1 text-small text-pretty text-ink-2">{SITE.emergency.short}</p>
+              <EmergencyLine />
               <Dialog.Close aria-label="Close menu" className="nv-nav-close focus-ring">
                 <X aria-hidden />
               </Dialog.Close>
@@ -584,6 +599,23 @@ export function SiteNav() {
       <BottomBar current={current} jumpTo={jumpTo} />
       <ChromeSignalsStore />
     </Dialog.Root>
+  );
+}
+
+/** The emergency sentence as site-facts.ts words it, with 112 and 108 as numbers a phone can dial. */
+function EmergencyLine() {
+  return (
+    <p className="nv-nav-sos">
+      {SITE.emergency.short.split(/\b(112|108)\b/).map((part, i) =>
+        i % 2 ? (
+          <a key={part} href={`tel:${part}`} className="nv-nav-tel focus-ring">
+            {part}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </p>
   );
 }
 

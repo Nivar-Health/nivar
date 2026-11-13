@@ -6,9 +6,9 @@ import { SingleChecks } from "./single-checks";
 import "./check-ups.css";
 
 /**
- * Check-ups, the second act (spec U6): the packages and the single checks in one list, then the live
- * readings panel. Nothing invites a booking in or after the panel, so the habits section that follows
- * sits more than a screen away from the last call to action.
+ * Check-ups, the second act (spec U6): the packages and the single checks in one list, then the readings
+ * panel, a demo of what the doctor sees. Nothing invites a booking in or after the panel: the questions
+ * come next, and the callback form after them.
  */
 export function CheckUps({ packages, services }: { packages: Package[]; services: Service[] }) {
   return (

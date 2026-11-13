@@ -5,9 +5,11 @@ import { cn } from "@/lib/utils";
 import { Disclosure } from "./disclosure";
 import {
   ALL_SOURCES,
+  CONTENT_REVIEW,
   EMERGENCY_NOTE,
   FASTING_WARNING,
   HEALTH_TIPS,
+  SOURCES_NOTE,
   VISIT_CHECKLIST,
   tipOfTheDayIndex,
 } from "./health-content";
@@ -18,30 +20,51 @@ import { TipDeck } from "./tip-deck";
 import { VisitChecklist } from "./visit-checklist";
 import "./health-tips.css";
 
-/** 48px danger-outline call buttons: never marigold, never a jade fill. Tint and scale on press. */
+/**
+ * 48px danger-outline call buttons: never marigold, never a jade fill. Tint and scale on press. On
+ * phones the two share one row; under 360px their glyphs go, so they still do.
+ */
 const TEL_BUTTON =
-  "inline-flex h-12 grow items-center justify-center gap-1.5 rounded-full border-[1.5px] border-danger bg-white px-3 text-[0.9375rem] font-semibold whitespace-nowrap text-danger focus-ring transition-[background-color,scale] duration-180 ease-standard select-none hover:bg-danger/5 active:scale-[0.97] active:bg-danger/10 active:duration-90 motion-reduce:active:scale-100 sm:grow-0 sm:px-5 [&_svg]:size-4 [&_svg]:shrink-0";
+  "inline-flex h-12 grow items-center justify-center gap-1.5 rounded-full border-[1.5px] border-danger bg-white px-3 text-[0.9375rem] font-semibold whitespace-nowrap text-danger focus-ring transition-[background-color,scale] duration-180 ease-standard select-none hover:bg-danger/5 active:scale-[0.97] active:bg-danger/10 active:duration-90 motion-reduce:active:scale-100 sm:grow-0 sm:px-5 [&_svg]:size-4 [&_svg]:shrink-0 max-[22.5rem]:[&_svg]:hidden";
 
-/** The one emergency note in this section (the footer keeps its own line): the sentence, then two calls. */
-function EmergencyNote() {
+/**
+ * The one emergency note in this section (the footer keeps its own line): a plain card with a red edge,
+ * never a red box, so it reads as a safety net and not as an alarm. Always visible, named so it can be
+ * found by landmark or heading, and its sentence is the reviewed one, word for word. From md to lg it
+ * spans the section, so the calls sit beside the sentence.
+ */
+function EmergencyNote({ className }: { className?: string }) {
   return (
-    <div className="nv-habits-sos rounded-2xl border border-danger/20 bg-danger-bg p-4 sm:p-5">
-      {/* The icon floats, so the sentence runs the full width from its second line. */}
-      <p className="text-small/[1.5] text-pretty text-ink md:max-w-[31rem]">
-        <PhoneCall aria-hidden className="float-left mt-0.5 mr-2.5 size-5 text-danger" />
-        {EMERGENCY_NOTE.lead} Call 112 (or 108 for an ambulance) now. {EMERGENCY_NOTE.tail}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+    <aside
+      aria-labelledby="habits-sos-title"
+      className={cn(
+        "nv-habits-sos rounded-2xl bg-card p-4 shadow-[inset_3px_0_0_var(--danger),0_0_0_1px_var(--border-strong)] forced-colors:border forced-colors:border-[CanvasText] sm:p-5 md:max-lg:flex md:max-lg:items-center md:max-lg:gap-6",
+        className,
+      )}
+    >
+      <div className="min-w-0 md:max-lg:flex-1">
+        <h3 id="habits-sos-title" className="flex items-center gap-2 text-small font-semibold text-ink">
+          <PhoneCall aria-hidden className="size-[1.125rem] shrink-0 text-danger" strokeWidth={2.25} />
+          In an emergency
+        </h3>
+        <p className="mt-1.5 text-small/[1.5] text-pretty text-ink">
+          {EMERGENCY_NOTE.lead} Call 112 (or 108 for an ambulance) now. {EMERGENCY_NOTE.tail}
+        </p>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 md:max-lg:mt-0 md:max-lg:flex-none">
         <a href="tel:112" className={TEL_BUTTON}>
           <PhoneCall aria-hidden strokeWidth={2.25} />
           Call 112
         </a>
         <a href="tel:108" className={TEL_BUTTON}>
           <PhoneCall aria-hidden strokeWidth={2.25} />
-          Call 108 (ambulance)
+          {/* Spoken as "Call ambulance 108": the name keeps the words on the button. */}
+          <span>
+            <span className="sr-only">Call </span>Ambulance 108
+          </span>
         </a>
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -49,25 +72,33 @@ function EmergencyNote() {
 function FastingWarning() {
   return (
     <p className="rounded-2xl bg-warning-bg px-4 py-3 text-small/[1.5] text-pretty text-warning-ink forced-colors:border forced-colors:border-[CanvasText] sm:px-5">
-      <span className="block md:max-w-[31rem]">
-        <TriangleAlert aria-hidden className="float-left mt-0.5 mr-2.5 size-5 text-warning" />
-        {FASTING_WARNING.text}{" "}
-        <span className="text-caption whitespace-nowrap">
-          <ExternalLink href={FASTING_WARNING.source.url} className="active:bg-warning/15">
-            {FASTING_WARNING.source.label}
-          </ExternalLink>
-        </span>
+      <TriangleAlert aria-hidden className="float-left mt-0.5 mr-2.5 size-5 text-warning" />
+      {FASTING_WARNING.text}{" "}
+      <span className="text-sm whitespace-nowrap">
+        <ExternalLink href={FASTING_WARNING.source.url} className="active:bg-warning/15">
+          {FASTING_WARNING.source.label}
+        </ExternalLink>
       </span>
     </p>
   );
 }
 
-/** Every source behind the section and Take a minute, with full labels, behind one drop-down. */
-function AllSources() {
+/**
+ * Every source behind the section and Take a minute, with full labels, behind one drop-down. The closed
+ * row says how many there are and when they were last checked.
+ */
+function AllSources({ className }: { className?: string }) {
+  const meta = [
+    `${ALL_SOURCES.length} sources`,
+    `checked ${CONTENT_REVIEW.checked}`,
+    CONTENT_REVIEW.clinicalReviewer && `reviewed by ${CONTENT_REVIEW.clinicalReviewer}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <div className="nv-disc-group">
-      <Disclosure id="all-sources" title="All sources">
-        <ul className="flex flex-col text-caption text-pretty text-ink-3">
+    <div className={cn("nv-disc-group", className)}>
+      <Disclosure id="all-sources" title="All sources" meta={meta}>
+        <ul className="flex flex-col text-sm text-pretty text-ink-3">
           {ALL_SOURCES.map((s) => (
             <li key={s.url}>
               <ExternalLink href={s.url} className="flex min-h-11 w-fit items-center py-1.5">
@@ -81,32 +112,38 @@ function AllSources() {
   );
 }
 
-/** A quiet morning walk between the tile and the facts, phones and tablets only (lg has the grid). */
-function WalkBand({ className }: { className?: string }) {
+/**
+ * A quiet morning walk: a band under the tip on phones, and from md a picture beside it, as tall as the
+ * tip's card (health-tips.css), cropped to the couple.
+ */
+function WalkPhoto({ className }: { className?: string }) {
   return (
-    <div className={cn("relative aspect-[3/1] overflow-hidden rounded-[1.25rem] bg-aqua", className)}>
+    <div className={cn("nv-habits-walk relative aspect-[3/1] overflow-hidden rounded-[1.25rem] bg-aqua", className)}>
       <Image
         src="/img/elder-walk.jpg"
         alt="An older couple walking and talking on a tree-lined park path in the early morning"
         fill
-        sizes="(min-width: 640px) calc(100vw - 48px), calc(100vw - 40px)"
-        className="object-cover object-[50%_20%]"
+        // From md the picture fills a tall cell, so it is drawn wider than the cell it is cropped to.
+        sizes="(min-width: 48rem) 560px, calc(100vw - 40px)"
+        className="object-cover object-[50%_20%] md:object-[62%_30%]"
       />
     </div>
   );
 }
 
 /**
- * Small habits: Take a minute first (the Health tips tab lands on it), the four facts, the tip of the
- * day, the visit checklist with its fasting warning, then one emergency note, the disclaimer and every
- * source. A gift with no booking CTA anywhere in it. One grid: a column on phones and tablets, and from
- * lg "title tile / facts facts / tip notes / check notes" (health-tips.css), in reading order.
+ * Small habits, the page's coda after the callback form: something to do (Take a minute), something to
+ * know (the tip of the day, then the four facts), something to prepare (the visit checklist with its
+ * fasting warning), then the safety net (one emergency note, the disclaimer and every source). A gift
+ * with no booking CTA anywhere in it. One grid, in reading order at every width: a column on phones,
+ * two columns from md with the walk beside the tip, and from lg the tile beside the title and the
+ * emergency note beside the checklist (health-tips.css).
  */
 export async function HealthTips() {
   // The tip of the day and its date are per request (IST calendar day), never baked in at build time.
   await connection();
   const now = new Date();
-  const initialIndex = tipOfTheDayIndex(now);
+  const todayIndex = tipOfTheDayIndex(now);
   const dateLabel = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", timeZone: "Asia/Kolkata" }).format(
     now,
   );
@@ -123,41 +160,37 @@ export async function HealthTips() {
           />
 
           <TakeAMinuteTile className="nv-habits-tile-cell mt-7 sm:mt-10 lg:mt-0" />
-          <WalkBand className="mt-4 lg:hidden" />
+
+          <TipDeck
+            tips={HEALTH_TIPS}
+            todayIndex={todayIndex}
+            dateLabel={dateLabel}
+            className="nv-habits-tipcell mt-4 sm:mt-5 md:mt-6 lg:mt-16"
+          />
+          <WalkPhoto className="mt-4 sm:mt-5 md:mt-6 lg:mt-16" />
 
           <section
             id="health-facts"
             aria-labelledby="health-facts-title"
-            className="nv-habits-facts mt-7 scroll-mt-24 sm:mt-14 lg:mt-16"
+            className="nv-habits-facts mt-10 scroll-mt-24 sm:mt-14 lg:mt-16"
           >
             <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
-              <h3 id="health-facts-title" className="max-w-[24ch] text-h3 text-balance text-ink">
-                Most of it is silent. Until someone checks.
+              <h3 id="health-facts-title" className="text-h3 text-balance text-ink">
+                Easy to miss. Easy to check.
               </h3>
-              <p className="max-w-[44ch] text-small text-pretty text-ink-3 lg:max-w-none lg:pb-0.5">
-                These figures come from large public-health studies, not from Nivar patients.
-              </p>
+              <p className="max-w-[44ch] text-small text-pretty text-ink-3 lg:pb-0.5 xl:max-w-none">{SOURCES_NOTE}</p>
             </div>
             <FactsRow className="mt-4 sm:mt-6 lg:mt-8" />
           </section>
 
-          <TipDeck
-            tips={HEALTH_TIPS}
-            initialIndex={initialIndex}
-            dateLabel={dateLabel}
-            className="nv-habits-tipcell mt-7 sm:mt-14 lg:mt-16"
-          />
-
-          <div className="nv-habits-check-cell mt-5 flex flex-col gap-3 lg:mt-5">
+          <div className="nv-habits-check-cell mt-8 flex flex-col gap-3 sm:mt-10 md:mt-12 lg:mt-16">
             <VisitChecklist items={VISIT_CHECKLIST} />
             <FastingWarning />
           </div>
 
-          <div className="nv-habits-notes mt-6 flex flex-col gap-3 sm:mt-10 sm:gap-4 lg:mt-16">
-            <EmergencyNote />
-            <HealthDisclaimer className="px-0.5" />
-            <AllSources />
-          </div>
+          <EmergencyNote className="mt-5 lg:mt-16" />
+          <HealthDisclaimer className="nv-habits-small mt-5 px-0.5 md:mt-6 lg:mt-8" />
+          <AllSources className="nv-habits-sources mt-4 md:mt-6 lg:mt-8" />
         </div>
       </Container>
     </Section>

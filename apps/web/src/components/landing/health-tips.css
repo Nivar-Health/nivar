@@ -3,39 +3,67 @@
    press and grid rules must beat Tailwind's utilities. Presses are 90 ms in and 180 ms out; under
    reduced motion or the visitor's pause they are a tint only. */
 
-/* ---- The section's grid: one column below lg, then title tile / facts facts / tip notes / check notes,
-   7 to 5. Reading order is DOM order at every width. ---- */
-@media (width >= 64rem) {
+/* ---- The section's grid: one column on phones; from md two columns, 7 to 5, with the walk beside the
+   tip and the small print beside the sources; from lg the tile beside the title and the emergency note
+   beside the checklist. Reading order is DOM order at every width. ---- */
+@media (width >= 48rem) {
   .nv-habits-grid {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     grid-template-areas:
-      "title tile"
+      "title title"
+      "tile tile"
+      "tip walk"
       "facts facts"
-      "tip notes"
-      "check notes";
-    grid-template-rows: auto auto auto 1fr;
+      "check check"
+      "sos sos"
+      "small sources";
     /* 24px: the drop-down rows bleed 8px past their column, and side by side they stay 8px apart. */
     column-gap: 1.5rem;
     align-items: start;
   }
   .nv-habits-title {
     grid-area: title;
-    align-self: center;
   }
   .nv-habits-tile-cell {
     grid-area: tile;
   }
-  .nv-habits-facts {
-    grid-area: facts;
-  }
   .nv-habits-tipcell {
     grid-area: tip;
+  }
+  /* As tall as the tip's card, whichever tip it shows; never a sliver beside a short one. */
+  .nv-habits-walk {
+    grid-area: walk;
+    align-self: stretch;
+    aspect-ratio: auto;
+    min-height: 16rem;
+  }
+  .nv-habits-facts {
+    grid-area: facts;
   }
   .nv-habits-check-cell {
     grid-area: check;
   }
-  .nv-habits-notes {
-    grid-area: notes;
+  .nv-habits-sos {
+    grid-area: sos;
+  }
+  .nv-habits-small {
+    grid-area: small;
+  }
+  .nv-habits-sources {
+    grid-area: sources;
+  }
+}
+@media (width >= 64rem) {
+  .nv-habits-grid {
+    grid-template-areas:
+      "title tile"
+      "tip walk"
+      "facts facts"
+      "check sos"
+      "small sources";
+  }
+  .nv-habits-title {
+    align-self: center;
   }
 }
 
@@ -204,6 +232,67 @@ html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed
 }
 
 /* ---- Tip deck ---- */
+/* Where a tip's link lands (/#tip-salt): one empty target per tip at the card's top edge, with the
+   card's own scroll margin (landing.css §11 gives it one, as it does every article with an id). */
+.nv-habits-tip-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  scroll-margin-top: inherit;
+}
+/* The header. Phones: the chip and the arrows, then the date and the counter on a line of their own,
+   so no row depends on how long a date is. From sm it is one row. Under 320px the arrows drop below.
+   The arrows never share a cell with anything that changes from tip to tip, so they never move. */
+.nv-habits-tip-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "chip pager"
+    "meta meta";
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+.nv-habits-tip-chip {
+  grid-area: chip;
+  justify-self: start;
+}
+.nv-habits-tip-meta {
+  grid-area: meta;
+}
+.nv-habits-tip-pager {
+  grid-area: pager;
+}
+@media (width < 20rem) {
+  .nv-habits-tip-head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "chip"
+      "meta"
+      "pager";
+  }
+  .nv-habits-tip-pager {
+    justify-self: end;
+  }
+}
+@media (width >= 40rem) {
+  .nv-habits-tip-head {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "chip meta pager";
+    min-height: 2.75rem;
+  }
+}
+/* A step changes the card's height. On phones the blocks under it start from where they were and glide
+   to their new place instead of jumping (tip-deck.tsx measures the shift): a transform, so no layout
+   animates. From md the walk sits beside the card and takes its height, and nothing glides. */
+@media (width < 48rem) {
+  .nv-habits-grid[data-tip-glide] > .nv-habits-tipcell ~ * {
+    transform: translateY(var(--nv-habits-tip-shift, 0px));
+  }
+  .nv-habits-grid[data-tip-glide="to"] > .nv-habits-tipcell ~ * {
+    transform: none;
+    transition: transform 200ms var(--curve-standard);
+  }
+}
 /* Follows the finger a little while a swipe is in progress (tip-deck.tsx writes the offset). */
 .nv-habits-tip-layer {
   transform: translateX(var(--nv-habits-drag, 0px));
@@ -297,7 +386,7 @@ html[data-motion="paused"] .nv-habits-tip .tip-in {
 html[data-motion="paused"] .nv-habits-launch:active,
 html[data-motion="paused"] .nv-habits-sos a:active,
 html[data-motion="paused"] .nv-habits-tip button:active,
-html[data-motion="paused"] .nv-habits-rest:active,
+html[data-motion="paused"] .nv-habits-minute:active,
 html[data-motion="paused"] .nv-habits-check-cell button:active {
   scale: none;
 }

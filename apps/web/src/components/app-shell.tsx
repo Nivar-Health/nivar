@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarPlus, ClipboardList, House, UserRound } from "lucide-react";
+import { CalendarPlus, CircleHelp, ClipboardList, House, UserRound } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { UserMenu } from "@/components/user-menu";
 import { useNotifications } from "@/lib/socket";
@@ -30,6 +30,12 @@ export function activeHref(pathname: string, hrefs: readonly string[]): string |
 /**
  * Patient shell. Mobile: top bar + bottom tab bar. Desktop: top bar with
  * inline nav and a centred content column.
+ *
+ * Booking is one focused task with a bar of its own (price and Continue), so on phones the tab bar
+ * steps aside there: one bar at the bottom, and no way out under the thumb beside Continue.
+ *
+ * The header and the tab bar are direct children of the root on purpose: the report's print styles
+ * find them there. `print:hidden` keeps them off paper as well.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -37,13 +43,20 @@ export function AppShell({ children }: { children: ReactNode }) {
     pathname,
     TABS.map((t) => t.href),
   );
+  const booking = active === "/app/book";
   useNotifications();
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md supports-backdrop-filter:bg-background/70">
+      <a
+        href="#main"
+        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-full focus-visible:bg-card focus-visible:px-4 focus-visible:py-2.5 focus-visible:text-sm focus-visible:font-semibold focus-visible:shadow-lift focus-ring"
+      >
+        Skip to content
+      </a>
+      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md supports-backdrop-filter:bg-background/70 print:hidden">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 md:h-16 md:px-6">
-          <Link href="/app" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+          <Link href="/app" aria-label="Nivar, home" className="rounded-md focus-ring">
             <Logo size="sm" />
           </Link>
 
@@ -56,9 +69,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={tab.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                    "inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                     isActive
-                      ? "bg-muted text-foreground"
+                      ? "bg-accent font-semibold text-primary"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   )}
                 >
@@ -73,47 +86,57 @@ export function AppShell({ children }: { children: ReactNode }) {
             links={[
               { href: "/app/profile", label: "Profile", icon: <UserRound /> },
               { href: "/app/bookings", label: "My bookings", icon: <ClipboardList /> },
+              { href: "/app/profile#help", label: "Help", icon: <CircleHelp /> },
             ]}
           />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-6 md:pt-8 md:pb-16">
+      <main
+        id="main"
+        tabIndex={-1}
+        className={cn(
+          "mx-auto w-full max-w-2xl flex-1 px-4 pt-5 outline-none md:px-6 md:pt-8 md:pb-16",
+          booking ? "pb-[calc(1.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(6rem+env(safe-area-inset-bottom))]",
+        )}
+      >
         {children}
       </main>
 
-      <nav
-        aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-card/95 pb-safe backdrop-blur-md md:hidden"
-      >
-        <ul className="mx-auto grid h-16 max-w-md grid-cols-4">
-          {TABS.map((tab) => {
-            const isActive = active === tab.href;
-            return (
-              <li key={tab.href}>
-                <Link
-                  href={tab.href}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors outline-none",
-                    isActive ? "text-primary" : "text-muted-foreground active:text-foreground",
-                  )}
-                >
-                  <span
+      {!booking && (
+        <nav
+          aria-label="Main"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-card/95 pb-safe backdrop-blur-md md:hidden print:hidden"
+        >
+          <ul className="mx-auto grid h-16 max-w-md grid-cols-4">
+            {TABS.map((tab) => {
+              const isActive = active === tab.href;
+              return (
+                <li key={tab.href}>
+                  <Link
+                    href={tab.href}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "grid h-7 w-12 place-items-center rounded-full transition-colors",
-                      isActive && "bg-muted",
+                      "flex h-full flex-col items-center justify-center gap-0.5 rounded-xl text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset",
+                      isActive ? "font-semibold text-primary" : "font-medium text-muted-foreground active:text-foreground",
                     )}
                   >
-                    <tab.icon className="size-[18px]" strokeWidth={isActive ? 2.25 : 2} aria-hidden />
-                  </span>
-                  {tab.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+                    <span
+                      className={cn(
+                        "grid h-7 w-14 place-items-center rounded-full transition-colors",
+                        isActive && "bg-accent",
+                      )}
+                    >
+                      <tab.icon className="size-5" strokeWidth={isActive ? 2.25 : 2} aria-hidden />
+                    </span>
+                    {tab.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }

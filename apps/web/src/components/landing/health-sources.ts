@@ -1,7 +1,7 @@
 export type HealthSource = {
   label: string;
   url: string;
-  /** The tip and fact cards' label ("WHO, 2025"). "All sources", the Share text and Take a minute keep `label`. */
+  /** The label on the tip and fact cards and in a shared tip ("WHO, 2025"). "All sources" and Take a minute keep `label`. */
   short?: string;
 };
 

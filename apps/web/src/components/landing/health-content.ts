@@ -27,10 +27,19 @@ export type HealthFact = {
 export type TipCategory = "Checks" | "Heart" | "Food" | "Movement" | "Sleep" | "Sugar" | "Breath";
 
 export type HealthTip = {
-  id: string;
+  /** Also the tip's deep link on the page: /#tip-salt. */
+  id: `tip-${string}`;
   category: TipCategory;
   title: string;
   text: string;
+  /** When to call for help: the tip's last sentence, shown as a row of its own so it cannot be missed. */
+  urgent?: string;
+  /** A number to call, on its own line: `before` and `after` are the words around the tappable number. */
+  phone?: { before: string; label: string; tel: string; after: string };
+  /** The Take a minute tool that does what the tip describes; the tip gets a way to open it. */
+  minute?: "breathe" | "rest";
+  /** false keeps a reference note out of the tip of the day; it stays in the deck. */
+  daily?: boolean;
   sources: HealthSource[];
   checked: string;
 };
@@ -232,6 +241,7 @@ export const HEALTH_TIPS: HealthTip[] = [
     category: "Checks",
     title: "Measure blood pressure right",
     text: "Empty your bladder first. Sit with your back supported, feet flat and legs uncrossed, arm resting on a table at chest height, cuff on bare skin. Rest 5 minutes and don't talk during the reading. No food, drinks, smoking or exercise for 30 minutes before.",
+    minute: "rest",
     sources: [S.cdcMeasureBp],
     checked: "2026-10",
   },
@@ -239,7 +249,10 @@ export const HEALTH_TIPS: HealthTip[] = [
     id: "tip-know-numbers",
     category: "Heart",
     title: "Know your BP numbers",
-    text: "For adults, under 120/80 is considered normal. One high reading isn't a diagnosis: take 2 readings 1–2 minutes apart, note them, and share a pattern of high numbers with a doctor. Higher than 180/120 with chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or difficulty speaking? Call 112 (or 108 for an ambulance) now.",
+    text: "For adults, under 120/80 is considered normal. One high reading isn't a diagnosis: take 2 readings 1–2 minutes apart, note them, and share a pattern of high numbers with a doctor.",
+    urgent:
+      "Higher than 180/120 with chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or difficulty speaking? Call 112 (or 108 for an ambulance) now.",
+    daily: false,
     sources: [S.aha2025, S.cdcMeasureBp, S.whoHypertension, S.ahaCrisis],
     checked: "2026-10",
   },
@@ -262,7 +275,7 @@ export const HEALTH_TIPS: HealthTip[] = [
   {
     id: "tip-balance-65",
     category: "Movement",
-    title: "Over 65? Add balance work",
+    title: "Over 65? Build balance and strength",
     text: "On 3 or more days a week, add activities that build balance and strength. They help you stay steady on your feet and lower the risk of falls. If you live with a health condition or disability, ask a doctor or physiotherapist what's safe for you.",
     sources: [S.whoActivity],
     checked: "2026-10",
@@ -270,7 +283,7 @@ export const HEALTH_TIPS: HealthTip[] = [
   {
     id: "tip-sleep",
     category: "Sleep",
-    title: "Give sleep 7 to 9 hours",
+    title: "Aim for 7 to 9 hours of sleep",
     text: "Most adults should aim for 7–9 hours of sleep a night on average. The American Heart Association counts sleep among its eight essentials for a healthy heart.",
     sources: [S.ahaLe8],
     checked: "2026-10",
@@ -287,7 +300,10 @@ export const HEALTH_TIPS: HealthTip[] = [
     id: "tip-pulse",
     category: "Heart",
     title: "Check your pulse",
-    text: "Sit and rest for at least 10 minutes, then place two fingers on the inside of your wrist, below the base of your thumb. Count the beats for a full minute (or 30 seconds and double it). A resting adult pulse is usually 60–100. If the rhythm feels irregular, tell a doctor. If it's fast or irregular with chest pain, breathlessness, dizziness or fainting, call 112 (or 108 for an ambulance).",
+    text: "Sit and rest for at least 10 minutes, then place two fingers on the inside of your wrist, below the base of your thumb. Count the beats for a full minute (or 30 seconds and double it). A resting adult pulse is usually 60–100. If the rhythm feels irregular, tell a doctor.",
+    urgent:
+      "If it's fast or irregular with chest pain, breathlessness, dizziness or fainting, call 112 (or 108 for an ambulance).",
+    daily: false,
     sources: [S.medlinePulse, S.nhsAf],
     checked: "2026-10",
   },
@@ -304,6 +320,7 @@ export const HEALTH_TIPS: HealthTip[] = [
     category: "Breath",
     title: "Take a 5-minute breathing break",
     text: "Breathe in gently through your nose and out through your mouth, counting 1 to 5 each way, without forcing it. Keep going for at least 5 minutes; it can help you feel calmer.",
+    minute: "breathe",
     sources: [S.nhsBreathing],
     checked: "2026-10",
   },
@@ -311,7 +328,8 @@ export const HEALTH_TIPS: HealthTip[] = [
     id: "tip-quit-smoking",
     category: "Heart",
     title: "Quitting smoking pays off fast",
-    text: "Within 20 minutes of your last cigarette, heart rate and blood pressure drop. After a year, your risk of coronary heart disease is about half a smoker's. Free quitline: 1800-11-2356 (8 am to 8 pm, closed Mondays).",
+    text: "Within 20 minutes of your last cigarette, heart rate and blood pressure drop. After a year, your risk of coronary heart disease is about half a smoker's.",
+    phone: { before: "Free quitline:", label: "1800-11-2356", tel: "1800112356", after: "(8 AM to 8 PM, closed Mondays)." },
     sources: [S.whoQuit, S.ntqls],
     checked: "2026-10",
   },
@@ -369,23 +387,29 @@ export const ALL_SOURCES: readonly HealthSource[] = (() => {
 export const HEALTH_DISCLAIMER =
   "General health information for adults, not medical advice or a diagnosis. Targets differ in pregnancy and for children. Talk to a qualified doctor about your own readings, medicines and treatment, and don't stop or change a medicine without them.";
 
+/** Under the facts' heading, so nobody reads the figures as Nivar's own. */
 export const SOURCES_NOTE =
-  "Figures come from published studies and public health bodies, not from Nivar patients or Nivar results.";
+  "These figures come from large public-health studies, not from Nivar patients or Nivar results.";
 
 /**
  * Emergency safety net, shown once in the Small habits section: plain text, then "Call 112" and
- * "Call 108 (ambulance)" as two tel: buttons (never inline links, which are too small to hit).
+ * "Ambulance 108" as two tel: buttons (never inline links, which are too small to hit).
  */
 export const EMERGENCY_NOTE = {
   lead: "Chest pain, sudden breathlessness, weakness or numbness on one side, trouble speaking, or a fast or irregular heartbeat with dizziness or fainting?",
   tail: "Nivar is not an emergency service.",
 } as const;
 
-/** Shown under the sources. Set clinicalReviewer once a Nivar doctor has reviewed this file. */
+/** Shown on the "All sources" row. Set clinicalReviewer once a Nivar doctor has reviewed this file. */
 export const CONTENT_REVIEW = { checked: "October 2026", clinicalReviewer: null as string | null };
 
-/** Index of the tip of the day, by calendar day in India (IST, UTC+5:30). */
-export function tipOfTheDayIndex(now: Date, count = HEALTH_TIPS.length): number {
+/**
+ * Index of the tip of the day, by calendar day in India (IST, UTC+5:30). It turns through the tips
+ * that can lead the deck; a reference note (`daily: false`) never does.
+ */
+export function tipOfTheDayIndex(now: Date, tips: readonly HealthTip[] = HEALTH_TIPS): number {
+  const daily = tips.flatMap((tip, i) => (tip.daily === false ? [] : [i]));
+  if (!daily.length) return 0;
   const istDay = Math.floor((now.getTime() + 5.5 * 60 * 60 * 1000) / 86_400_000);
-  return ((istDay % count) + count) % count;
+  return daily[((istDay % daily.length) + daily.length) % daily.length];
 }

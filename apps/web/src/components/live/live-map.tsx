@@ -16,8 +16,18 @@ export type LiveMapProps = {
   height?: number | string;
   /** Show the distance / ETA chip when the nurse position is known. Default true. */
   showEta?: boolean;
+  /**
+   * On touch screens, let a finger on the map scroll the page instead of panning the map, so the map
+   * never traps a page it sits in the middle of. The map already refits itself to keep the nurse and
+   * the home in view; the zoom buttons stay, at a size a thumb can hit. Default false.
+   */
+  touchScrollsPage?: boolean;
   className?: string;
 };
+
+/** Touches pass through the map surface and its markers; Leaflet's controls keep their own taps. */
+const TOUCH_SCROLLS_PAGE =
+  "pointer-coarse:[&_.leaflet-container]:pointer-events-none! pointer-coarse:[&_.leaflet-container]:touch-auto! pointer-coarse:[&_.leaflet-marker-icon]:pointer-events-none! pointer-coarse:[&_.leaflet-bar_a]:size-11! pointer-coarse:[&_.leaflet-bar_a]:leading-[2.75rem]!";
 
 function MapSkeleton({ height }: { height: number | string }) {
   return (
@@ -47,12 +57,24 @@ const LiveMapInner = dynamic(() => import("./live-map-inner"), {
  * Live tracking map: patient home pin, nurse avatar that glides between
  * position updates, dashed connector and ETA. Client-only (Leaflet).
  */
-export function LiveMap({ home, nurse, nurseName, height = 320, showEta = true, className }: LiveMapProps) {
+export function LiveMap({
+  home,
+  nurse,
+  nurseName,
+  height = 320,
+  showEta = true,
+  touchScrollsPage = false,
+  className,
+}: LiveMapProps) {
   const km = nurse ? haversineKm(nurse, home) : null;
   const first = nurseName?.trim().split(/\s+/)[0];
   return (
     <div
-      className={cn("relative isolate overflow-hidden rounded-2xl border border-border bg-muted", className)}
+      className={cn(
+        "relative isolate overflow-hidden rounded-2xl border border-border bg-muted",
+        touchScrollsPage && TOUCH_SCROLLS_PAGE,
+        className,
+      )}
       style={{ height }}
     >
       <LiveMapInner home={home} nurse={nurse} nurseName={nurseName} height="100%" />

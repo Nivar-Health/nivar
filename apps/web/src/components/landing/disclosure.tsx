@@ -10,7 +10,7 @@ export type DisclosureProps = {
   /** The row title. Phrasing content. With titleTag it is rendered inside that heading (FAQ only). */
   title: ReactNode;
   titleTag?: "h3";
-  /** 13px/500 line under the title: proof, contents, progress. Phrasing content. Not with titleTag. */
+  /** 14px/500 line under the title: proof, contents, progress. Phrasing content. Not with titleTag. */
   meta?: ReactNode;
   /** Right-hand value before the chevron, e.g. a price or "Optional". Phrasing content. */
   value?: ReactNode;

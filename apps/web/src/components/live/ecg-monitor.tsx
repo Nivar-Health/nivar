@@ -46,6 +46,21 @@ export type EcgMonitorProps = {
   growWithText?: boolean;
   /** "landing" raises the 10-11px labels to 12px. Default "console". */
   labelScale?: LabelScale;
+  /** The status chip's word while the trace runs. Default "LIVE". */
+  badgeLabel?: string;
+  /** The trace's accessible name. Default "Live ECG waveform". */
+  canvasLabel?: string;
+  /**
+   * A captured frame (mV, at the feed's sample rate) for a monitor that demonstrates rather than
+   * measures, as on the public site. The frame is on screen before any data arrives and the sweep
+   * carries on from its end; the heart rate reads `heartRate`, and the monitor never says it is waiting
+   * for a device. Default: none.
+   */
+  demoFrame?: readonly number[];
+  /** Draw at most this many frames a second. Default: every animation frame. */
+  maxFps?: number;
+  /** Cap on the canvas's device pixel ratio. Default 3. */
+  maxDpr?: number;
 };
 
 const SPEED_MM_S = 25;
@@ -63,14 +78,26 @@ export function EcgMonitor({
   idle = false,
   growWithText = false,
   labelScale = "console",
+  badgeLabel,
+  canvasLabel = "Live ECG waveform",
+  demoFrame,
+  maxFps,
+  maxDpr,
 }: EcgMonitorProps) {
-  const [hasSignal, setHasSignal] = useState(false);
+  /** A demo frame stands in for a signal from the first paint, and for as long as the monitor lives. */
+  const seeded = Boolean(demoFrame && demoFrame.length > 0);
+  const [hasSignal, setHasSignal] = useState(seeded);
   const [gainLabel, setGainLabel] = useState("10 mm/mV");
 
   const hrPropRef = useRef<number | null | undefined>(heartRate);
   useEffect(() => {
     hrPropRef.current = heartRate;
   }, [heartRate]);
+  /** Read by setup(), which runs from resize and feed callbacks, never during render. */
+  const demoFrameRef = useRef(demoFrame);
+  useEffect(() => {
+    demoFrameRef.current = demoFrame;
+  }, [demoFrame]);
 
   const hrTextRef = useRef<HTMLSpanElement>(null);
   const rrTextRef = useRef<HTMLSpanElement>(null);
@@ -80,7 +107,7 @@ export function EcgMonitor({
   /** Set only while paused: the frame painter, so a resize can repaint instead of leaving a blank canvas. */
   const drawRef = useRef<(() => void) | null>(null);
   /** Mirrors hasSignal for the draw loop, so a restarted (or paused) loop keeps the current state. */
-  const signalRef = useRef(false);
+  const signalRef = useRef(seeded);
   /** Whether the last draw-loop run was frozen (paused or idle), to detect the frozen -> playing transition. */
   const wasPausedRef = useRef(paused || idle);
 
@@ -94,6 +121,8 @@ export function EcgMonitor({
     pxPerMv: 50,
     baseline: 0,
     gap: 0,
+    /** A sample from the feed has been drawn. Until then a demo frame is repainted whole on a resize. */
+    started: false,
     // beat detector
     peakEnv: 0.8,
     armed: true,
@@ -120,9 +149,16 @@ export function EcgMonitor({
     v.buf = new Float32Array(cap).fill(NaN);
     v.wi = 0;
     v.gap = Math.round(sr * 0.12);
-    // Paused (drawRef is set only then): carry the newest samples over, oldest first, so the frozen
-    // trace survives a resize or rotation. Streaming monitors keep the old behaviour (fresh sweep).
-    if (drawRef.current && prev.length > 0) {
+    const frame = demoFrameRef.current;
+    if (frame && !v.started) {
+      // The captured frame from the left edge. The sweep carries on from its end, or from the left
+      // edge again where the frame fills the screen.
+      const n = Math.min(frame.length, cap);
+      v.buf.set(frame.slice(0, n));
+      v.wi = n % cap;
+    } else if (drawRef.current && prev.length > 0) {
+      // Paused (drawRef is set only then): carry the newest samples over, oldest first, so the frozen
+      // trace survives a resize or rotation. Streaming monitors keep the old behaviour (fresh sweep).
       const n = Math.min(prev.length, cap - v.gap - 2);
       for (let k = n; k > 0; k--) v.buf[v.wi++] = prev[(prevWi - k + prev.length) % prev.length];
       v.wi %= cap;
@@ -132,7 +168,7 @@ export function EcgMonitor({
     drawRef.current?.();
   };
 
-  const { containerRef, canvasRef } = useHiDpiCanvas((size) => setup(size));
+  const { containerRef, canvasRef } = useHiDpiCanvas((size) => setup(size), maxDpr);
 
   // Subscribe to the feed.
   useEffect(() => {
@@ -200,6 +236,7 @@ export function EcgMonitor({
       p1 = raw;
       const v = view.current;
       const cap = v.buf.length;
+      v.started = true;
       v.buf[v.wi] = val;
       v.wi = (v.wi + 1) % cap;
       for (let k = 0; k < 2; k++) v.buf[(v.wi + v.gap + k) % cap] = NaN;
@@ -270,10 +307,10 @@ export function EcgMonitor({
       ctx.lineWidth = 1.9;
       ctx.stroke();
 
-      // Write head glow.
+      // Write head glow, once the feed has drawn something (a demo frame alone has no head).
       const headIdx = (v.wi - 1 + cap) % cap;
       const headVal = v.buf[headIdx];
-      if (signal && !Number.isNaN(headVal)) {
+      if (signal && v.started && !Number.isNaN(headVal)) {
         const hx = headIdx * pxPerSample;
         const hy = yOf(headVal);
         const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, 10);
@@ -288,13 +325,21 @@ export function EcgMonitor({
       }
     };
 
+    // A capped monitor skips the frames that come sooner than its interval; 4ms of slack keeps a 60Hz
+    // screen on every second frame.
+    const minFrameMs = maxFps ? 1000 / maxFps - 4 : 0;
+
     const loop = (now: number) => {
       const dt = now - last;
+      if (minFrameMs && dt < minFrameMs) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       last = now;
       const player = playerRef.current;
       if (view.current.buf.length > 0) player.take(dt, write);
 
-      const nowSignal = player.lastDataAt > 0 && now - player.lastDataAt < NO_SIGNAL_MS;
+      const nowSignal = seeded || (player.lastDataAt > 0 && now - player.lastDataAt < NO_SIGNAL_MS);
       if (nowSignal !== signal) {
         signal = nowSignal;
         signalRef.current = nowSignal;
@@ -337,7 +382,7 @@ export function EcgMonitor({
       cancelAnimationFrame(raf);
       drawRef.current = null;
     };
-  }, [canvasRef, paused, idle]);
+  }, [canvasRef, paused, idle, seeded, maxFps]);
 
   const live = hasSignal && status !== "stopped" && status !== "connecting";
   const landing = labelScale === "landing";
@@ -375,12 +420,12 @@ export function EcgMonitor({
           <span className="hidden text-[#8F8F89] tabular-nums sm:inline">{gainLabel}</span>
           <span className="hidden text-[#8F8F89] md:inline">0.5 to 40 Hz</span>
         </div>
-        <LiveBadge live={live && !paused} paused={paused} labelScale={labelScale} />
+        <LiveBadge live={live && !paused} label={badgeLabel} paused={paused} labelScale={labelScale} />
       </div>
 
       <div className="flex min-h-0 flex-1">
         <div ref={containerRef} className="relative min-w-0 flex-1">
-          <canvas ref={canvasRef} className="absolute inset-0 block" aria-label="Live ECG waveform" role="img" />
+          <canvas ref={canvasRef} className="absolute inset-0 block" aria-label={canvasLabel} role="img" />
           <MonitorOverlay show={overlay !== null}>{overlay}</MonitorOverlay>
         </div>
 
@@ -402,14 +447,14 @@ export function EcgMonitor({
               className="font-mono text-[44px] leading-none font-semibold tracking-tight text-[#19C37D] tabular-nums sm:text-[52px]"
               style={{ textShadow: "0 0 18px rgba(59,227,180,0.35)" }}
             >
-              --
+              {seeded && heartRate ? Math.round(heartRate) : "--"}
             </span>
             <span className={cn("mt-1 tracking-wider text-[#8F8F89]", landing ? "text-xs" : "text-[10px]")}>bpm</span>
           </div>
           <div className={cn("flex items-baseline justify-between text-[#8F8F89]", landing ? "text-xs" : "text-[10px]")}>
             <span className="tracking-wider">RR</span>
             <span className="font-mono text-xs text-[#8FE3BF] tabular-nums">
-              <span ref={rrTextRef}>--</span> ms
+              <span ref={rrTextRef}>{seeded && heartRate ? Math.round(60000 / heartRate) : "--"}</span> ms
             </span>
           </div>
         </div>

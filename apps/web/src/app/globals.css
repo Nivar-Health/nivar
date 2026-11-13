@@ -531,8 +531,10 @@ html[data-motion="paused"] .live-dot::after {
   }
 }
 
+/* The public site only (its class comes from SiteRoot, chrome-signals.ts): in-page jumps glide, unless
+   the visitor asked the OS for less motion or paused the page's own. */
 @media (prefers-reduced-motion: no-preference) {
-  html:has([data-landing]) {
+  html.nv-site:not([data-motion="paused"]) {
     scroll-behavior: smooth;
   }
 }

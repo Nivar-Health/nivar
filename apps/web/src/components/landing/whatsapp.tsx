@@ -101,8 +101,8 @@ export function ContactCtas({
 /**
  * One service's call to action (spec §3.2):
  * - WhatsApp set: [Ask on WhatsApp], sr " about {name}"; the message asks the price (from null) or
- *   books ("I'd like to book {ask} at home."). `compactLabel` shows only "Ask" below sm (the WhatsApp
- *   glyph stays); " on WhatsApp" is still read, so the accessible name does not change.
+ *   books ("I'd like to book {ask} at home."). `compactLabel` shortens it below sm, where the WhatsApp
+ *   glyph says the channel: "Ask the price" (from null) or "Ask"; " on WhatsApp" is still read.
  * - No WhatsApp, from null: [Get the price], sr " for {name}", need "Please tell me the price for {ask} at home."
  * - No WhatsApp, priced: [Request this visit], named "Request this visit: {name}", need "I'd like to book {ask}
  *   at home ({priceLabel})."
@@ -141,7 +141,7 @@ export function CareCta({
   label?: string;
   className?: string;
   appearance?: "button" | "link";
-  /** WhatsApp only: "Ask" below sm, "Ask on WhatsApp" from sm. */
+  /** WhatsApp only: "Ask the price" (or "Ask", once priced) below sm, "Ask on WhatsApp" from sm. */
   compactLabel?: boolean;
 }): JSX.Element {
   const link = appearance === "link";
@@ -156,7 +156,9 @@ export function CareCta({
         <WhatsAppIcon className={link ? "size-4" : "size-4.5!"} />
         {compactLabel ? (
           <span>
-            Ask<span className="max-sm:sr-only"> on WhatsApp</span>
+            Ask
+            {from === null && <span className="sm:hidden"> the price</span>}
+            <span className="max-sm:sr-only"> on WhatsApp</span>
           </span>
         ) : (
           "Ask on WhatsApp"

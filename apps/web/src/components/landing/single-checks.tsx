@@ -3,6 +3,7 @@ import type { Service } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Disclosure } from "./disclosure";
 import { inr } from "./primitives";
+import { checkName } from "./programmes";
 import { CareCta } from "./whatsapp";
 
 /** Catalogue `icon` names mapped to an icon and a tint. Unknown names fall back to a pulse on aqua. */
@@ -20,9 +21,11 @@ const DEFAULT_LOOK = { icon: Activity, tone: "bg-aqua text-primary" };
 /**
  * The checks a nurse does on the spot, priced from the live catalogue: the last row of the check-up list
  * (programmes.tsx), closed at every width, holding a real table and one call to action (spec U6). The
- * closed row already says how many checks there are and the lowest price. The video consult is not a
- * check, so it is left out. Below 640px the table's rows stack (check-ups.css), so its roles are explicit:
- * Safari drops table semantics from a table whose display changes.
+ * closed row already says how many checks there are and, where the packages show their prices, the
+ * lowest price. Each check goes by the page's own name for it (programmes.tsx), so a device has one name
+ * here, in the bag and on the readings panel. The doctor's video call is not a check, so it is left out.
+ * Below 640px the table's rows stack (check-ups.css), so its roles are explicit: Safari drops table
+ * semantics from a table whose display changes.
  */
 export function SingleChecks({ services }: { services: Service[] }) {
   const checks = services.filter((s) => s.code !== "CONSULT");
@@ -38,13 +41,14 @@ export function SingleChecks({ services }: { services: Service[] }) {
         leadSize="tile"
         lead={<LayoutGrid className="size-5" strokeWidth={1.9} />}
         title="Single checks"
-        meta={n === 1 ? `1 check, ${inr(from)}` : `${n} checks, from ${inr(from)}`}
+        meta={n === 1 ? "1 check" : `${n} checks`}
+        value={<span className="nv-disc-price">{n === 1 ? inr(from) : `from ${inr(from)}`}</span>}
         bodyClassName="ps-0"
       >
         <table role="table" className="nv-chk-table w-full table-fixed border-collapse text-left">
           <caption className="sr-only">Single checks a nurse does at home, with prices</caption>
           <thead role="rowgroup">
-            <tr role="row" className="border-b border-border-strong text-caption text-ink-3">
+            <tr role="row" className="border-b border-border-strong text-[0.875rem] leading-[1.45] text-ink-3">
               <th role="columnheader" scope="col" className="w-[32%] py-2.5 pr-3 font-medium">
                 Check
               </th>
@@ -69,7 +73,7 @@ export function SingleChecks({ services }: { services: Service[] }) {
                       >
                         <look.icon className="size-4" strokeWidth={1.9} />
                       </span>
-                      <span className="sm:pt-1">{s.name}</span>
+                      <span className="sm:pt-1">{checkName(s.code, s.name)}</span>
                     </span>
                   </th>
                   <td role="cell" className="nv-chk-does text-small text-pretty text-ink-2 sm:py-3.5 sm:pt-[1.125rem] sm:pr-3">
@@ -94,7 +98,7 @@ export function SingleChecks({ services }: { services: Service[] }) {
           label="Ask about a single check"
           need="I'd like to book a single check at home."
           needLabel="A single check"
-          className="mt-4 sm:mt-5"
+          className="mt-4 max-sm:h-12 max-sm:w-full sm:mt-5"
         />
       </Disclosure>
     </li>

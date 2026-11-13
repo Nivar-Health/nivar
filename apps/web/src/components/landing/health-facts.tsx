@@ -1,20 +1,14 @@
 import { Info } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import {
-  CONTENT_REVIEW,
-  HEALTH_DISCLAIMER,
-  HEALTH_FACTS,
-  SOURCES_NOTE,
-  type HealthFact,
-  type HealthSource,
-} from "./health-content";
+import { HEALTH_DISCLAIMER, HEALTH_FACTS, type HealthFact, type HealthSource } from "./health-content";
 import { SnapRow } from "./snap-row";
 import "./health-tips.css";
 
 /**
- * Underlined source link that opens in a new tab (server-rendered; no client JS). Inline, so its press
- * is a tint only: transforms don't apply to inline boxes.
+ * Underlined source link that opens in a new tab (server-rendered; no client JS). Its client twin is in
+ * tip-deck.tsx: keep the two recipes the same. Inline, so its press is a tint only: transforms don't
+ * apply to inline boxes.
  */
 export function ExternalLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
   return (
@@ -23,7 +17,7 @@ export function ExternalLink({ href, className, children }: { href: string; clas
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "rounded-sm underline decoration-current/30 underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
+        "rounded-sm underline decoration-current/40 underline-offset-[3px] transition-colors duration-180 hover:text-foreground hover:decoration-current focus-ring active:bg-aqua/60 active:duration-90",
         className,
       )}
     >
@@ -36,7 +30,7 @@ export function ExternalLink({ href, className, children }: { href: string; clas
 /** "Source: a; b" as new-tab links, with the cards' short labels ("All sources" keeps the full ones). */
 export function SourceLinks({ sources, className }: { sources: readonly HealthSource[]; className?: string }) {
   return (
-    <p className={cn("text-caption text-ink-3", className)}>
+    <p className={cn("text-sm text-ink-3", className)}>
       {sources.length > 1 ? "Sources: " : "Source: "}
       {sources.map((s, i) => (
         <span key={s.url}>
@@ -50,15 +44,15 @@ export function SourceLinks({ sources, className }: { sources: readonly HealthSo
   );
 }
 
-/** Info-icon disclaimer row for the health content (Small habits). */
+/**
+ * Info-icon disclaimer row for the health content (Small habits): the disclaimer alone. Whose figures
+ * these are is said under the facts' heading, and when the sources were checked on the "All sources" row.
+ */
 export function HealthDisclaimer({ className }: { className?: string }) {
   return (
-    <p className={cn("flex max-w-[80ch] items-start gap-2.5 text-caption text-pretty text-ink-3", className)}>
-      <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
-      <span>
-        {HEALTH_DISCLAIMER} {SOURCES_NOTE} Sources checked {CONTENT_REVIEW.checked}.
-        {CONTENT_REVIEW.clinicalReviewer && ` Reviewed by ${CONTENT_REVIEW.clinicalReviewer}.`}
-      </span>
+    <p className={cn("flex max-w-[80ch] items-start gap-2.5 text-small/[1.5] text-pretty text-ink-2", className)}>
+      <Info aria-hidden className="mt-[0.1875rem] size-4 shrink-0 text-ink-3" />
+      <span>{HEALTH_DISCLAIMER}</span>
     </p>
   );
 }
@@ -87,7 +81,7 @@ function FactCard({ fact: f }: { fact: HealthFact }) {
   return (
     <article data-nv-reveal="" className={cn("nv-habits-fact flex h-full flex-col rounded-3xl p-5 sm:p-6 lg:p-5 xl:p-6", look.tint)}>
       <div className="nv-habits-fact-head">
-        <span className="nv-habits-fact-scope rounded-full bg-white/80 px-2.5 py-1 text-[0.8125rem] leading-none font-semibold whitespace-nowrap text-ink-2">
+        <span className="nv-habits-fact-scope rounded-full bg-white/80 px-2.5 py-1 text-sm leading-none font-semibold whitespace-nowrap text-ink-2">
           {f.scope}
         </span>
         <p
@@ -110,7 +104,7 @@ function FactCard({ fact: f }: { fact: HealthFact }) {
 }
 
 /**
- * "Most of it is silent": the four featured facts. A snap row on phones, 2 × 2 from md and four
+ * "Easy to miss. Easy to check.": the four featured facts. A snap row on phones, 2 × 2 from md and four
  * across from lg. No CTA, here or near it (health-content.ts).
  */
 export function FactsRow({ className }: { className?: string }) {

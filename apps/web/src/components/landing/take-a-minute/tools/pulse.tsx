@@ -12,21 +12,26 @@ import {
   OrbWord,
   PromptLine,
   RichText,
-  SafetyLine,
+  SafetyFull,
   TimeLeft,
   ToolControls,
+  safetySlots,
   useToolSession,
   type MainAction,
+  type SideAction,
 } from "./parts";
 import { Wrist } from "./wrist";
 
-/* Pulse (spec §3.12, §5.4, §5.6). Defaults to "Just count": both hands are busy, so the screen
-   only counts down 30 seconds; nothing pulses, ticks or vibrates while you count. "Tap along" turns
-   the orb into a real button; the 30 seconds start with the first tap. The orb only ever says what
-   to do: the time left sits under it, as in every tool, so no number in it can pass for a beat
-   count. The result is neutral (no verdict colours, no chart) and nothing is stored. */
+/* Pulse. Defaults to "Just count": both hands are busy, so the screen only counts down 30 seconds;
+   nothing pulses, ticks or vibrates while you count. "Tap along" turns the orb into a real button;
+   the 30 seconds start with the first tap. The orb only ever says what to do: the time left sits
+   under it, so no number in it can pass for a beat count. The clock ticks on a timer (nothing here is
+   paced); taps are timed where they land. The result is neutral (no verdict colours, no chart) and
+   nothing is stored. The safety line's first sentence shows under the controls with a text button for
+   the emergency one, and both stand in full beside the result. */
 
 const LENGTH_MS = 30_000;
+const TICK_MS = 250;
 const MIN_TAP_GAP_MS = 250;
 const MIN_TAPS = 10;
 const ENTRY = /^\d{1,3}$/;
@@ -81,8 +86,8 @@ export function Pulse({ api, Layout }: ToolProps) {
     api,
     tone: TOOL_TONE.pulse,
     pauseWhenHidden: true,
+    tick: TICK_MS,
     holdActive: stage === "armed",
-    motes: false,
     onFrame(elapsed, total, a) {
       if (!tenLeft.current && total - elapsed <= 10_000 && elapsed < total) {
         tenLeft.current = true;
@@ -148,7 +153,9 @@ export function Pulse({ api, Layout }: ToolProps) {
       setStage("session");
       s.begin(LENGTH_MS);
     } else {
+      // The arc draws in now: the count starts, with a full ring, at the first tap.
       s.touch();
+      s.refillRing(1);
       setStage("armed");
     }
   };
@@ -208,15 +215,15 @@ export function Pulse({ api, Layout }: ToolProps) {
   const tapping = mode === "tap" && (stage === "armed" || (stage === "session" && phase === "running"));
 
   // The main button keeps one place in the dock, so focus stays on it from Start to Pause; after a
-  // count it submits the beats form above the safety line (Return in the field submits it too).
+  // count it submits the beats form above it (Return in the field submits it too).
   let orb;
   let readout = null;
   let prompt;
   let options = null;
   let main: MainAction;
   let held = false;
-  let onStop: (() => void) | undefined;
-  let onDone: (() => void) | undefined;
+  let beside: SideAction | undefined;
+  let under: SideAction | undefined;
   if (stage === "idle") {
     orb = <Wrist />;
     readout = (
@@ -248,9 +255,9 @@ export function Pulse({ api, Layout }: ToolProps) {
     );
     prompt = <PromptLine>{PULSE.tapHint}</PromptLine>;
     // Pause's place is kept (hidden), so nothing moves when the first tap starts the count.
-    main = { label: COMMON.pause };
+    main = { label: COMMON.pause, quiet: true };
     held = true;
-    onStop = toIdle;
+    beside = { label: COMMON.stop, run: toIdle };
   } else if (stage === "session") {
     if (phase === "leadin") orb = <LeadInOrb left={s.leadInLeft} />;
     else if (phase === "paused") orb = <OrbWord>{COMMON.paused}</OrbWord>;
@@ -266,8 +273,8 @@ export function Pulse({ api, Layout }: ToolProps) {
         {phase === "leadin" ? PULSE.leadIn : s.pausedByVisibility ? COMMON.away : null}
       </PromptLine>
     );
-    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause };
-    onStop = toIdle;
+    main = { label: phase === "paused" ? COMMON.resume : COMMON.pause, run: s.togglePause, quiet: phase !== "paused" };
+    beside = { label: COMMON.stop, run: toIdle };
   } else if (stage === "entry") {
     orb = ENTRY.test(entry.trim()) ? <OrbNum aria-hidden>{entry.trim()}</OrbNum> : null;
     options = (
@@ -314,14 +321,20 @@ export function Pulse({ api, Layout }: ToolProps) {
         <div className="nv-tool-notes">
           <p>{PULSE.general}</p>
           {!inRange(r.bpm) && <p>{PULSE.outOfRange}</p>}
+          <SafetyFull text={PULSE.always} />
         </div>
       );
     } else {
       orb = <Wrist />;
       readout = <p className="nv-tool-lead">{PULSE.fewTaps(r.n)}</p>;
+      prompt = (
+        <div className="nv-tool-notes">
+          <SafetyFull text={PULSE.always} />
+        </div>
+      );
     }
     main = { label: PULSE.again, run: toIdle };
-    onDone = api.close;
+    under = { label: COMMON.done, run: api.close };
   }
 
   return (
@@ -331,13 +344,20 @@ export function Pulse({ api, Layout }: ToolProps) {
       readout={readout ? <div className="nv-tool-readout">{readout}</div> : undefined}
       prompt={prompt}
       options={options}
-      always={<SafetyLine emergency text={PULSE.always} />}
-      controls={<ToolControls main={main} mainRef={primary} held={held} onStop={onStop} onDone={onDone} />}
+      {...safetySlots(
+        PULSE.always,
+        stage === "result"
+          ? { shown: true }
+          : { line: PULSE.alwaysLine, more: { label: PULSE.alwaysLabel, text: PULSE.alwaysEmergency } },
+      )}
+      controls={<ToolControls main={main} mainRef={primary} held={held} beside={beside} under={under} />}
+      dock={stage === "entry" || stage === "result" ? "flow" : "sticky"}
       fine={
         <p className="nv-tool-fine">
           <RichText parts={PULSE.sources} />
         </p>
       }
+      fineTitle={COMMON.sources}
     />
   );
 }

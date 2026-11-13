@@ -16,6 +16,12 @@ const COLUMNS: readonly { id: Col; name: string }[] = [
 
 const SAY: Record<MarkKind, string> = { yes: "Yes.", partly: "Partly.", no: "No." };
 
+/** One line under the phone switch, per comparator. Each only sums up rows of the table below it. */
+const VERDICT: Record<Exclude<Col, "nivar">, string> = {
+  opd: "A hospital can do everything, in person. Nivar saves you the trip and the queue for care that can be done at home.",
+  compounder: "Both come to you. With Nivar the nurse is registered, a doctor is involved and you get a written record.",
+};
+
 /** [Nivar at home, Hospital OPD, Local compounder] for each row (mobile spec U5): typical experiences, kept
  * honest and short, so every cell reads at 15px in three lines or fewer on a phone. */
 const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
@@ -38,7 +44,7 @@ const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
   {
     label: "A doctor involved",
     cells: [
-      { mark: "yes", text: "Calls ahead; video if needed" },
+      { mark: "yes", text: "Every visit, video if needed" },
       { mark: "yes", text: "In person" },
       { mark: "no", text: "Not usually" },
     ],
@@ -86,10 +92,11 @@ const ROWS: readonly { label: string; cells: readonly [Cell, Cell, Cell] }[] = [
 ];
 
 /**
- * "Why families choose Nivar": one real table (sr-only caption, column and row headers) on a white sheet,
- * with Nivar's column raised on a jade spine. Every cell is a mark plus a short phrase.
- * Below lg it shows Nivar and one comparator at a time, picked by a radio switch that works through CSS
- * :has() alone (browsers without :has() get all four columns, scrolling inside the sheet), and the
+ * "How Nivar compares": one real table (sr-only caption, column and row headers) on a white sheet, with
+ * Nivar's column raised on a jade spine. Every cell is a mark plus a short phrase.
+ * Below 640px it shows Nivar and one comparator at a time, picked by a radio switch that works through
+ * CSS :has() alone, with one line under the switch that sums that comparison up (browsers without :has()
+ * get all four columns, scrolling inside the sheet). From 640px all three stand side by side. Below lg the
  * column names stay in view while the rows scroll.
  */
 export function Comparison() {
@@ -98,11 +105,11 @@ export function Comparison() {
       <Container>
         <SectionTitle
           id="compare-title"
-          title="Why families choose Nivar."
-          lede="How a Nivar visit compares with the two usual options. We've kept it honest, including where a hospital is the better choice."
+          title="How Nivar compares."
+          lede="A Nivar visit next to the two usual options. We've kept it honest, including where a hospital is the better choice."
         />
 
-        <div className="nv-cmp mt-7 sm:mt-5 lg:mt-14">
+        <div className="nv-cmp mt-7 sm:mt-10 lg:mt-14">
           <fieldset className="nv-cmp-switch">
             <legend className="nv-cmp-legend">Compare Nivar with</legend>
             <div className="nv-cmp-seg">
@@ -114,6 +121,14 @@ export function Comparison() {
               ))}
             </div>
           </fieldset>
+          {/* Both lines share one cell, so the table never moves when the switch changes. */}
+          <div className="nv-cmp-verdict">
+            {COLUMNS.slice(1).map((c) => (
+              <p key={c.id} data-verdict={c.id}>
+                {VERDICT[c.id as keyof typeof VERDICT]}
+              </p>
+            ))}
+          </div>
 
           <div {...revealProps(0)} className="nv-cmp-sheet">
             <div className="nv-cmp-scroll">
@@ -162,7 +177,9 @@ export function Comparison() {
             </div>
           </div>
 
-          <p className="mt-3 text-caption text-ink-2 text-balance lg:mt-7">Typical experiences, not a rating of any hospital or person.</p>
+          <p className="mt-3 text-[0.875rem] leading-[1.45] text-balance text-ink-2 lg:mt-7">
+            Typical experiences, not a rating of any hospital or person.
+          </p>
         </div>
       </Container>
     </Section>

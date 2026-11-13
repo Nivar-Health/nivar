@@ -36,13 +36,18 @@ export function UserAvatar({
   );
 }
 
+const MENU_ROW = "min-h-11 gap-2.5 px-2.5 text-sm";
+
 export interface UserMenuLink {
   href: string;
   label: string;
   icon?: ReactNode;
 }
 
-/** Avatar button with a dropdown: identity header, optional links, sign out. */
+/**
+ * Avatar button with a dropdown: identity header, optional links, sign out.
+ * The button looks 36px and takes taps on 44px; menu rows are 44px tall.
+ */
 export function UserMenu({
   links = [],
   showName = false,
@@ -67,14 +72,17 @@ export function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Account menu"
+        // The name a screen reader hears includes the name on screen; the initials are decoration.
+        aria-label={user.name ? `Account menu, ${user.name}` : "Account menu"}
         className={cn(
-          "flex items-center gap-2 rounded-full p-0.5 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 data-popup-open:bg-muted",
+          "relative flex items-center gap-2 rounded-full p-0.5 outline-none transition-colors before:absolute before:-inset-1 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 data-popup-open:bg-muted",
           showName && "pr-2",
           className,
         )}
       >
-        <UserAvatar name={user.name} src={user.avatarUrl} />
+        <span aria-hidden className="flex">
+          <UserAvatar name={user.name} src={user.avatarUrl} />
+        </span>
         {showName && (
           <>
             <span className="max-w-32 truncate text-sm font-medium">{user.name}</span>
@@ -82,23 +90,24 @@ export function UserMenu({
           </>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-60 p-1.5">
-        <div className="flex items-center gap-3 px-2 py-2">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-64 p-1.5">
+        <div className="flex items-center gap-3 px-2.5 py-2">
           <UserAvatar name={user.name} src={user.avatarUrl} size="lg" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+            <p className="truncate text-small font-semibold">{user.name}</p>
+            <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
           </div>
         </div>
         <DropdownMenuSeparator />
         {links.map((link) => (
-          <DropdownMenuItem key={link.href} onClick={() => router.push(link.href)} className="px-2 py-1.5">
+          <DropdownMenuItem key={link.href} onClick={() => router.push(link.href)} className={MENU_ROW}>
             {link.icon}
             {link.label}
           </DropdownMenuItem>
         ))}
         {links.length > 0 && <DropdownMenuSeparator />}
-        <DropdownMenuItem variant="destructive" onClick={signOut} className="px-2 py-1.5">
+        {/* Signing out is not dangerous, so it is not red. */}
+        <DropdownMenuItem onClick={signOut} className={MENU_ROW}>
           <LogOut />
           Sign out
         </DropdownMenuItem>

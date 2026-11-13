@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { ApiError, api, tokenStore } from "@/lib/api";
+import { checkPhone, phoneDigits } from "@/lib/phone";
 import { getSupabase } from "@/lib/supabase";
 import type { OtpRequestResponse, Role, User } from "@/lib/types";
 
@@ -58,18 +59,19 @@ export function safeNextPath(next: string | null | undefined): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Phone numbers, normalised exactly like the server (server/validate.ts).
+// Phone numbers go through lib/phone.ts, the one normaliser; the server checks again
+// (server/validate.ts).
 // ---------------------------------------------------------------------------
 
-/** Normalise an Indian mobile number to 10 digits, or return null if invalid. */
-function normalizePhone(input: string): string | null {
-  let digits = input.replace(/[\s\-()]/g, "");
-  if (digits.startsWith("+91")) digits = digits.slice(3);
-  else if (digits.startsWith("0091")) digits = digits.slice(4);
-  else if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
-  else if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
-  return /^[6-9]\d{9}$/.test(digits) ? digits : null;
+/** The 10-digit mobile number in whatever was typed, or an error that says what to fix. */
+function phoneOrThrow(input: string): string {
+  const check = checkPhone(phoneDigits(input));
+  if (!check.ok) throw new ApiError(400, check.message, "validation_error");
+  return check.phone;
 }
+
+/** What a person reads when the API cannot be reached (the same words as lib/http.ts). */
+export const UNREACHABLE_MESSAGE = "Can't reach Nivar right now. Check your connection and try again.";
 
 /** E.164 form Supabase Auth expects. */
 const toE164 = (phone10: string) => `+91${phone10}`;
@@ -91,10 +93,18 @@ interface AuthContextValue {
   token: string | null;
   /** True until the stored session has been read and validated against /auth/me. */
   loading: boolean;
+  /**
+   * True when this tab holds a session but the profile could not be loaded (no network, API down).
+   * The session is kept: guards offer a retry instead of sending a signed-in person to sign in.
+   */
+  unreachable: boolean;
+  /** True when the session ended without the person signing out (it expired or was revoked). */
+  sessionEnded: boolean;
   requestOtp: (phone: string) => Promise<OtpRequestResponse>;
   loginWithOtp: (phone: string, otp: string, name?: string) => Promise<User>;
   loginStaff: (email: string, password: string) => Promise<User>;
   logout: () => void;
+  /** Loads the profile again; also the retry after `unreachable`. Null when it still cannot be loaded. */
   refresh: () => Promise<User | null>;
   setUser: (user: User) => void;
 }
@@ -143,6 +153,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   /** True while a login call is fetching /auth/me itself, so the effect below does not duplicate it. */
   const signingIn = useRef(false);
+  /** A code Supabase accepted while the profile then failed to load: a second try must not spend it again. */
+  const verified = useRef<{ phone: string; accessToken: string } | null>(null);
+
+  // A token that goes away without logout() means the session expired or was revoked (a 401 clears
+  // it in api.ts): sign-in pages then say so. Adjusted while rendering, so guards see it together
+  // with the missing token.
+  const [seenToken, setSeenToken] = useState(token);
+  const [sessionEnded, setSessionEnded] = useState(false);
+  if (seenToken !== token) {
+    setSeenToken(token);
+    setSessionEnded(seenToken !== null && token === null && !signedOutRecently());
+  }
 
   // Validate whichever session this tab holds. A 401 clears the session inside api.ts.
   useEffect(() => {
@@ -165,12 +187,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const current = session && key && session.key === key ? session : null;
   const user = current?.user ?? null;
   const loading = !hydrated || (token !== null && current === null);
+  const unreachable = Boolean(current?.failed);
 
-  const requestOtp = useCallback((phone: string) => {
-    const phone10 = normalizePhone(phone);
-    if (!phone10) {
-      return Promise.reject(new ApiError(400, "Enter a valid 10 digit Indian mobile number.", "validation_error"));
-    }
+  const requestOtp = useCallback(async (phone: string) => {
+    const phone10 = phoneOrThrow(phone);
     return api.post<OtpRequestResponse>("/auth/otp/request", { phone: phone10 }, { anonymous: true });
   }, []);
 
@@ -182,6 +202,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (check) me = await check(me);
       setSession({ key: subjectOf(accessToken), user: me });
       return me;
+    } catch (err) {
+      // Signed in, but the profile did not load: keep the session so guards offer a retry rather
+      // than waiting for ever. A 401, or a check that signed the person out, has cleared it already.
+      if (tokenStore.get() !== null && !(err instanceof ApiError && err.status === 401)) {
+        setSession({ key: subjectOf(accessToken), user: null, failed: true });
+      }
+      throw err;
     } finally {
       signingIn.current = false;
     }
@@ -189,24 +216,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithOtp = useCallback(
     async (phone: string, otp: string, name?: string) => {
-      const phone10 = normalizePhone(phone);
-      if (!phone10) throw new ApiError(400, "Enter a valid 10 digit Indian mobile number.", "validation_error");
-      const { data, error } = await getSupabase().auth.verifyOtp({
-        phone: toE164(phone10),
-        token: otp.trim(),
-        type: "sms",
-      });
-      if (error || !data.session) {
-        throw new ApiError(400, "That code is not correct or has expired", "invalid_otp");
+      const phone10 = phoneOrThrow(phone);
+      let accessToken =
+        verified.current?.phone === phone10 && tokenStore.get() !== null ? verified.current.accessToken : null;
+      if (!accessToken) {
+        const { data, error } = await getSupabase().auth.verifyOtp({
+          phone: toE164(phone10),
+          token: otp.trim(),
+          type: "sms",
+        });
+        if (error || !data.session) {
+          // No answer, a server fault or a rate limit is not a wrong code: say which it was.
+          const status = error?.status ?? 0;
+          if (error && (status === 0 || status >= 500)) throw new ApiError(0, UNREACHABLE_MESSAGE);
+          if (status === 429) {
+            throw new ApiError(429, "Too many tries. Wait a minute, then try again.", "rate_limited");
+          }
+          throw new ApiError(400, "That OTP isn't right or has expired.", "invalid_otp");
+        }
+        accessToken = data.session.access_token;
+        verified.current = { phone: phone10, accessToken };
       }
       const trimmed = name?.trim();
-      return completeSignIn(data.session.access_token, async (me) => {
-        if (trimmed && !me.name?.trim()) {
+      const me = await completeSignIn(accessToken, async (me) => {
+        if (!trimmed || me.name?.trim()) return me;
+        try {
           const { user: updated } = await api.patch<{ user: User }>("/me", { name: trimmed });
           return updated ?? { ...me, name: trimmed };
+        } catch {
+          // The sign-in itself worked: let the person in, and the app asks for the name again.
+          return me;
         }
-        return me;
       });
+      verified.current = null;
+      return me;
     },
     [completeSignIn],
   );
@@ -219,6 +262,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return completeSignIn(data.session.access_token, async (me) => {
         if (me.role === "customer") {
+          // A deliberate sign-out, not an expiry.
+          lastLogoutAt = Date.now();
           tokenStore.clear();
           throw new ApiError(403, "Use the patient sign in for this account", "forbidden");
         }
@@ -230,6 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     lastLogoutAt = Date.now();
+    verified.current = null;
     tokenStore.clear();
     setSession(null);
   }, []);
@@ -256,6 +302,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       token: current ? token : null,
       loading,
+      unreachable,
+      sessionEnded,
       requestOtp,
       loginWithOtp,
       loginStaff,
@@ -263,7 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh,
       setUser,
     }),
-    [user, current, token, loading, requestOtp, loginWithOtp, loginStaff, logout, refresh, setUser],
+    [user, current, token, loading, unreachable, sessionEnded, requestOtp, loginWithOtp, loginStaff, logout, refresh, setUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,24 +1,28 @@
-/* Sound (spec §5.12), off by default. The AudioContext is created inside the toggle's click (or
-   the first press inside the experience, when it was left on last time), as an "ambient" audio
-   session so the iOS silent switch is respected. Master gain (600 ms fade-in) → compressor
-   (−18 dB, 3:1). Chimes are struck-bar tones: sine partials at f and 2.76f, decaying with
-   τ 0.6 s, peak gain ≤ .06. No breath bed in v1, and never lib/heart-sound: a free-running beat
-   could pull the taps of someone counting their pulse. */
+/* Sound. The top bar's control keeps it per tool: Breathe's pacing chimes are off until asked for, and
+   the chime that ends an eye break or a rest is on. The AudioContext is created inside a press (the
+   toggle, or the first press inside the experience while sound is on), as an "ambient" audio session so
+   the iOS silent switch is respected. Master gain → a limiter (−10 dB, 12:1). Chimes are struck-bar
+   tones: sine partials at f and 2.76f, decaying with τ 0.6 s, between 440 and 880 Hz so a phone speaker
+   carries them, peak gain .18. No breath bed, and never lib/heart-sound: a free-running beat could pull
+   the taps of someone counting their pulse. */
 
 export type Chime = "in" | "out" | "prompt" | "done" | "look-back";
 
 const NOTES: Record<Chime, readonly number[]> = {
-  in: [392], // G4
-  out: [293.66], // D4
+  in: [587.33], // D5
+  out: [440], // A4, a fourth below
   prompt: [659.25], // E5
-  done: [392, 493.88, 587.33], // G4, B4, D5
+  done: [587.33, 739.99, 880], // D5, F♯5, A5
   "look-back": [587.33, 783.99], // D5, then G5
 };
 const STEP: Record<Chime, number> = { in: 0, out: 0, prompt: 0, done: 0.16, "look-back": 0.3 };
 
-const PEAK = 0.06;
+const PEAK = 0.18;
 const TAU = 0.6;
 const ATTACK = 0.012;
+/** The master gain's fade-in when the context starts; the preview chime needs it up at once. */
+const FADE_IN_MS = 600;
+const PREVIEW_FADE_MS = 40;
 
 type AudioWindow = Window & { webkitAudioContext?: typeof AudioContext };
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
@@ -28,6 +32,8 @@ class Sound {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private suspendTimer = 0;
+  /** Faded out on purpose (the sheet closed, or Sound went off): revive() leaves the context asleep. */
+  private parked = true;
 
   /** Turns sound on. Call from a click or key press: browsers only start audio from a gesture. */
   enable(): void {
@@ -45,19 +51,28 @@ class Sound {
    * (a deep link, Back, a touch before it lifts) it waits: browsers refuse to start audio then, and warn.
    */
   wake(): void {
-    if (this.on) this.start();
+    if (this.on) this.start(FADE_IN_MS);
   }
 
   /**
-   * Starts the context for cue() alone, leaving `on` (and so every chime and tick) as it is: the Eyes
-   * chime sounds with Sound off. Call it only inside a gesture, like wake().
+   * Sound switched on: the "in" chime at once, so the person hears that it works before they start.
+   * Call it inside the press that switched it on.
    */
-  prime(): void {
-    this.start();
+  preview(): void {
+    this.on = true;
+    this.start(PREVIEW_FADE_MS);
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const strike = () => {
+      if (this.on && ctx.state === "running") this.strike(ctx, "in");
+    };
+    if (ctx.state === "running") strike();
+    else ctx.resume().then(strike, () => {});
   }
 
   /** Gain to 0, then suspend (closing the experience: over its close, 280 ms at ×1). */
   fadeOut(ms: number): void {
+    this.parked = true;
     if (!this.ctx) return;
     this.ramp(0, ms);
     window.clearTimeout(this.suspendTimer);
@@ -69,12 +84,6 @@ class Sound {
   chime(kind: Chime): void {
     const ctx = this.ready();
     if (ctx) this.strike(ctx, kind);
-  }
-
-  /** A chime that plays whenever the context runs (primed or woken), whatever `on` says. */
-  cue(kind: Chime): void {
-    const ctx = this.ctx;
-    if (ctx?.state === "running") this.strike(ctx, kind);
   }
 
   /** The Tap along tick: 30 ms of 880 Hz at gain .03. */
@@ -96,13 +105,29 @@ class Sound {
     return this.on && this.ctx?.state === "running" ? this.ctx : null;
   }
 
-  private start(): void {
+  private start(fadeMs: number): void {
     if (!(navigator.userActivation?.isActive ?? true) || !this.build()) return;
-    window.clearTimeout(this.suspendTimer);
     const ctx = this.ctx!;
+    // The gain fades in only out of a parked state: every press inside the sheet lands here, and a
+    // fade restarted by one would swallow the chime that is ringing.
+    if (this.parked) {
+      window.clearTimeout(this.suspendTimer);
+      this.parked = false;
+      this.ramp(1, fadeMs);
+    }
     if (ctx.state !== "running") ctx.resume().catch(() => {});
-    this.ramp(1, 600);
   }
+
+  /**
+   * A phone call, the lock screen or another app can leave the context suspended, and a rest's last
+   * chimes would then stay silent. While sound is on and the sheet is open, it is resumed whenever the
+   * page shows again or the context changes state.
+   */
+  private revive = (): void => {
+    const ctx = this.ctx;
+    if (!ctx || !this.on || this.parked || ctx.state === "running" || ctx.state === "closed") return;
+    ctx.resume().catch(() => {});
+  };
 
   private strike(ctx: AudioContext, kind: Chime): void {
     const at = ctx.currentTime + 0.02;
@@ -121,13 +146,19 @@ class Sound {
     }
     try {
       const ctx = new Context();
-      const compressor = ctx.createDynamicsCompressor();
-      compressor.threshold.value = -18;
-      compressor.ratio.value = 3;
+      // A limiter: single chimes pass untouched, and the three notes of "done" cannot clip together.
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -10;
+      limiter.knee.value = 6;
+      limiter.ratio.value = 12;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.25;
       const master = ctx.createGain();
       master.gain.value = 0;
-      master.connect(compressor);
-      compressor.connect(ctx.destination);
+      master.connect(limiter);
+      limiter.connect(ctx.destination);
+      ctx.addEventListener("statechange", this.revive);
+      document.addEventListener("visibilitychange", this.revive);
       this.ctx = ctx;
       this.master = master;
       return true;

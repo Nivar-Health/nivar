@@ -3,8 +3,11 @@
 import { useSyncExternalStore } from "react";
 
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
-/** The visitor's own pause (MotionToggle), per browser. Only "paused" is ever stored. */
-const STORAGE_KEY = "nivar.motion";
+/**
+ * The visitor's own pause (MotionToggle), per browser. Only "paused" is ever stored. Exported for the
+ * script that applies it before first paint (chrome-signals.ts), so a paused page never starts moving.
+ */
+export const MOTION_STORAGE_KEY = "nivar.motion";
 
 type State = { osReduced: boolean; userPaused: boolean };
 
@@ -15,7 +18,7 @@ const listeners = new Set<() => void>();
 /** The stored pause, or null when storage is blocked (the choice then lives in memory only). */
 function readStored(): boolean | null {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === "paused";
+    return window.localStorage.getItem(MOTION_STORAGE_KEY) === "paused";
   } catch {
     return null;
   }
@@ -47,7 +50,7 @@ function subscribe(listener: () => void) {
     const onChange = () => update({ osReduced: mq.matches });
     // The switch flipped in another tab.
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY || e.key === null) update({ userPaused: readStored() ?? read().userPaused });
+      if (e.key === MOTION_STORAGE_KEY || e.key === null) update({ userPaused: readStored() ?? read().userPaused });
     };
     mq.addEventListener("change", onChange);
     window.addEventListener("storage", onStorage);
@@ -97,8 +100,8 @@ export function useMotionPaused(): boolean {
 /** Pauses or plays every landing animation for this visitor, and remembers it where storage allows. */
 export function setUserMotionPaused(paused: boolean): void {
   try {
-    if (paused) window.localStorage.setItem(STORAGE_KEY, "paused");
-    else window.localStorage.removeItem(STORAGE_KEY);
+    if (paused) window.localStorage.setItem(MOTION_STORAGE_KEY, "paused");
+    else window.localStorage.removeItem(MOTION_STORAGE_KEY);
   } catch {
     // Blocked storage: the choice holds for this page view.
   }

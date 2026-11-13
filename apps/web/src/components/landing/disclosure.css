@@ -85,10 +85,11 @@
   }
   .nv-disc-meta {
     margin-top: 2px;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.35;
     font-weight: 500;
     color: var(--ink-3);
+    text-wrap: balance;
   }
   .nv-disc-value {
     flex: none;
@@ -107,7 +108,9 @@
     block-size: 1.25rem;
     margin-inline-start: auto;
     color: var(--jade);
-    transition: rotate 240ms var(--curve-standard);
+    transition:
+      rotate 240ms var(--curve-standard),
+      translate 180ms var(--curve-standard);
   }
   .nv-disc[open] > .nv-disc-sum > .nv-disc-chev {
     rotate: 180deg;
@@ -243,6 +246,21 @@
     }
     .nv-disc--dark > .nv-disc-sum:hover > .nv-disc-chev {
       color: var(--on-pine);
+    }
+  }
+  /* The two title colours are too close to tell apart, so a card also answers the pointer with a firmer
+     ring. It switches at once: no shadow animates. Its own rule, as every :has() rule here is. */
+  @media (hover: hover) and (pointer: fine) {
+    .nv-disc--card:has(> .nv-disc-sum:hover) {
+      box-shadow:
+        0 0 0 1px rgb(1 58 72 / 0.16),
+        0 1px 2px rgb(1 43 54 / 0.05);
+    }
+  }
+  /* A closed card's chevron leans the way it will open. Travel, so not under reduced motion or a pause. */
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    html:not([data-motion="paused"]) .nv-disc--card:not([open]) > .nv-disc-sum:hover > .nv-disc-chev {
+      translate: 0 2px;
     }
   }
 

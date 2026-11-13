@@ -5,8 +5,7 @@ import { useId, useRef, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { Disclosure } from "./disclosure";
 import type { ChecklistItem } from "./health-content";
-import { Pearl } from "./take-a-minute/pearl";
-import { ExternalLink } from "./tip-deck";
+import { ExternalLink, MinuteLauncher } from "./tip-deck";
 import "./health-tips.css";
 
 /* Ticks live for the IST calendar day: { day: "YYYY-MM-DD", done: ids }. Storage can be missing or
@@ -79,11 +78,14 @@ function doneLabel(n: number, total: number) {
   return n >= total ? "All done." : `${n} of ${total} done`;
 }
 
-/** The closed row's line: what the list is for and how far along it is. */
+/**
+ * The closed row's line: what the list is for and how far along it is, also once every box is ticked.
+ * Short enough to stay on one line beside the icon and the chevron on a 360px phone.
+ */
 function metaLabel(n: number, total: number) {
-  if (n >= total) return "All done.";
   const lead = "For the day of your visit · ";
-  return n === 0 ? `${lead}${total} ${total === 1 ? "thing" : "things"} to check` : `${lead}${doneLabel(n, total)}`;
+  if (n >= total) return `${lead}all ${total} done`;
+  return n === 0 ? `${lead}${total} to check` : `${lead}${doneLabel(n, total)}`;
 }
 
 /**
@@ -167,24 +169,14 @@ export function VisitChecklist({ items, className }: { items: readonly Checklist
                   </label>
                 </div>
                 <div className="pl-[2.125rem] md:max-w-[33.125rem]">
-                  <p className="mt-1 text-caption text-ink-3">
+                  <p className="mt-1 text-sm text-ink-3">
                     {item.source.url ? (
                       <ExternalLink href={item.source.url}>{item.source.label}</ExternalLink>
                     ) : (
                       item.source.label
                     )}
                   </p>
-                  {item.id === "rest" && (
-                    <button
-                      type="button"
-                      data-minute-open="rest"
-                      aria-haspopup="dialog"
-                      className="nv-habits-rest mt-2.5 flex min-h-11 w-fit max-w-full items-center gap-2 rounded-full bg-white py-1.5 pr-3.5 pl-2 text-left text-[0.875rem] leading-[1.25] font-semibold text-balance text-primary shadow-xs ring-1 ring-border-strong ring-inset focus-ring transition-[background-color,scale] duration-180 hover:bg-aqua/50 active:scale-[0.97] active:bg-aqua active:duration-90 motion-reduce:active:scale-100 forced-colors:border forced-colors:border-[ButtonText] sm:gap-2.5 sm:pr-4 sm:pl-2.5 sm:text-[0.9375rem]"
-                    >
-                      <Pearl size={22} />
-                      Use the 5-minute rest timer
-                    </button>
-                  )}
+                  {item.id === "rest" && <MinuteLauncher tool="rest" className="mt-2.5" />}
                 </div>
               </li>
             );

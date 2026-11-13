@@ -28,7 +28,8 @@ export type LandingCatalog = Catalog & { live: boolean };
 
 /**
  * Live catalogue from the API (so admin price edits show up immediately),
- * with a short timeout and a static fallback if the API is down.
+ * with a short timeout and a static fallback if the API is down. The fallback is logged on the
+ * server, because the page then shows the snapshot's prices with nothing on it to say so.
  */
 export async function getCatalog(): Promise<LandingCatalog> {
   try {
@@ -47,7 +48,8 @@ export async function getCatalog(): Promise<LandingCatalog> {
       packages: [...packages].sort((a, b) => a.sortOrder - b.sortOrder),
       live: true,
     };
-  } catch {
+  } catch (err) {
+    console.warn("[catalog] API unreachable, showing the fallback snapshot:", err instanceof Error ? err.message : err);
     return { services: FALLBACK_SERVICES, packages: FALLBACK_PACKAGES, live: false };
   }
 }

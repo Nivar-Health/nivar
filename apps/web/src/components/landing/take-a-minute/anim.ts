@@ -1,6 +1,6 @@
 import { animateValue, styleEffect, type MotionValue } from "motion";
 
-/* The choreography's moves (spec §5.8), on motion's low-level API: motion values, animateValue and
+/* The choreography's moves, on motion's low-level API: motion values, animateValue and
    styleEffect. The same spring and tween engine as motion/react's animate(), about 18 kB gzip
    lighter for the lazy chunk (LazyMotion, m and animate() cost 28 kB together).
 
@@ -60,6 +60,14 @@ export function tween(
     times: o.times,
     delay: (o.delay ?? 0) * 1000,
   });
+}
+
+/** Ends the animation on a value that is about to be set by hand, so the next frame does not overwrite it. */
+export function settle(value: MotionValue<number>): void {
+  const playback = live.get(value);
+  if (!playback) return;
+  playback.stop();
+  live.delete(value);
 }
 
 /** Stops whatever is animating these values (unmount). */

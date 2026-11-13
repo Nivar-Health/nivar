@@ -27,15 +27,17 @@ export type LabelScale = "console" | "landing";
 export type CanvasSize = { width: number; height: number; dpr: number };
 
 /**
- * Keeps a canvas sized to its container at device pixel ratio.
- * Calls `onResize` (from a ResizeObserver callback, never during render).
+ * Keeps a canvas sized to its container at device pixel ratio, up to `maxDpr` (3 unless a caller asks
+ * for a lighter canvas). Calls `onResize` (from a ResizeObserver callback, never during render).
  */
-export function useHiDpiCanvas(onResize: (size: CanvasSize, canvas: HTMLCanvasElement) => void) {
+export function useHiDpiCanvas(onResize: (size: CanvasSize, canvas: HTMLCanvasElement) => void, maxDpr = 3) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cbRef = useRef(onResize);
+  const maxDprRef = useRef(maxDpr);
   useEffect(() => {
     cbRef.current = onResize;
+    maxDprRef.current = maxDpr;
   });
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export function useHiDpiCanvas(onResize: (size: CanvasSize, canvas: HTMLCanvasEl
     let last = "";
     const apply = () => {
       const rect = container.getBoundingClientRect();
-      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      const dpr = Math.min(maxDprRef.current, window.devicePixelRatio || 1);
       const width = Math.max(1, Math.floor(rect.width));
       const height = Math.max(1, Math.floor(rect.height));
       const key = `${width}x${height}@${dpr}`;

@@ -7,18 +7,24 @@ import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
 /**
- * Split sign-in layout. Desktop: deep pine brand panel on faint ECG paper with a single
- * trace on the left, form on the right. Mobile: single column with a slim pine brand header.
+ * Split sign-in layout. Desktop: dark brand panel on faint ECG paper with a single
+ * trace on the left, form on the right. Mobile: single column with a slim dark brand header.
  */
 export function AuthLayout({
   eyebrow,
   headline,
+  headlineAs: Headline = "h1",
   points,
   footnote,
   children,
 }: {
   eyebrow: string;
   headline: ReactNode;
+  /**
+   * The brand panel only shows from 1024px. Pass "p" when the form carries the page's h1 itself,
+   * so the page has exactly one h1 at every width.
+   */
+  headlineAs?: "h1" | "p";
   points: string[];
   footnote?: ReactNode;
   children: ReactNode;
@@ -35,10 +41,10 @@ export function AuthLayout({
           </Link>
 
           <div className="mt-auto max-w-md pb-6">
-            <p className="text-[13px] font-medium text-muted-foreground">{eyebrow}</p>
-            <h1 className="mt-4 font-display text-[2.6rem] leading-[1.08] text-foreground xl:text-5xl">
+            <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p>
+            <Headline className="mt-4 font-display text-[2.6rem] leading-[1.08] text-balance text-foreground xl:text-5xl">
               {headline}
-            </h1>
+            </Headline>
             <ul className="mt-8 flex flex-col gap-3.5">
               {points.map((point) => (
                 <li key={point} className="flex items-start gap-3 text-[15px] leading-snug text-pretty text-foreground-2">
@@ -75,7 +81,7 @@ export function AuthLayout({
           <Link href="/" className="rounded-md focus-ring">
             <Logo size="sm" variant="light" />
           </Link>
-          <span className="text-xs font-medium text-muted-foreground">{eyebrow}</span>
+          <span className="text-sm font-medium text-muted-foreground">{eyebrow}</span>
         </div>
         <EcgLine
           beats={3}

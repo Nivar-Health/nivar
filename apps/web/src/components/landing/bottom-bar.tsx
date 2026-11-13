@@ -6,27 +6,27 @@ import type { JSX, MouseEvent as ReactMouseEvent } from "react";
 import { TabGlyph, type GlyphKind } from "./bar-icons";
 import { WhatsAppIcon, whatsappHref } from "./whatsapp";
 
-export type TabId = "services" | "check-ups" | "health-tips" | "nurses";
+export type TabId = "services" | "nurses" | "check-ups";
 type Slot = TabId | "key" | "menu";
 
 const TABS: Readonly<Record<TabId, { href: `#${string}`; label: string; glyph: GlyphKind }>> = {
   services: { href: "#services", label: "Services", glyph: "services" },
-  "check-ups": { href: "#check-ups", label: "Check-ups", glyph: "check-ups" },
-  "health-tips": { href: "#health-tips", label: "Health tips", glyph: "health" },
   nurses: { href: "#nurses", label: "Your nurse", glyph: "nurse" },
+  "check-ups": { href: "#check-ups", label: "Check-ups", glyph: "check-ups" },
 };
 
-/** Left to right. Founder question 1, the other way: replace "health-tips" with "nurses". */
-export const BAR_SLOTS: readonly Slot[] = ["services", "check-ups", "key", "health-tips", "menu"];
+/** Left to right in the page's own order, so the mark walks along the bar as the page scrolls. */
+export const BAR_SLOTS: readonly Slot[] = ["services", "nurses", "key", "check-ups", "menu"];
 
+/** The tab each section marks. Questions and Small habits have no tab: they are in the menu. */
 const SECTION_TAB: Readonly<Record<string, TabId | "menu">> = {
   services: "services",
   "how-it-works": "services",
   nurses: "nurses",
   compare: "nurses",
   "check-ups": "check-ups",
-  "health-tips": "health-tips",
   faq: "menu",
+  "health-tips": "menu",
 };
 
 /** The slot that carries the mark: the section's own tab when the bar has it, else Menu; null at the hero and the form. */

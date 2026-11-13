@@ -1,8 +1,10 @@
 import { MINUTE_SOURCES } from "../../health-sources";
 import { PROVERBS } from "../../l10n";
 
-/* Every line the four tools show or announce, verbatim from spec §3.12. Sources come from
-   MINUTE_SOURCES (health-sources.ts), so "All sources" on the page lists the same links. */
+/* Every line the four tools show or announce. The health sentences (technique, posture, readings and
+   every `always` safety line) are sourced and were clinically checked: where they show can change, their
+   words cannot without a new check. Sources come from MINUTE_SOURCES (health-sources.ts), so "All
+   sources" on the page lists the same links. */
 
 /** A sentence with links in it: plain strings and { text, href } parts, in reading order. */
 export type Rich = readonly (string | { text: string; href: string })[];
@@ -10,15 +12,27 @@ export type Rich = readonly (string | { text: string; href: string })[];
 /** Shared by every tool. */
 export const COMMON = {
   getReady: "Get ready",
+  settleIn: "Settle in",
   leadInLine: "Sit comfortably and let your shoulders drop.",
   away: "Paused while you were away.",
+  backPaused: "Paused. Go back again to close.",
   paused: "Paused",
   pause: "Pause",
   resume: "Resume",
   stop: "Stop",
+  end: "End",
   again: "Again",
   done: "Done",
   timeLeft: "Time left",
+  /** Under the orb while paused: "0:39 left". */
+  left: (clock: string) => `${clock} left`,
+  /** Time in words, once a minute: never seconds. */
+  aboutLeft: (minutes: number) => `About ${minutes} ${minutes === 1 ? "minute" : "minutes"} left`,
+  screenMayOff: "Your screen may switch off before the end. The time will still be right when you come back.",
+  about: "About this exercise",
+  sources: "Sources",
+  call112: "Call 112",
+  call108: "Call 108 (ambulance)",
 } as const;
 
 export const ANNOUNCE = {
@@ -29,30 +43,42 @@ export const ANNOUNCE = {
 
 const MINUTES_WORD: Record<1 | 3 | 5, string> = { 1: "one", 3: "three", 5: "five" };
 
+const BREATHE_ALWAYS = "Feel dizzy or unwell? Stop and breathe normally.";
+
 export const BREATHE = {
   word: "Breathe",
-  idleSub: "Five counts in, five counts out",
+  technique: "In through your nose, out through your mouth, without forcing it.",
   chips: [1, 3, 5] as const,
   chip: (m: number) => `${m} min`,
   chipsLabel: "Length",
+  /** The pace, one quiet button: what is so now, then what a press does. Five's caveat is the NHS's own. */
+  pace: {
+    5: { now: "You may not reach five at first.", press: "Try four counts." },
+    4: { now: "Counting to four.", press: "Back to five." },
+  },
+  /** Announced when the pace changes, as the button under focus only changes its words. */
+  paceSaid: { 5: "Five counts in, five counts out.", 4: "Four counts in, four counts out." },
   start: "Start breathing",
   restLink: "Before a blood pressure reading? Use the 5-minute rest.",
-  welcome: "Welcome back.",
+  breatheOut: "Let your breath out.",
   inhale: "Breathe in",
   exhale: "Breathe out",
-  left: (m: number) => `left of ${m} ${m === 1 ? "minute" : "minutes"}`,
   done: (m: 1 | 3 | 5) => `That's ${MINUTES_WORD[m]} calm ${m === 1 ? "minute" : "minutes"}. Notice how you feel.`,
   proverb: PROVERBS[0],
-  keepGoing: (m: number) => `Keep going for ${m} minutes`,
+  stay: (m: number) => `Stay a little longer · ${m} min`,
+  soundTip: "Tip: turn on sound to follow with your eyes closed.",
+  always: BREATHE_ALWAYS,
+  /** About this exercise: the source, the safety line (which leaves the done screen but stays here) and what is kept. */
   fine: [
-    ["In through your nose, out through your mouth, without forcing it. You may not reach 5 at first."],
     [
       "Technique: ",
       { text: "NHS, Breathing exercises for stress", href: MINUTE_SOURCES.nhsBreathing.url },
       ". The NHS suggests at least 5 minutes.",
     ],
+    [BREATHE_ALWAYS],
+    ["Nothing you do here is saved or sent. Your choices stay on this device."],
   ] satisfies readonly Rich[],
-  always: "Feel dizzy or unwell? Stop and breathe normally.",
+  announceStart: "Starting. Let your breath out.",
 } as const;
 
 export type RestPart = "bladder" | "back" | "feet" | "arm" | "cuff" | "clock" | "mouth";
@@ -86,8 +112,13 @@ export const REST = {
     "Not pregnant, and higher than 180/120? Wait at least a minute and measure again. Still that high, with no symptoms? Contact your doctor as soon as possible.",
     "Pregnant? Ask your doctor which readings need urgent care.",
   ],
+  /** Heads the high-reading guidance on the done screen. */
+  highLabel: "If a reading is higher than 180/120",
+  again: "Rest again",
   always:
     "Higher than 180/120 with chest pain, shortness of breath, back pain, numbness, weakness, a change in vision or difficulty speaking? Call 112 (or 108 for an ambulance) now.",
+  /** The text button that opens `always` in place before and during the rest. */
+  alwaysLabel: "When a high reading is an emergency",
   sources: [
     "How to sit, rest and take readings: ",
     { text: "US CDC", href: MINUTE_SOURCES.cdcMeasureBp.url },
@@ -95,6 +126,12 @@ export const REST = {
     { text: "American Heart Association", href: MINUTE_SOURCES.ahaCrisis.url },
     ".",
   ] satisfies Rich,
+} as const;
+
+/** Pulse's safety line is two sentences: the first shows as the quiet line, the second opens from a text button. */
+const PULSE_ALWAYS = {
+  line: "If the rhythm feels irregular, tell a doctor.",
+  emergency: "Fast or irregular with chest pain, breathlessness, dizziness or fainting? Call 112 (or 108 for an ambulance) now.",
 } as const;
 
 export const PULSE = {
@@ -123,8 +160,11 @@ export const PULSE = {
     "That's outside the usual resting range of 60 to 100. Rest for 10 minutes and count again. If you get a similar number again, talk to a doctor.",
   fewTaps: (n: number) => `Only ${n} ${n === 1 ? "tap" : "taps"}. Rest a moment and try again, or switch to Just count.`,
   again: "Count again",
-  always:
-    "If the rhythm feels irregular, tell a doctor. Fast or irregular with chest pain, breathlessness, dizziness or fainting? Call 112 (or 108 for an ambulance) now.",
+  always: `${PULSE_ALWAYS.line} ${PULSE_ALWAYS.emergency}`,
+  alwaysLine: PULSE_ALWAYS.line,
+  alwaysEmergency: PULSE_ALWAYS.emergency,
+  /** The text button that opens the emergency sentence in place until the result. */
+  alwaysLabel: "When to call 112",
   sources: [
     "Sources: ",
     { text: "MedlinePlus, Pulse", href: MINUTE_SOURCES.medlinePulse.url },
@@ -141,7 +181,6 @@ export const EYES = {
   idleWord: "seconds",
   idleBody: "Every 20 minutes, look at something at least 20 feet (about 6 metres) away for at least 20 seconds.",
   start: "Start a 20-second break",
-  chime: "Chime when it's time to look back",
   leadIn: "When the count ends, look out of a window or to the far end of the room.",
   running: "Look away now: out of a window, or to the far end of the room.",
   left: "left of 20 seconds",

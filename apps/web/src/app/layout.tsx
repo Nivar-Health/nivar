@@ -27,6 +27,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en-IN"
       className={cn(generalSans.variable, notoKannada.variable, notoDevanagari.variable, "h-full antialiased")}
+      // The public site marks <html> before React hydrates (SiteRoot in landing/chrome-signals.ts).
+      suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>

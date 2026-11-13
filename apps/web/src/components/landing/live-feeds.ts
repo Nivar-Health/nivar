@@ -17,12 +17,32 @@ export function useInView(ref: RefObject<Element | null>, rootMargin = "160px"):
   const [inView, setInView] = useState(false);
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { rootMargin });
     io.observe(el);
     return () => io.disconnect();
   }, [ref, rootMargin]);
   return inView;
+}
+
+/** True from the first time the element comes within `rootMargin` of the screen: the cue to fetch what it will need. */
+export function useNear(ref: RefObject<Element | null>, rootMargin = "600px"): boolean {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        setNear(true);
+      },
+      { rootMargin },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, rootMargin]);
+  return near;
 }
 
 /** A local simulated Smart ECG feed (multicast; runs only while subscribed). */
@@ -35,15 +55,4 @@ export function useEcgFeed(heartRate: number): Feed<EcgChunk> {
 export function useStethFeed(heartRate: number): Feed<StethChunk> {
   const [feed] = useState(() => simulatorFeed(createStethSimulator({ heartRate })));
   return feed;
-}
-
-/** Shows a "connecting" state briefly on mount, like a device pairing. */
-export function usePairing(active: boolean, ms = 900): boolean {
-  const [paired, setPaired] = useState(false);
-  useEffect(() => {
-    if (!active || paired) return;
-    const t = window.setTimeout(() => setPaired(true), ms);
-    return () => window.clearTimeout(t);
-  }, [active, paired, ms]);
-  return paired;
 }

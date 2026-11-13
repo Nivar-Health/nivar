@@ -1,23 +1,24 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Session, SessionOptions, SessionPhase } from "./types";
 
-/* The Take a minute clock (spec §5.4–§5.5). One rAF loop, only during the lead-in and while running.
-   elapsed = banked + (now − since). React re-renders once a second; every frame goes to onFrame, which
-   writes the ring and the orb through the api, never through React state. */
+/* The Take a minute clock. One loop, only during the lead-in and while running: animation frames for
+   paced motion, or a timer when only the ring moves (options.tick). elapsed = banked + (now − since).
+   React re-renders once a second; every tick goes to onFrame, which writes the ring and the orb through
+   the api, never through React state. */
 
 const LEAD_IN_MS = 3000;
-/** A longer gap between frames is sleep or a throttled tab, not time spent (pauseWhenHidden only). */
+/** A longer gap between ticks is sleep or a throttled tab, not time spent (pauseWhenHidden only). */
 const MAX_FRAME_GAP_MS = 1000;
 
-type View = Pick<Session, "phase" | "secondsLeft" | "leadInLeft" | "pausedByVisibility" | "totalMs">;
+type View = Pick<Session, "phase" | "secondsLeft" | "leadInLeft" | "pausedByVisibility" | "totalMs" | "screenHeld">;
 
-const IDLE: View = { phase: "idle", secondsLeft: 0, leadInLeft: 0, pausedByVisibility: false, totalMs: 0 };
+const IDLE: View = { phase: "idle", secondsLeft: 0, leadInLeft: 0, pausedByVisibility: false, totalMs: 0, screenHeld: null };
 
 const secondsIn = (ms: number) => Math.max(0, Math.ceil(ms / 1000));
 
 const doneListeners = new Set<() => void>();
 
-/** Called whenever any session reaches done: the shell's done-dot on the corner button. */
+/** Called whenever any session reaches done: the shell's done-dot on the corner button, and its quiet ending. */
 export function onSessionDone(listener: () => void): () => void {
   doneListeners.add(listener);
   return () => {
@@ -41,8 +42,11 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
   /** performance.now() when running last (re)started. */
   let since = 0;
   let leadSince = 0;
+  /** The length of the lead-in now playing: the first one, or the shorter one before a Resume. */
+  let leadLength = 0;
   let lastFrame = 0;
   let raf = 0;
+  let timer = 0;
   /** This run started with a lead-in, so Resume after an away pause replays it. */
   let withLeadIn = true;
   let pausedFrom: "leadin" | "running" | null = null;
@@ -63,7 +67,8 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
       next.secondsLeft === shown.secondsLeft &&
       next.leadInLeft === shown.leadInLeft &&
       next.pausedByVisibility === shown.pausedByVisibility &&
-      next.totalMs === shown.totalMs
+      next.totalMs === shown.totalMs &&
+      next.screenHeld === shown.screenHeld
     ) {
       return;
     }
@@ -71,7 +76,11 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
     publish(next);
   }
 
-  /** Screen wake lock while counting: taken on start and resume, dropped on pause, stop, done and unmount. */
+  /**
+   * Screen wake lock while counting: taken on start and resume, dropped on pause, stop, done and unmount.
+   * The view says whether the browser granted it, so a tool can tell the person when the screen may
+   * switch off before the end.
+   */
   function holdScreen(on: boolean) {
     wantLock = on;
     if (!on) {
@@ -79,20 +88,40 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
       lock = null;
       return;
     }
-    if (lock && !lock.released) return;
+    if (lock && !lock.released) {
+      show({ screenHeld: true });
+      return;
+    }
     lock = null;
-    if (typeof navigator === "undefined" || !("wakeLock" in navigator) || document.hidden) return;
+    if (typeof navigator === "undefined" || !("wakeLock" in navigator)) {
+      show({ screenHeld: false });
+      return;
+    }
+    // A hidden page cannot ask: onVisibility asks again when it shows.
+    if (document.hidden) return;
     navigator.wakeLock.request("screen").then(
       (sentinel) => {
-        if (wantLock && !disposed && !lock) lock = sentinel;
-        else sentinel.release().catch(() => {});
+        if (wantLock && !disposed && !lock) {
+          lock = sentinel;
+          show({ screenHeld: true });
+        } else sentinel.release().catch(() => {});
       },
-      () => {},
+      () => {
+        if (wantLock) show({ screenHeld: false });
+      },
     );
+  }
+
+  /** The next tick: a frame, or the session's timer. */
+  function schedule() {
+    const tick = options().tick ?? "frame";
+    if (tick === "frame") raf = requestAnimationFrame(frame);
+    else timer = window.setTimeout(frame, Math.max(16, tick));
   }
 
   function frame() {
     raf = 0;
+    timer = 0;
     if (disposed || (phase !== "leadin" && phase !== "running")) return;
     const now = performance.now();
     const gap = now - lastFrame;
@@ -102,15 +131,15 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
       else leadSince += gap;
     }
     if (phase === "leadin") {
-      const left = leadMs() - (now - leadSince);
+      const left = leadLength - (now - leadSince);
       if (left > 0) {
         show({ leadInLeft: secondsIn(left) });
-        raf = requestAnimationFrame(frame);
+        schedule();
         return;
       }
       phase = "running";
       // From the moment the lead-in ended, so a wall-clock session stays exact after a hidden tab.
-      since = leadSince + leadMs();
+      since = leadSince + leadLength;
       show({ phase, leadInLeft: 0 });
     }
     const elapsed = Math.max(0, banked + (now - since));
@@ -120,18 +149,20 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
     }
     options().onFrame?.(elapsed, total);
     show({ secondsLeft: secondsIn(total - elapsed) });
-    raf = requestAnimationFrame(frame);
+    schedule();
   }
 
   function run() {
-    if (raf || disposed) return;
+    if (raf || timer || disposed) return;
     lastFrame = performance.now();
-    raf = requestAnimationFrame(frame);
+    schedule();
   }
 
   function halt() {
     if (raf) cancelAnimationFrame(raf);
+    if (timer) window.clearTimeout(timer);
     raf = 0;
+    timer = 0;
   }
 
   /** `landing`: one last frame exactly on the end. Not when Resume finds nothing left to run. */
@@ -183,11 +214,19 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
       if (withLeadIn) {
         phase = "leadin";
         leadSince = now;
-        show({ phase, totalMs: total, secondsLeft: secondsIn(total), leadInLeft: secondsIn(leadMs()), pausedByVisibility: false });
+        leadLength = leadMs();
+        show({
+          phase,
+          totalMs: total,
+          secondsLeft: secondsIn(total),
+          leadInLeft: secondsIn(leadLength),
+          pausedByVisibility: false,
+          screenHeld: null,
+        });
       } else {
         phase = "running";
         since = now;
-        show({ phase, totalMs: total, secondsLeft: secondsIn(total), leadInLeft: 0, pausedByVisibility: false });
+        show({ phase, totalMs: total, secondsLeft: secondsIn(total), leadInLeft: 0, pausedByVisibility: false, screenHeld: null });
         options().onFrame?.(0, total);
       }
       holdScreen(true);
@@ -198,7 +237,8 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
     },
     resume() {
       if (disposed || phase !== "paused") return;
-      const replayLeadIn = pausedFrom === "leadin" || (byVisibility && withLeadIn);
+      const again = Math.max(0, options().resumeLeadInMs ?? 0);
+      const replayLeadIn = again > 0 || pausedFrom === "leadin" || (byVisibility && withLeadIn);
       pausedFrom = null;
       byVisibility = false;
       const now = performance.now();
@@ -212,7 +252,8 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
         }
         phase = "leadin";
         leadSince = now;
-        show({ phase, pausedByVisibility: false, leadInLeft: secondsIn(leadMs()), secondsLeft: secondsIn(total - banked) });
+        leadLength = again > 0 ? again : leadMs();
+        show({ phase, pausedByVisibility: false, leadInLeft: secondsIn(leadLength), secondsLeft: secondsIn(total - banked) });
       } else {
         phase = "running";
         since = now;
@@ -234,7 +275,7 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
     extend(addMs) {
       if (disposed || phase === "idle" || !(addMs > 0)) return;
       if (phase === "done") {
-        // Keep going: continue from where it ended, so the breathing rhythm never breaks.
+        // Stay a little longer: continue from where it ended, so the breathing rhythm never breaks.
         banked = total;
         total += addMs;
         phase = "running";
@@ -260,7 +301,7 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
 }
 
 /**
- * A countdown session: idle → leadin (3, 2, 1) → running ⇄ paused → done; stop() → idle.
+ * A countdown session: idle → leadin → running ⇄ paused → done; stop() → idle.
  * Call the methods from event handlers or effects (not during render). Unmounting cancels the loop,
  * drops the wake lock and makes no further state updates.
  */

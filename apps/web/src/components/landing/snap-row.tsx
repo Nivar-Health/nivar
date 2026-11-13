@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Children,
   isValidElement,
-  useCallback,
   useEffect,
   useId,
   useRef,
@@ -20,18 +19,17 @@ export type SnapRowProps = {
   /** Names the row (its region while it scrolls, else its list) and its buttons, e.g. "Health check-up packages". */
   label: string;
   children: ReactNode[];
-  /** Item width on the row, e.g. "basis-[85%] sm:basis-[46%]". Chip rows leave it out (auto width). */
+  /** Item width on the row, e.g. "basis-[85%] sm:basis-[46%]". */
   itemClassName?: string;
-  /** From this breakpoint the row is a plain grid, with no cue or buttons. Default "never". */
-  gridFrom?: "sm" | "md" | "lg" | "never";
-  /** Grid columns and gap once it is a grid, e.g. "sm:grid-cols-2 lg:grid-cols-3". */
+  /** The row is a plain grid from md, the one breakpoint in use; the prop only names it at the call site. */
+  gridFrom?: "md";
+  /** Grid columns and gap once it is a grid, e.g. "md:grid-cols-2 lg:grid-cols-4". */
   gridClassName?: string;
   className?: string;
-  /** "always" on card rows (one flick moves one card), "normal" on chip rows. Default "always". */
-  snapStop?: "always" | "normal";
 };
 
-const GRID_QUERY = { sm: "(min-width: 40rem)", md: "(min-width: 48rem)", lg: "(min-width: 64rem)" } as const;
+/** From md the row is a plain grid, with no cue or buttons (snap-row.css). */
+const GRID_QUERY = "(min-width: 48rem)";
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
 /** The edge fade's width (--nv-snap-fade, 2rem in snap-row.css). */
 const FADE_PX = 32;
@@ -44,23 +42,13 @@ function motionPaused() {
   return window.matchMedia(REDUCED_QUERY).matches || document.documentElement.dataset.motion === "paused";
 }
 
-/** Whether `query` matches, for behaviour only (layout stays CSS). False on the server and when null. */
-function useMatches(query: string | null): boolean {
-  const subscribe = useCallback(
-    (onChange: () => void) => {
-      if (!query) return () => {};
-      const mq = window.matchMedia(query);
-      mq.addEventListener("change", onChange);
-      return () => mq.removeEventListener("change", onChange);
-    },
-    [query],
-  );
-  return useSyncExternalStore(
-    subscribe,
-    () => (query ? window.matchMedia(query).matches : false),
-    () => false,
-  );
+function subscribeGrid(onChange: () => void) {
+  const mq = window.matchMedia(GRID_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
 }
+const isGridWidth = () => window.matchMedia(GRID_QUERY).matches;
+const serverGridWidth = () => false;
 
 /** Offset of each item from the first, i.e. the scrollLeft that snaps it to the start. */
 function snapPoints(list: HTMLElement): number[] {
@@ -70,7 +58,8 @@ function snapPoints(list: HTMLElement): number[] {
 }
 
 /**
- * A sideways row that snaps card by card on phones and, from `gridFrom`, turns into a plain grid.
+ * A sideways row that snaps card by card on phones (one flick moves one card) and, from md, turns into a
+ * plain grid.
  * While it scrolls it is a named region, focusable for arrow-key scrolling, and keyboard focus inside
  * brings its card fully into view. Edges fade while there is more to see; phones get a
  * dot row, and from sm previous and next buttons with a "2 / 4" cue ("2–3 / 4" while two cards are in
@@ -80,15 +69,7 @@ function snapPoints(list: HTMLElement): number[] {
  * It bleeds 20px into the parent's inline padding, so place it inside `Container` (or ≥ 20px of
  * padding). Don't wrap it in revealProps: it has its own entrance.
  */
-export function SnapRow({
-  label,
-  children,
-  itemClassName,
-  gridFrom = "never",
-  gridClassName,
-  className,
-  snapStop = "always",
-}: SnapRowProps) {
+export function SnapRow({ label, children, itemClassName, gridClassName, className }: SnapRowProps) {
   const items = Children.toArray(children);
   const count = items.length;
   const trackId = useId();
@@ -96,7 +77,8 @@ export function SnapRow({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [pos, setPos] = useState<Position>(START);
-  const isGrid = useMatches(gridFrom === "never" ? null : GRID_QUERY[gridFrom]);
+  // For behaviour only (layout stays CSS). False on the server.
+  const isGrid = useSyncExternalStore(subscribeGrid, isGridWidth, serverGridWidth);
   const scrollable = !isGrid && !pos.fits;
 
   // Position, edges and the cue, measured on scroll (once per frame) and on resize.
@@ -220,12 +202,7 @@ export function SnapRow({
   const cue = pos.last > pos.index ? `${pos.index + 1}–${pos.last + 1} / ${count}` : `${pos.index + 1} / ${count}`;
 
   return (
-    <div
-      ref={wrapRef}
-      className={cn("nv-snap-wrap", className)}
-      data-grid-from={gridFrom}
-      data-fits={pos.fits ? "" : undefined}
-    >
+    <div ref={wrapRef} className={cn("nv-snap-wrap", className)} data-fits={pos.fits ? "" : undefined}>
       {/* A named, focusable region only while it scrolls; as a grid, or when it all fits, the list carries the name. */}
       <div
         ref={scrollerRef}
@@ -234,7 +211,6 @@ export function SnapRow({
         aria-label={scrollable ? label : undefined}
         tabIndex={scrollable ? 0 : undefined}
         className="nv-snap"
-        data-snap-stop={snapStop}
         data-scrolled={pos.scrolled ? "" : undefined}
         data-at-end={pos.atEnd ? "" : undefined}
       >

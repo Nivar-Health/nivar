@@ -2,9 +2,9 @@ import type { JSX, ReactNode } from "react";
 
 /* The phone bar's glyphs (bottom-bar.tsx): a line icon, and for the current tab a filled one stacked
    over it. Path data copied from lucide v1.55.0 (ISC licence, lucide-react/dist/esm/icons): briefcase-medical,
-   clipboard-list, heart, user-round and menu. The filled variants are drawn from the same paths. */
+   clipboard-list, user-round and menu. The filled variants are drawn from the same paths. */
 
-export type GlyphKind = "services" | "check-ups" | "health" | "nurse" | "menu";
+export type GlyphKind = "services" | "check-ups" | "nurse" | "menu";
 
 const SVG = {
   viewBox: "0 0 24 24",
@@ -15,8 +15,7 @@ const SVG = {
   strokeLinejoin: "round",
 } as const;
 
-const HEART =
-  "M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5";
+const MENU = <path d="M4 5h16M4 12h16M4 19h16" />;
 
 /* Each icon's stroked paths are joined into one path element: the same data, drawn the same way
    (every subpath keeps its own round caps). */
@@ -33,14 +32,13 @@ const LINE: Readonly<Record<GlyphKind, ReactNode>> = {
       <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01" />
     </>
   ),
-  health: <path d={HEART} />,
   nurse: (
     <>
       <circle cx="12" cy="8" r="5" />
       <path d="M20 21a8 8 0 0 0-16 0" />
     </>
   ),
-  menu: <path d="M4 5h16M4 12h16M4 19h16" />,
+  menu: MENU,
 };
 
 /** The current tab's look. Each covers its line glyph completely, so only it needs to fade. */
@@ -62,7 +60,6 @@ const FILL: Readonly<Partial<Record<GlyphKind, ReactNode>>> = {
       <path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" stroke="#fff" strokeWidth={2.25} />
     </>
   ),
-  health: <path d={HEART} fill="currentColor" />,
   nurse: (
     <>
       <circle cx="12" cy="8" r="5" fill="currentColor" />
@@ -85,5 +82,17 @@ export function TabGlyph({ kind }: { kind: GlyphKind }): JSX.Element {
         </svg>
       )}
     </span>
+  );
+}
+
+/**
+ * The bar's Menu glyph on its own, for the pill's menu button: the same three lines at the same
+ * weight, so the two triggers read as one control. Decorative; the caller sizes it.
+ */
+export function MenuGlyph({ className }: { className?: string }): JSX.Element {
+  return (
+    <svg aria-hidden className={className} {...SVG}>
+      {MENU}
+    </svg>
   );
 }

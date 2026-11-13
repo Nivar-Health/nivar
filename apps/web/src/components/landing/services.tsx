@@ -38,16 +38,16 @@ export type CareCategory = {
   line: string;
   /** Nursing only: the phone tile's shorter line, below 640px. */
   tileLine?: string;
-  note?: string;
   icon: LucideIcon;
   /**
    * A real photo (spec §1.12): `src` is the 4:3 file (96px thumb at 640–767, the card from 768), `square`
    * the 1:1 phone tile. Positions default to "50% 50%". Without one the care illustration shows instead.
    */
   photo?: { src: string; square: string; alt: string; thumbPosition?: string; position?: string };
-  /** Starting price in rupees, from the catalogue only. null shows "Price on request". */
+  /** Price in rupees, from the catalogue only. null shows no number: the action asks for the price. */
   from: number | null;
-  priceLabel?: string;
+  /** `from` is one item's own price ("₹799"), not the lowest of a range ("from ₹449"). */
+  exact?: boolean;
   link?: { href: "#check-ups"; label: string };
   /** false keeps a category out of every list until it can be offered. */
   available?: boolean;
@@ -55,7 +55,7 @@ export type CareCategory = {
 
 /**
  * Every service, in the order the page lists them. Check-up, ECG and consult prices come from the
- * live catalogue (so an admin price edit shows up here); the nursing services stay "Price on request"
+ * live catalogue (so an admin price edit shows up here); the nursing services show no number
  * because the price depends on the prescription.
  * The four procedure photos render in every build. A registered Nivar nurse checks them before the PR
  * to main; a frame that fails loses its `photo` entry here, and its tile and card show the illustration.
@@ -69,9 +69,8 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
       tier: "nursing",
       name: "Injections and vaccines",
       ask: "an injection or vaccine",
-      line: "IM and IV injections, B12, tetanus and vaccines, as your doctor prescribed.",
-      tileLine: "IM, IV, B12, tetanus and vaccines.",
-      note: "No prescription? Our doctor can talk you through the options on the call.",
+      line: "B12, tetanus, vaccines and other injections, as your doctor prescribed.",
+      tileLine: "B12, tetanus, vaccines and other injections.",
       icon: Syringe,
       photo: {
         src: "/img/nurse-injection-swab.jpg",
@@ -102,7 +101,6 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
       ask: "wound care",
       line: "Dressings and care after an injury or surgery.",
       tileLine: "Dressings after an injury or surgery.",
-      note: "Dressings changed at home, without the trip to a clinic.",
       icon: Bandage,
       photo: {
         src: "/img/nurse-wound-care.jpg",
@@ -116,9 +114,8 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
       tier: "nursing",
       name: "Blood tests at home",
       ask: "a blood test",
-      line: "Your nurse collects the sample at home for our partner lab.",
+      line: "Your nurse collects the sample at home for our partner lab. Tell us the tests on your prescription.",
       tileLine: "Sample collected for our partner lab.",
-      note: "Tell us the tests on your prescription.",
       icon: TestTubeDiagonal,
       photo: {
         src: "/img/nurse-blood-sample.jpg",
@@ -146,6 +143,7 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
       line: "Smart ECG, reviewed by a Nivar doctor.",
       icon: Activity,
       from: servicePrice("ECG"),
+      exact: true,
     },
     {
       id: "doctor-consult",
@@ -155,6 +153,7 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
       line: "A Nivar doctor on video, with your nurse at your side.",
       icon: Video,
       from: servicePrice("CONSULT"),
+      exact: true,
     },
     {
       id: "x-ray",
@@ -171,7 +170,7 @@ export function careCategories({ packages, services }: Pick<Catalog, "packages" 
   return all.filter((c) => c.available !== false);
 }
 
-/** What one price covers. The last item is the cancellation promise from site-facts. */
+/** The pricing promises that hold for every visit. The last one is the cancellation rule from site-facts. */
 const PROMISES: { icon: LucideIcon; text: string }[] = [
   { icon: House, text: "No travel charge" },
   { icon: IndianRupee, text: "No surge pricing" },
@@ -186,22 +185,21 @@ const RX_NEED = { "data-need": "I have a prescription. Please call me about it."
 const TILE_SIZES = "calc(50vw - 26px)";
 const CARD_SIZES = "(min-width: 1024px) 282px, (min-width: 768px) 46vw, 96px";
 
+/** The price as the callback note quotes it: "₹799" for one item's own price, else CareCta's "from ₹449". */
+const noteLabel = (c: CareCategory) => (c.exact && c.from !== null ? inr(c.from) : undefined);
+
 /**
- * "from ₹449", or "Price on request" while a service has no catalogue price. `compact` is the "Also at
+ * "₹799", or "from ₹449" when the number is the lowest of a range. Nothing while a service has no catalogue
+ * price: its action asks for the price, and one line under the tiles says why. `compact` is the "Also at
  * home" row's: 17px below md, then the card's 22px in the ruled panel.
  */
-function PriceTag({ from, compact = false }: { from: number | null; compact?: boolean }) {
-  if (from === null) {
-    return (
-      <p className="nv-care-price flex flex-col">
-        <span className="text-small leading-snug font-semibold text-ink">Price on request</span>
-        <span className={cn("text-caption text-ink-3", compact && "max-md:hidden")}>Told before we confirm</span>
-      </p>
-    );
-  }
+function PriceTag({ from, exact = false, compact = false }: { from: number | null; exact?: boolean; compact?: boolean }) {
+  if (from === null) return null;
   return (
     <p className={cn("nv-care-price flex items-baseline", compact ? "gap-1 md:gap-1.5" : "gap-1.5")}>
-      <span className={cn("font-medium text-ink-3", compact ? "text-caption md:text-small" : "text-small")}>from</span>
+      {!exact && (
+        <span className={cn("font-medium text-ink-3", compact ? "text-[0.875rem] md:text-small" : "text-small")}>from</span>
+      )}
       <span
         className={cn(
           "font-semibold text-ink tabular-nums",
@@ -231,8 +229,8 @@ export function PrescriptionStrip({ className }: { className?: string }) {
       <h3 className="nv-care-rx-title text-h4 text-on-pine">Have a prescription?</h3>
       <p className="nv-care-rx-body text-small text-pretty text-on-pine-2">
         {wa
-          ? "Send a photo of it on WhatsApp. We tell you what it needs, the price and the next free slot."
-          : "Ask us to call you. We tell you what it needs, the price and the next free slot."}
+          ? "Send a photo of it on WhatsApp. We'll check it and tell you the price and the next free slot."
+          : "Ask us to call you. We'll check it and tell you the price and the next free slot."}
       </p>
       {wa ? (
         <WhatsAppLink href={wa} className={buttonClass("whatsapp", "nv-care-rx-cta")}>
@@ -248,7 +246,7 @@ export function PrescriptionStrip({ className }: { className?: string }) {
   );
 }
 
-/** The same ask on phones: one ruled 56px row, the whole row the link. */
+/** The same ask on phones: the first row of the prescription card, the whole row the link. */
 function PrescriptionRow({ className }: { className?: string }) {
   const wa = whatsappHref(RX_MESSAGE);
   const body = (meta: string) => (
@@ -261,43 +259,53 @@ function PrescriptionRow({ className }: { className?: string }) {
       <ChevronRight aria-hidden className="nv-care-rxrow-chev" strokeWidth={2.25} />
     </>
   );
-  return (
-    <div className={cn("nv-care-rxwrap", className)}>
-      {wa ? (
-        <WhatsAppLink href={wa} className="nv-care-rxrow">
-          {body("Send a photo of it on WhatsApp")}
-        </WhatsAppLink>
-      ) : (
-        <a href={CALLBACK_HREF} className="nv-care-rxrow" {...RX_NEED}>
-          {body("Ask us to call you about it")}
-        </a>
-      )}
-    </div>
+  return wa ? (
+    <WhatsAppLink href={wa} className={cn("nv-care-rxrow", className)}>
+      {body("Send a photo of it on WhatsApp")}
+    </WhatsAppLink>
+  ) : (
+    <a href={CALLBACK_HREF} className={cn("nv-care-rxrow", className)} {...RX_NEED}>
+      {body("Ask us to call you about it")}
+    </a>
   );
 }
 
 /**
- * Phones only (the cards carry their own notes from 640px): the prescription rule, the path without a
- * prescription, and the price. "Price on request:" stays only while every nursing service lacks a price.
+ * Under the nursing services, at every width: why they show no price, then the prescription rule with the
+ * path for anyone without one. On phones the rule sits in one aqua card under the "Have a prescription?"
+ * row; from 640px that ask is the strip by the heading, and the two notes are plain lines side by side.
+ * The reason for the missing price shows only while every nursing service lacks one.
  */
-function ShieldNote({ onRequest, className }: { onRequest: boolean; className?: string }) {
+function CareNotes({ onRequest }: { onRequest: boolean }) {
   return (
-    <p className={cn("nv-care-shield", className)}>
-      <ShieldCheck aria-hidden className="nv-care-shield-icon" strokeWidth={2} />
-      {"Injections and drips are given only as your doctor prescribed. No prescription? Our doctor can talk you through the options on the call. "}
-      {onRequest
-        ? "Price on request: we tell you the full price before we confirm."
-        : "We tell you the full price before we confirm."}
-    </p>
+    <div className="nv-care-notes">
+      <p className="nv-care-note">
+        <IndianRupee aria-hidden className="nv-care-note-icon" strokeWidth={2} />
+        <span>
+          {onRequest && <strong>Prices depend on the prescription. </strong>}
+          We tell you the full price before we confirm.
+        </span>
+      </p>
+      <div className="nv-care-rxcard">
+        <PrescriptionRow className="sm:hidden" />
+        <p className="nv-care-note nv-care-rule">
+          <ShieldCheck aria-hidden className="nv-care-note-icon" strokeWidth={2} />
+          <span>
+            Injections and drips are given only as your doctor prescribed. No prescription? Our doctor can explain
+            the options on the call.
+          </span>
+        </p>
+      </div>
+    </div>
   );
 }
 
-/** What one price covers: a static 2×2 list on phones, the ruled row from sm (services.css). */
+/** The pricing promises: a static 2×2 list on phones, the ruled row from sm (services.css). */
 function PromiseList({ className }: { className?: string }) {
   return (
     <ul
       role="list"
-      aria-label="What one price covers"
+      aria-label="Pricing promises"
       {...revealProps(0)}
       className={cn(
         "nv-care-promise sm:grid-cols-2 sm:gap-0 sm:border-y sm:border-border lg:grid-cols-[repeat(4,auto)]",
@@ -343,11 +351,11 @@ function CareMedia({ c }: { c: CareCategory }) {
 
 /**
  * One nursing service, rendered once for every width (services.css):
- * - phones: a photo tile whose action line is a stretched link, so the whole tile is its target;
+ * - phones: a photo tile whose action line is a stretched link;
  * - 640–767: a media row, the 96px picture beside the name;
- * - from 768: a card with a 4:3 picture.
- * From 640 the price, the note and the button replace the tile's line and action; only one of the two
- * calls to action is ever displayed, so only one is in the accessibility tree.
+ * - from 768: a card with a 4:3 picture and a full-width button, also a stretched link.
+ * So the whole tile or card is one target at every width, and the photo's alt stays outside the link.
+ * Only one of the two calls to action is ever displayed, so only one is in the accessibility tree.
  */
 function NursingCard({ c }: { c: CareCategory }) {
   const titleId = `service-${c.id}-title`;
@@ -355,31 +363,29 @@ function NursingCard({ c }: { c: CareCategory }) {
     <article id={`service-${c.id}`} aria-labelledby={titleId} className="nv-care-card">
       <CareMedia c={c} />
       <div className="nv-care-text">
-        <div className="nv-care-head">
-          <h3 id={titleId} className="nv-care-name">
-            {c.name}
-          </h3>
-          {c.tileLine && <p className="nv-care-tileline sm:hidden">{c.tileLine}</p>}
-          <p className={cn("mt-1 text-small text-pretty text-ink-2", c.tileLine && "max-sm:hidden")}>{c.line}</p>
-        </div>
-        {c.note && <p className="nv-care-note text-caption text-pretty text-ink-3 max-sm:hidden">{c.note}</p>}
+        <h4 id={titleId} className="nv-care-name">
+          {c.name}
+        </h4>
+        {c.tileLine && <p className="nv-care-tileline sm:hidden">{c.tileLine}</p>}
+        <p className={cn("mt-1 text-small text-pretty text-ink-2", c.tileLine && "max-sm:hidden")}>{c.line}</p>
       </div>
       <div className="nv-care-foot max-sm:hidden">
-        <PriceTag from={c.from} />
-        <CareCta name={c.name} ask={c.ask} from={c.from} priceLabel={c.priceLabel} className="nv-care-cta" />
+        <PriceTag from={c.from} exact={c.exact} />
+        <CareCta name={c.name} ask={c.ask} from={c.from} priceLabel={noteLabel(c)} className="nv-care-cta" />
       </div>
       <div className="nv-care-act sm:hidden">
         {/* Only once a nursing price reaches `from` (spec Q10): the price over "Request this visit". */}
         {c.from !== null && (
           <p className="nv-care-act-price">
-            <span className="text-caption font-medium text-ink-3">from</span> {inr(c.from)}
+            {!c.exact && <span className="text-[0.875rem] font-medium text-ink-3">from </span>}
+            {inr(c.from)}
           </p>
         )}
         <CareCta
           name={c.name}
           ask={c.ask}
           from={c.from}
-          priceLabel={c.priceLabel}
+          priceLabel={noteLabel(c)}
           appearance="link"
           compactLabel
           className="nv-care-go"
@@ -390,12 +396,13 @@ function NursingCard({ c }: { c: CareCategory }) {
 }
 
 /**
- * One "Also at home" item, once for every width. Below md the whole row is one link (its words are read,
- * not shown) with a right chevron; from md it is a row of the ruled panel with its own link or button.
+ * One "Also at home" item, once for every width. Below md the row is one link: its action line names
+ * where it goes ("Compare check-ups", "Request this visit") and stretches over the row. From md it is a
+ * row of the ruled panel with its own link or button.
  */
 function AlsoRow({ c }: { c: CareCategory }) {
   return (
-    <li id={`service-${c.id}`} className="nv-care-row" data-wa={!c.link && whatsappHref() ? "" : undefined}>
+    <li id={`service-${c.id}`} className="nv-care-row">
       <div className="nv-care-row-main">
         <span aria-hidden className="nv-care-row-icon">
           <c.icon strokeWidth={1.9} />
@@ -404,30 +411,24 @@ function AlsoRow({ c }: { c: CareCategory }) {
           <h4 className="nv-care-row-name">{c.name}</h4>
           <p className="nv-care-row-line text-pretty">{c.line}</p>
         </div>
-        <PriceTag from={c.from} compact />
+        <PriceTag from={c.from} exact={c.exact} compact />
       </div>
       {c.link ? (
-        <>
-          <a href={c.link.href} className="nv-care-row-go md:hidden">
-            <span className="sr-only">{c.name}: compare check-ups</span>
-            <ChevronRight aria-hidden strokeWidth={2.25} />
-          </a>
-          <a href={c.link.href} className="nv-care-link nv-care-cta max-md:hidden">
-            {c.link.label}
-            <ArrowDown aria-hidden strokeWidth={2.25} />
-          </a>
-        </>
+        <a href={c.link.href} className="nv-care-row-go nv-care-link nv-care-cta">
+          {c.link.label}
+          <ArrowDown aria-hidden strokeWidth={2.25} />
+        </a>
       ) : (
         <>
           <CareCta
             name={c.name}
             ask={c.ask}
             from={c.from}
-            priceLabel={c.priceLabel}
+            priceLabel={noteLabel(c)}
             appearance="link"
             className="nv-care-row-go md:hidden"
           />
-          <CareCta name={c.name} ask={c.ask} from={c.from} priceLabel={c.priceLabel} className="nv-care-cta max-md:hidden" />
+          <CareCta name={c.name} ask={c.ask} from={c.from} priceLabel={noteLabel(c)} className="nv-care-cta max-md:hidden" />
         </>
       )}
     </li>
@@ -435,10 +436,10 @@ function AlsoRow({ c }: { c: CareCategory }) {
 }
 
 /**
- * "What your nurse can do at home.", in phone order: four photo tiles, the shield note, what one price
- * covers, the prescription row and the "Also at home" rows. Nothing swipes. From 640px the prescription
- * strip sits by the heading, the promise row moves up under it (flex order; the list has no controls,
- * so the focus order is unchanged) and the cards carry their own prices and notes.
+ * "What your nurse can do at home.", in one order at every width: the nursing services (photo tiles on
+ * phones, cards from 640px), why they show no price and the prescription rule, the "Also at home" rows,
+ * then the pricing promises that hold for all of them. Nothing swipes. From 640px the prescription strip
+ * sits by the heading.
  */
 export function Services({ catalog }: { catalog: Pick<Catalog, "packages" | "services"> }) {
   const categories = careCategories(catalog);
@@ -447,7 +448,7 @@ export function Services({ catalog }: { catalog: Pick<Catalog, "packages" | "ser
   return (
     <Section id="services" titleId="services-title" tone="white">
       <Container className="flex flex-col">
-        <div className="grid gap-6 sm:order-[-1] lg:grid-cols-12 lg:items-end lg:gap-12">
+        <div className="grid gap-6 lg:grid-cols-12 lg:items-end lg:gap-12">
           <SectionTitle
             id="services-title"
             className="lg:col-span-7"
@@ -457,9 +458,9 @@ export function Services({ catalog }: { catalog: Pick<Catalog, "packages" | "ser
           <PrescriptionStrip className="max-sm:hidden lg:col-span-5" />
         </div>
 
-        <p id="services-nursing" className="nv-care-tier mt-7 sm:mt-12 lg:mt-16">
+        <h3 id="services-nursing" className="nv-care-tier mt-7 sm:mt-12 lg:mt-16">
           Nursing at home
-        </p>
+        </h3>
         <ul role="list" aria-labelledby="services-nursing" {...revealProps(0)} className="nv-care-grid">
           {nursing.map((c) => (
             <li key={c.id} className="nv-care-item">
@@ -467,9 +468,7 @@ export function Services({ catalog }: { catalog: Pick<Catalog, "packages" | "ser
             </li>
           ))}
         </ul>
-        <ShieldNote onRequest={nursing.every((c) => c.from === null)} className="mt-5 sm:hidden" />
-        <PromiseList className="mt-6 sm:order-[-1] sm:mt-10 lg:mt-12" />
-        <PrescriptionRow className="mt-6 sm:hidden" />
+        <CareNotes onRequest={nursing.every((c) => c.from === null)} />
 
         {also.length > 0 && (
           <>
@@ -483,6 +482,9 @@ export function Services({ catalog }: { catalog: Pick<Catalog, "packages" | "ser
             </ul>
           </>
         )}
+
+        <h3 className="nv-care-tier mt-8 sm:mt-12 lg:mt-16">With every visit</h3>
+        <PromiseList className="mt-3 sm:mt-4" />
       </Container>
     </Section>
   );
