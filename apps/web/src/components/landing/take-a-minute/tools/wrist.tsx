@@ -15,7 +15,7 @@ export function Wrist() {
           <stop offset="0.55" stopColor="currentColor" />
         </linearGradient>
       </defs>
-      <circle cx="47" cy="61" r="10" className="nv-tool-part-disc nv-tool-wrist-spot" />
+      <circle cx="47" cy="61" r="10" className="nv-tool-wrist-spot" />
       <path d="M2 58H52M2 76H54" className="nv-tool-line" />
       <path
         d="M52 58C55 57 58 53 60.6 47.2C62 44.2 65.8 44.8 65.6 48.2C65.4 51.6 63.8 55.4 62.4 58H74C78 58 86 57.6 89.6 59C93.6 60.6 93.6 74.4 89.6 75.8C86 77.2 78 77 74 77H54"

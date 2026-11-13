@@ -37,6 +37,54 @@
   .nv-tool-num + .nv-tool-word {
     margin-top: 4px;
   }
+  /* Breathe's running face: the phase word over the pacing dots. Both words and every dot stay in the
+     page for the whole session; a breath turn only changes opacities, so it inserts nothing. */
+  .nv-tool-breath {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* The two words share one cell and cross-fade: the new one starts while the old one is still going,
+     so the instruction never dips at a turn. */
+  .nv-tool-phase {
+    display: grid;
+    justify-items: center;
+  }
+  .nv-tool-phase > .nv-tool-word {
+    grid-area: 1 / 1;
+    font-size: 19px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity calc(360ms * var(--nv-k)) var(--curve-standard);
+  }
+  .nv-tool-phase[data-phase="in"] > :first-child,
+  .nv-tool-phase[data-phase="out"] > :last-child {
+    opacity: 1;
+    transition: opacity calc(420ms * var(--nv-k)) var(--curve-standard) calc(160ms * var(--nv-k));
+  }
+  /* One dot a second: they fill on the way in and empty on the way out. Opacity only, so they also
+     pace the breath under reduced motion. */
+  .nv-tool-dots {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    transition: opacity 600ms var(--curve-standard);
+  }
+  .nv-tool-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.25;
+    transition: opacity 400ms var(--curve-standard);
+  }
+  .nv-tool-dot[data-on] {
+    opacity: 1;
+  }
+  /* The stillness after the last breath out: the dots go quiet before the ending. */
+  .nv-tool-breath[data-ending] .nv-tool-dots {
+    opacity: 0;
+  }
   .nv-tool-proverb {
     display: flex;
     flex-direction: column;
@@ -50,7 +98,7 @@
     font-weight: 600;
   }
   .nv-tool-proverb-gloss {
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.3;
     font-weight: 600;
     color: var(--jade);
@@ -91,37 +139,10 @@
   .nv-tool-line-soft {
     stroke-opacity: 0.28;
   }
-  .nv-tool-part-base {
-    transition: opacity 320ms var(--curve-calm);
-  }
-  .nv-tool-part-lit {
-    fill: none;
-    stroke: var(--jade);
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    opacity: 0;
-    transition: opacity 320ms var(--curve-calm);
-  }
-  .nv-tool-part-disc {
+  /* The soft disc at the pulse point. */
+  .nv-tool-wrist-spot {
     fill: var(--jade);
     fill-opacity: 0.12;
-    opacity: 0;
-    transform: scale(0.55);
-    transform-box: fill-box;
-    transform-origin: center;
-    transition:
-      opacity 320ms var(--curve-calm),
-      transform 480ms var(--curve-calm);
-  }
-  [data-lit] > .nv-tool-part-lit,
-  [data-lit] > .nv-tool-part-disc,
-  .nv-tool-wrist-spot {
-    opacity: 1;
-    transform: none;
-  }
-  [data-lit] > .nv-tool-part-base {
-    opacity: 0;
   }
   .nv-tool-wrist-fingers {
     fill: none;
@@ -137,18 +158,6 @@
     align-items: center;
     gap: 2px;
   }
-  /* The countdown: 36px in every tool, idle and running (K2), read from a table at arm's length. */
-  .nv-tool-clock {
-    font-size: 2.25rem;
-    line-height: 1;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-    color: var(--on-pine);
-  }
-  .nv-tool-clock + .nv-tool-sub {
-    margin-top: 6px;
-  }
   .nv-tool-sub {
     max-width: 34ch;
     font-size: 0.9375rem;
@@ -159,6 +168,10 @@
   .nv-tool-sub-wide {
     max-width: 44ch;
     text-wrap: pretty;
+  }
+  /* Pulse's how-to, one short line each. */
+  .nv-tool-sub-line {
+    display: block;
   }
   .nv-tool-lead + .nv-tool-sub {
     margin-top: 6px;
@@ -171,13 +184,30 @@
     color: var(--on-pine);
     text-wrap: balance;
   }
-  .nv-tool-welcome {
-    margin-bottom: 6px;
+  /* Breathe's time left, shown only while paused ("0:39 left"). Its line is always there, so nothing
+     moves when it appears. */
+  .nv-tool-left {
+    min-height: 1.45em;
     font-size: 0.9375rem;
+    line-height: 1.45;
     font-weight: 600;
-    color: var(--mint-glow);
+    font-variant-numeric: tabular-nums;
+    color: var(--on-pine);
+    opacity: 0;
+    transition: opacity 200ms var(--curve-standard);
   }
-  /* Tap along's count, labelled, under the time left. */
+  .nv-tool-left[data-on] {
+    opacity: 1;
+  }
+  /* Before BP's time left in words, under the orb: it changes once a minute, with the prompt. Its line is
+     kept through the settle-in, so nothing moves when it appears. */
+  .nv-tool-coarse {
+    min-height: 1.45em;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--on-pine-2);
+  }
+  /* Tap along's count, labelled, under the orb. */
   .nv-tool-count {
     margin-top: 8px;
     font-size: 1.0625rem;
@@ -206,9 +236,22 @@
     line-height: 1.4;
     color: var(--on-pine);
   }
+  /* A passing note under the prompt (the screen may switch off): quiet, and gone after the first minute. */
+  .nv-tool-aside {
+    max-width: min(100%, 22rem);
+    margin: 4px auto 0;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--on-pine-2);
+    text-wrap: balance;
+  }
   .nv-tool-swap {
     display: inline-block;
     animation: nv-tool-in 560ms var(--curve-calm) backwards;
+  }
+  /* The orb's stacked faces keep their column when they swap in. */
+  .nv-tool-swap:is(.nv-tool-proverb, .nv-tool-breath) {
+    display: flex;
   }
   .nv-tool-notes {
     display: flex;
@@ -222,6 +265,13 @@
     text-wrap: pretty;
   }
 
+  /* A small heading inside the notes (Before BP's "If a reading is higher than 180/120"). */
+  .nv-tool-notes-label {
+    margin-top: 8px;
+    font-weight: 600;
+    color: var(--on-pine);
+  }
+
   /* ---- Controls (the dock's content) ---- */
   /* The wrapper spans the column and centres the main button; during a session it is the shell's
      .nv-minute-row (Pause and Stop). Done sits centred under it. The shell styles the buttons; only
@@ -232,6 +282,13 @@
     align-items: stretch;
     gap: 8px;
     width: 100%;
+  }
+  /* The stillness after a session: the buttons fade away and take no presses (focus stays put), and
+     the done screen's buttons come in where they were. */
+  .nv-tool-controls[data-hushed] {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 400ms var(--curve-exit);
   }
   .nv-tool-row {
     display: flex;
@@ -259,8 +316,10 @@
   .nv-tool-primary.nv-tool-paired:active {
     transition-duration: 90ms;
   }
-  /* Holds Pause's place while the Tap along pad waits; it fades in with the first tap. */
+  /* Pause, while the Tap along pad waits: out of the row, so Stop stands centred; it fades in with the
+     first tap. */
   .nv-tool-held {
+    position: absolute;
     visibility: hidden;
     opacity: 0;
   }
@@ -295,92 +354,16 @@
     outline: 2px solid var(--ring-on-dark);
     outline-offset: 3px;
   }
-  /* Focus scrolled into view clears the shell's sticky top bar (67–72px), never hides under it. */
+  /* Focus scrolled into view clears the shell's sticky top bar (67–72px), never hides under it; an
+     opened safety line does too. */
   .nv-tool-controls button,
   .nv-tool-input,
-  .nv-tool-switch,
+  .nv-tool-pace,
   .nv-tool-textlink,
   .nv-tool-link,
-  .nv-tool-tel {
+  .nv-tool-call,
+  .nv-tool-more-body {
     scroll-margin-block: 5.5rem 1rem;
-  }
-
-  /* Eyes: the chime switch, a 44px row in the options slot. The track shows the state (role="switch",
-     aria-checked); its fill fades and the thumb slides, opacity and translate only. */
-  .nv-tool-switch {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    max-width: 100%;
-    min-height: 44px;
-    padding: 6px 16px 6px 8px;
-    border-radius: 9999px;
-    font-size: 0.9375rem;
-    line-height: 1.35;
-    font-weight: 500;
-    color: var(--on-pine-2);
-    text-align: left;
-    text-wrap: balance;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition:
-      color 160ms var(--curve-standard),
-      background-color 180ms var(--curve-standard),
-      scale 180ms var(--curve-standard);
-  }
-  .nv-tool-switch[aria-checked="true"] {
-    color: var(--on-pine);
-  }
-  .nv-tool-switch-track {
-    position: relative;
-    flex: none;
-    width: 40px;
-    height: 24px;
-    border-radius: 9999px;
-    border: 1.5px solid rgb(255 255 255 / 0.36);
-  }
-  /* The on fill, over the hairline. */
-  .nv-tool-switch-track::before {
-    content: "";
-    position: absolute;
-    inset: -1.5px;
-    border-radius: inherit;
-    background: var(--mint-glow);
-    opacity: 0;
-    transition: opacity 180ms var(--curve-standard);
-  }
-  .nv-tool-switch-thumb {
-    position: absolute;
-    left: 2.5px;
-    top: 2.5px;
-    width: 16px;
-    height: 16px;
-    border-radius: 9999px;
-    background: var(--on-pine-2);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
-    transition: translate 220ms var(--curve-calm);
-  }
-  /* Pond over the thumb when on: the mark reads dark on mint. */
-  .nv-tool-switch-thumb::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: var(--pond);
-    opacity: 0;
-    transition: opacity 180ms var(--curve-standard);
-  }
-  [aria-checked="true"] > .nv-tool-switch-track::before,
-  [aria-checked="true"] > .nv-tool-switch-track > .nv-tool-switch-thumb::before {
-    opacity: 1;
-  }
-  [aria-checked="true"] > .nv-tool-switch-track > .nv-tool-switch-thumb {
-    translate: 16px 0;
-  }
-  .nv-tool-switch:active {
-    background: rgb(255 255 255 / 0.06);
-    scale: 0.98;
-    transition-duration: 90ms;
   }
 
   .nv-tool-chips,
@@ -409,6 +392,51 @@
     font-weight: 600;
     color: var(--on-pine);
   }
+  /* Pulse's choice sits in the dock with Start. On a short phone the chips speak for themselves and the
+     question is read out only, so the how-to above keeps its room. */
+  @media (width < 40rem) and (height < 700px) {
+    .nv-minute-controls .nv-tool-legend {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+  /* Breathe's pace, one quiet text button under the length chips: what is so now, then (underlined, on
+     its own line when the row is narrow) what a press does. */
+  .nv-tool-pace {
+    min-height: 44px;
+    max-width: min(100%, 30rem);
+    margin-top: 6px;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    color: var(--on-pine-2);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 160ms var(--curve-standard),
+      scale 180ms var(--curve-standard);
+  }
+  .nv-tool-pace-press {
+    display: inline-block;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: rgb(255 255 255 / 0.3);
+    text-underline-offset: 4px;
+  }
+  .nv-tool-pace:active {
+    color: var(--on-pine);
+    scale: 0.97;
+    transition-duration: 90ms;
+  }
+  .nv-tool-pace:focus-visible {
+    outline: 2px solid var(--ring-on-dark);
+    outline-offset: 2px;
+  }
   /* A radio label wearing the shell's nv-minute-chip (colours, press and hover come from there). */
   .nv-tool-chip {
     position: relative;
@@ -433,88 +461,48 @@
     outline-offset: 2px;
   }
 
-  /* Rest's optional ticks: real checkboxes; each lights its part of the drawing. */
-  .nv-tool-ticks {
+  /* Before BP's posture list: plain text in two short groups, how to sit and what to have done before.
+     Nothing to tick (Start never waited on it). One column on phones, the groups side by side from 640px. */
+  .nv-tool-steps {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 2px 20px;
-    width: min(100%, 22rem);
-    margin: 0 0 4px;
-    padding: 0;
-    list-style: none;
+    gap: 14px 32px;
+    width: min(100%, 21rem);
     text-align: left;
   }
-  .nv-tool-tick {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    min-height: 44px;
-    padding: 10px 6px;
-    border-radius: 12px;
+  .nv-tool-step-label {
+    margin-bottom: 4px;
     font-size: 0.9375rem;
     line-height: 1.4;
-    color: var(--on-pine-2);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition:
-      color 160ms var(--curve-standard),
-      background-color 160ms var(--curve-standard),
-      transform 180ms var(--curve-standard);
-  }
-  .nv-tool-tick input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: 0;
-    opacity: 0;
-  }
-  .nv-tool-tick-box {
-    position: relative;
-    flex: none;
-    width: 22px;
-    height: 22px;
-    margin-top: -1px;
-    border-radius: 7px;
-    border: 1.5px solid rgb(255 255 255 / 0.36);
-    transition:
-      background-color 160ms var(--curve-standard),
-      border-color 160ms var(--curve-standard);
-  }
-  .nv-tool-tick-box::after {
-    content: "";
-    position: absolute;
-    left: 6.5px;
-    top: 2.5px;
-    width: 6px;
-    height: 11px;
-    border: solid var(--pond);
-    border-width: 0 2.25px 2.25px 0;
-    opacity: 0;
-    transform: rotate(45deg) scale(0.6);
-    transition:
-      opacity 160ms var(--curve-standard),
-      transform 240ms var(--curve-calm);
-  }
-  .nv-tool-tick:has(input:checked) {
+    font-weight: 600;
     color: var(--on-pine);
   }
-  .nv-tool-tick:has(input:checked) .nv-tool-tick-box {
-    border-color: var(--mint-glow);
+  .nv-tool-step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--on-pine-2);
+  }
+  /* A small mint dot for each point, hung outside the text so the lines align. */
+  .nv-tool-step-list > li {
+    position: relative;
+    padding-left: 18px;
+    text-wrap: pretty;
+  }
+  .nv-tool-step-list > li::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 0.62em;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
     background: var(--mint-glow);
-  }
-  .nv-tool-tick:has(input:checked) .nv-tool-tick-box::after {
-    opacity: 1;
-    transform: rotate(45deg);
-  }
-  .nv-tool-tick:has(input:focus-visible) {
-    outline: 2px solid var(--ring-on-dark);
-    outline-offset: 0;
-  }
-  .nv-tool-tick:active {
-    background: rgb(255 255 255 / 0.06);
-    transform: scale(0.98);
-    transition-duration: 90ms;
+    opacity: 0.8;
   }
 
   /* Pulse, Just count: the number of beats, in the options slot; See result is the dock's main button
@@ -572,62 +560,105 @@
     text-decoration-color: rgb(255 255 255 / 0.3);
     text-underline-offset: 3px;
   }
-  .nv-tool-link:focus-visible,
-  .nv-tool-tel:focus-visible {
+  .nv-tool-link:focus-visible {
     outline: 2px solid var(--ring-on-dark);
     outline-offset: 2px;
   }
-  /* A safety line inside the always slot, whose frame, 15px type and colour are the shell's: the 16px
-     mark leads, and wrapped lines align under the text, not under the mark. */
+  /* The one quiet line under the controls (a safety line, or a note that follows Sound): no box and no
+     mark, 15px in the secondary ink, centred. */
+  .nv-tool-quietline {
+    max-width: min(100%, 34rem);
+    margin-inline: auto;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    color: var(--on-pine-2);
+    text-wrap: balance;
+  }
+  /* A safety line in full: plain text in the flow, never a box. An emergency line is followed by its
+     two call buttons on their own row. */
   .nv-tool-safety {
+    max-width: min(100%, 34rem);
+    margin-inline: auto;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--on-pine);
+    text-wrap: pretty;
+  }
+  /* Side by side where both fit (a column of 352px or more); narrower, as on a 360px phone, each takes
+     the row's full width, one under the other, so neither is a ragged half-row. */
+  .nv-tool-calls {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    text-align: start;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    max-width: 24rem;
+    margin: 12px auto 0;
   }
-  .nv-tool-safety-icon {
-    flex: none;
-    width: 16px;
-    height: 16px;
-    margin-top: 0.15em;
-    color: var(--mint-glow);
-  }
-  .nv-tool-safety .nv-tool-tel {
-    position: relative;
-    border-radius: 4px;
+  .nv-tool-call {
+    display: inline-flex;
+    flex: 1 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 120px;
+    min-height: 48px;
+    padding-inline: 18px;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.26);
+    font-size: 1rem;
     font-weight: 600;
     color: var(--on-pine);
-    text-decoration: underline;
-    text-decoration-color: rgb(255 255 255 / 0.4);
-    text-underline-offset: 2px;
-    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background-color 180ms var(--curve-standard),
+      border-color 180ms var(--curve-standard),
+      scale 180ms var(--curve-standard);
   }
-  /* A 44px tall target without moving the text. */
-  .nv-tool-tel::before {
-    content: "";
-    position: absolute;
-    inset: -12px -6px;
+  .nv-tool-call svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+  .nv-tool-call:active {
+    background: rgb(255 255 255 / 0.12);
+    scale: 0.97;
+    transition-duration: 90ms;
+  }
+  .nv-tool-call:focus-visible {
+    outline: 2px solid var(--ring-on-dark);
+    outline-offset: 2px;
+  }
+  /* A text button that opens a safety line in place, under the quiet line or alone. */
+  .nv-tool-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .nv-tool-more-body {
+    padding-block: 4px 8px;
   }
 
   @media (hover: hover) and (pointer: fine) {
     .nv-tool-textlink:hover,
     .nv-minute-sheet .nv-tool-link:hover,
-    .nv-tool-safety .nv-tool-tel:hover {
+    .nv-tool-pace:hover {
       color: var(--on-pine);
       text-decoration-color: currentColor;
     }
-    .nv-tool-tick:hover,
-    .nv-tool-switch:hover {
-      background: rgb(255 255 255 / 0.04);
-    }
-    .nv-tool-switch:hover {
-      color: var(--on-pine);
+    .nv-tool-call:hover {
+      border-color: rgb(255 255 255 / 0.4);
+      background: rgb(255 255 255 / 0.06);
     }
   }
 
   @media (width < 40rem) {
     .nv-tool-orb {
       max-width: min(116px, calc(var(--nv-d) * 0.54));
+    }
+    /* The pace is one sentence and one tap: without side padding it fits one line from 360px (321px of
+       328). The 44px height stays the target; larger text still wraps it whole. */
+    .nv-tool-pace {
+      padding-inline: 0;
     }
     .nv-tool-num {
       font-size: 56px;
@@ -636,20 +667,11 @@
       font-size: min(52px, calc(var(--nv-d) * 0.25));
     }
   }
-  /* Phones dock the controls at the screen's bottom edge (all but short landscape, where the safety line
-     stays in the flow), so a prompt changing length can't move them: no lines are reserved, and the
-     shell's scroll at Start measures only the words it has to keep clear of the dock. */
+  /* Portrait phones dock the controls at the screen's bottom edge, so a prompt changing length cannot
+     move them: no lines are reserved. (Short landscape reserves one line: experience.css.) */
   @media (width < 40rem) and (orientation: portrait), (width < 40rem) and (height > 520px) {
     .nv-tool-prompt {
       min-height: 0;
-    }
-  }
-  /* Short landscape: the safety line follows the prompt in the flow, above the docked controls, and the
-     height is scarce. One line of the prompt's own size is reserved, so a line that empties as the count
-     starts never moves the safety line, and no empty second line pushes it under the dock. */
-  @media (orientation: landscape) and (max-height: 520px) {
-    .nv-tool-prompt {
-      min-height: 1lh;
     }
   }
 
@@ -666,16 +688,9 @@
     .nv-tool-textlink {
       max-width: min(100%, 30rem);
     }
-    .nv-tool-ticks {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .nv-tool-steps {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
       width: min(100%, 34rem);
-    }
-  }
-  /* With a mouse the ticks can sit closer, so Start stays on a 900px-tall screen. */
-  @media (width >= 40rem) and (pointer: fine) {
-    .nv-tool-tick {
-      min-height: 36px;
-      padding-block: 7px;
     }
   }
 
@@ -683,36 +698,23 @@
     .nv-tool-swap {
       animation: none;
     }
-    .nv-minute-sheet :is(.nv-tool-textlink, .nv-tool-switch):active {
+    /* The phase word and the dots pace the breath here: they keep a short fade (globals.css would
+       otherwise make every transition instant; important in a layer wins over it). */
+    .nv-tool-phase > .nv-tool-word,
+    .nv-tool-dot {
+      transition-duration: 180ms !important;
+      transition-delay: 0s !important;
+    }
+    .nv-minute-sheet :is(.nv-tool-textlink, .nv-tool-pace, .nv-tool-call):active {
       scale: none;
-    }
-    .nv-tool-tick:active {
-      transform: none;
-    }
-    .nv-tool-switch-thumb {
-      transition: none;
-    }
-    .nv-tool-part-base,
-    .nv-tool-part-lit,
-    .nv-tool-part-disc {
-      transition-property: opacity;
-    }
-    .nv-tool-part-disc {
-      transform: none;
     }
   }
   /* The visitor's own pause: no motion either, and presses are a tint only. */
   html[data-motion="paused"] .nv-tool-swap {
     animation: none;
   }
-  html[data-motion="paused"] .nv-tool-switch-thumb {
-    transition: none;
-  }
-  html[data-motion="paused"] .nv-minute-sheet :is(.nv-tool-textlink, .nv-tool-switch):active {
+  html[data-motion="paused"] .nv-minute-sheet :is(.nv-tool-textlink, .nv-tool-pace, .nv-tool-call):active {
     scale: none;
-  }
-  html[data-motion="paused"] .nv-tool-tick:active {
-    transform: none;
   }
 
   /* Forced colours: the shell paints the orb CanvasText and its text layer Canvas, with
@@ -724,44 +726,29 @@
       color: Canvas;
     }
     .nv-tool-line,
-    .nv-tool-part-lit,
     .nv-tool-wrist-fingers {
       stroke: Canvas;
     }
     .nv-tool-line {
       stroke-opacity: 1;
     }
-    .nv-tool-part-disc {
+    .nv-tool-wrist-spot {
       fill: Canvas;
       fill-opacity: 0.3;
     }
-    .nv-tool-input,
-    .nv-tool-tick-box {
+    .nv-tool-step-list > li::before {
+      background: CanvasText;
+    }
+    .nv-tool-input {
       border: 1px solid CanvasText;
     }
-    /* The switch keeps its own system colours (inherited by the thumb): ButtonText off, Highlight on. */
-    .nv-tool-switch-track {
-      forced-color-adjust: none;
+    .nv-tool-call {
       border-color: ButtonText;
-    }
-    .nv-tool-switch-track::before {
-      background: Highlight;
-    }
-    .nv-tool-switch-thumb {
-      background: ButtonText;
-      box-shadow: none;
-    }
-    .nv-tool-switch-thumb::before {
-      background: HighlightText;
     }
     /* No text backplate on the chosen chip, or its HighlightText label would vanish behind it. */
     .nv-tool-chip:has(input:checked) {
       forced-color-adjust: none;
       border-color: Highlight;
-      background: Highlight;
-      color: HighlightText;
-    }
-    .nv-tool-tick:has(input:checked) .nv-tool-tick-box {
       background: Highlight;
       color: HighlightText;
     }

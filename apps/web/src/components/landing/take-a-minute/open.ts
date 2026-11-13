@@ -24,8 +24,8 @@ export function reportMinuteState(open: boolean): void {
 export const isMinuteOpen = (): boolean => minuteOpen;
 
 /**
- * Opens Take a minute from client code (the nav sheet, for example). `tool` omitted or "" opens the
- * last-used tool. `origin` is the launcher: focus returns to it on close and the orb flies from it.
+ * Opens Take a minute from client code (the nav sheet, for example). `tool` omitted or "" opens
+ * Breathe. `origin` is the launcher: focus returns to it on close and the orb flies from it.
  * Markup-only launchers use `<button data-minute-open="<tool|''>" aria-haspopup="dialog">` instead.
  */
 export function openTakeAMinute(tool?: ToolId | "", origin?: HTMLElement | null): void {

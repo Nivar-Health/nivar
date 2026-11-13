@@ -17,6 +17,8 @@ import "./closing.css";
 
 /** Short phrases (the hours) that should never break, e.g. "9 / pm" on a narrow phone. */
 const nowrap = (s: string) => <span className="whitespace-nowrap">{s}</span>;
+/** "HSR Layout" is one place name: a large line never breaks between its two words. */
+const keepPlaceName = (s: string) => s.replace("HSR Layout", "HSR\u00a0Layout");
 
 // Each promise is made once in this section: what the number is for sits at the phone field. The call's
 // time follows the clock (open, closing, closed) in India time.
@@ -250,7 +252,7 @@ export function SiteFooter() {
           <div className="lg:col-span-5">
             <p className="text-cta max-w-[15ch] text-balance text-white">Nursing care at home.</p>
             <p className="mt-4 max-w-[34ch] text-lede text-pretty text-on-pine-2 sm:mt-5">
-              A registered nurse comes to your home in {SITE.area}, {nowrap(SITE.hours.short)}.
+              A registered nurse comes to your home in {keepPlaceName(SITE.area)}, {nowrap(SITE.hours.short)}.
             </p>
             <p className="nv-foot-hello mt-4 text-body font-medium text-mint-glow sm:mt-5">
               {STAY_HEALTHY.map((p) => (

@@ -106,7 +106,7 @@ function RingsGlyph({ sw }: { sw: Stroke }) {
       {ring(22, 2, "var(--teal)")}
       <path
         d="M42 59H48L56 47.5L61.2 64.5L64.4 59H70"
-        stroke="var(--teal-deep)"
+        stroke="var(--jade)"
         strokeWidth={sw(2)}
         strokeLinecap="round"
         strokeLinejoin="round"

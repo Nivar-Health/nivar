@@ -18,7 +18,7 @@ export default function NotFound() {
   return (
     <div data-landing className="relative flex min-h-dvh flex-1 flex-col overflow-hidden bg-background text-ink">
       <header className="px-5 pt-5 sm:px-8 sm:pt-6">
-        <Link href="/" aria-label="Nivar home" className="inline-flex rounded-xl p-1 focus-ring">
+        <Link href="/" aria-label="Nivar home" className="inline-flex min-h-11 items-center rounded-xl p-1 focus-ring">
           <Logo size="sm" />
         </Link>
       </header>
@@ -26,7 +26,7 @@ export default function NotFound() {
         <p className="text-small font-semibold text-primary">Page not found</p>
         <h1 className="mt-3 text-h2 text-balance text-ink">We couldn&apos;t find that page</h1>
         <p className="mt-4 text-lede text-pretty text-ink-2">
-          The link may be old, or the page may have moved. Everything else is in good health.
+          The link may be old, or the page may have moved. You can go back to the home page, or ask us to call you.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link href="/" className={buttonClass("primary", "max-sm:h-14 max-sm:w-full", "lg")}>

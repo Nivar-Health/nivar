@@ -18,6 +18,7 @@ import { SITE, callbackPromiseAt, callbackPromiseFor, type CallbackPromise } fro
 import { cn } from "@/lib/utils";
 import { istParts } from "@/server/time";
 import { Disclosure } from "./disclosure";
+import { EMERGENCY_TEL_LABEL, isEmergencyNumber, type EmergencyNumber } from "./emergency-tel";
 import { LANGUAGES } from "./l10n";
 import { focusLanding } from "./page-history";
 import { buttonClass } from "./primitives";
@@ -188,11 +189,10 @@ export function CallbackPromiseText() {
  */
 const TEL_LINK =
   "relative rounded-sm font-semibold underline underline-offset-2 transition-colors duration-180 ease-standard focus-ring before:absolute before:-inset-y-3.5";
-const TEL = {
-  "112": { label: "Call 112, emergency", reach: "before:-right-2 before:-left-5" },
-  "108": { label: "Call 108, ambulance", reach: "before:-right-3.5 before:-left-2" },
-} as const;
-const isTel = (s: string): s is keyof typeof TEL => s in TEL;
+const TEL_REACH: Record<EmergencyNumber, string> = {
+  "112": "before:-right-2 before:-left-5",
+  "108": "before:-right-3.5 before:-left-2",
+};
 
 /**
  * One of the fixed emergency sentences (SITE.emergency) with 112 and 108 as call links. `tone`
@@ -208,14 +208,14 @@ export function EmergencyText({
   return (
     <>
       {sentence.split(/(112|108)/).map((part, i) =>
-        isTel(part) ? (
+        isEmergencyNumber(part) ? (
           <a
             key={i}
             href={`tel:${part}`}
-            aria-label={TEL[part].label}
+            aria-label={EMERGENCY_TEL_LABEL[part]}
             className={cn(
               TEL_LINK,
-              TEL[part].reach,
+              TEL_REACH[part],
               tone === "dark" ? "text-mint-glow active:bg-white/12" : "text-primary active:bg-aqua-2/60",
               "active:duration-90",
             )}
@@ -767,7 +767,7 @@ export function CallbackForm() {
         style={{ minHeight: formHeight ? Math.min(formHeight, 720) : undefined }}
       >
         <svg viewBox="0 0 64 64" aria-hidden className="size-14">
-          <circle cx="32" cy="32" r="30" fill="var(--mint)" />
+          <circle cx="32" cy="32" r="30" fill="var(--aqua)" />
           <circle
             className="success-ring"
             cx="32"
@@ -783,7 +783,7 @@ export function CallbackForm() {
             // Reduced motion: show the final pose at once (globals shorten durations but keep the 550ms delay).
             className="success-check motion-reduce:[animation-delay:0s]!"
             d="M21 33l8 8 15-16"
-            stroke="var(--teal-deep)"
+            stroke="var(--jade)"
             strokeWidth={3.5}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -796,7 +796,7 @@ export function CallbackForm() {
           <h3
             ref={headingRef}
             tabIndex={-1}
-            className="font-display mt-4 text-[1.5rem] leading-tight sm:text-[1.75rem] font-medium tracking-[-0.02em] text-balance text-foreground outline-none"
+            className="font-display mt-4 text-[1.5rem] leading-tight sm:text-[1.75rem] tracking-[-0.02em] text-balance text-foreground outline-none"
           >
             {/* One line each, so "We" never ends the first line. The space keeps the text whole for copy and AT. */}
             <span className="block">{name ? `Thanks, ${name}.` : "Thank you."}</span>{" "}

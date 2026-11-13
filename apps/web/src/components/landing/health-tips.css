@@ -117,7 +117,8 @@ html[data-nv-reveal-ready] .nv-habits-fact[data-nv-reveal]:not([data-nv-revealed
 
 /* ---- Take a minute tile: a still pearl in a pond. Nothing here animates but a press. ---- */
 .nv-habits-tile {
-  /* The glows stay faint enough to keep on-pine-2 copy at 4.5:1 or more over every part of the card. */
+  /* The glows stay faint so text stays readable over every part of the card. Sentences use on-pine:
+     on-pine-2 dips under 4.5:1 over the lit corner. */
   background:
     radial-gradient(340px 300px at 100% 0%, rgb(142 211 224 / 0.12), transparent 70%),
     radial-gradient(520px 360px at 100% 100%, rgb(1 106 128 / 0.22), transparent 65%),

@@ -2,31 +2,10 @@
    Loops carry .motion-loop so reduced motion, or the visitor's own pause (html[data-motion="paused"], motion.tsx), stops them on their rest pose (globals.css). One-shots use fill-mode `backwards`: an element's base style
    is its final pose, so without JS, or with reduced motion, everything simply shows at rest. */
 
-/* ---- 0. Tokens: the site is white, with Nivar teal for headings, icons and buttons ---- */
+/* ---- 0. Tokens: the site's page is white (the app's is mist); every other token is the shared Nivar Teal ---- */
 [data-landing],
 [data-landing] .theme-light {
   --background: #ffffff;
-  --ink: #013a48;
-  --ink-2: #3d5862;
-  --ink-3: #4f6973; /* 4.98:1 on aqua; never on aqua-2 */
-  --teal: #016a80;
-  /* Re-declared here: on :root these resolved against the app's ink before it was re-tinted above. */
-  --foreground: var(--ink);
-  --foreground-2: var(--ink-2);
-  --muted-foreground: var(--ink-3);
-  --card-foreground: var(--ink);
-  --popover-foreground: var(--ink);
-  --secondary-foreground: var(--ink);
-  --accent-foreground: var(--ink);
-  --primary: var(--jade);
-  --primary-hover: var(--jade-hover);
-  --primary-active: var(--jade-active);
-  --ring: var(--jade);
-  --heading-accent: var(--jade);
-  --muted: var(--aqua);
-  --accent: var(--aqua);
-  --border: #d5e4e9;
-  --border-strong: #bcd3da;
 }
 /* Fixed layers, lowest first. Literal values elsewhere are numerically equal. */
 [data-landing] {
@@ -36,17 +15,6 @@
   --z-sheet: 60;   /* menu sheet and its dim */
   --z-minute: 70;  /* Take a minute */
 }
-/* Deep teal panels: the pine tokens, re-tinted from green to the uniform's teal. */
-[data-landing] {
-  --pine: #012b36;
-  --pine-raised: #063845;
-  --on-pine: #f0f7f9;
-  --on-pine-2: #b4ccd3;
-  --on-pine-3: #8faeb8;
-  --pine-accent: #9ccfdb;
-  --ring-on-dark: #8ed3e0;
-}
-
 /* Deep pond bands (Live, footer): pine tokens on a pond gradient. */
 .band-pond {
   background:

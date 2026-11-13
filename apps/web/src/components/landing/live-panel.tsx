@@ -130,7 +130,7 @@ const MONITOR_FRAME =
   "nv-chk-still flex flex-col overflow-hidden rounded-2xl border border-[#262626] bg-[#0a0a0a] text-[#F2F2EE] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_30px_-12px_rgba(0,0,0,0.55)]";
 const MONITOR_BAR = "flex items-center justify-between gap-3 border-b border-white/5 px-3.5 py-2";
 const MONITOR_LABELS = "flex min-w-0 items-center gap-2.5 overflow-hidden text-xs tracking-wide whitespace-nowrap";
-const MONITOR_SIDE = "flex w-[92px] shrink-0 flex-col justify-between border-l border-white/5 bg-[#0A221E] px-3 py-2.5 sm:w-[124px]";
+const MONITOR_SIDE = "flex w-[92px] shrink-0 flex-col justify-between border-l border-white/5 bg-pond px-3 py-2.5 sm:w-[124px]";
 
 /** The monitors' status chip, saying what this is. Its dot is still: nothing here moves. */
 function DemoBadge() {

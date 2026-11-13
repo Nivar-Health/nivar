@@ -6,12 +6,16 @@ const SELECTOR = "[data-nv-reveal]:not([data-nv-revealed])";
 const INDIC = '[lang|="kn"], [lang|="hi"]';
 
 /**
- * Lets the Noto Kannada and Devanagari faces apply (globals.css), so the browser fetches them. Until
- * then far-off Indic text uses the system's own Indic fonts and the first load stays light.
+ * Whether the Noto Kannada and Devanagari faces may apply. Until then far-off Indic text uses the
+ * system's own Indic fonts and the first load stays light. Once allowed, it stays so for the visit.
  */
-export function allowIndicFonts() {
-  document.documentElement.setAttribute("data-indic-fonts", "");
-}
+let indicAllowed = false;
+
+/**
+ * Lets the Noto faces apply to one Indic element (globals.css), so the browser fetches them. Each
+ * element is marked, not <html>: the switch restyles those few lines instead of the whole page.
+ */
+const markIndic = (el: Element) => el.setAttribute("data-indic-fonts", "");
 
 /**
  * One observer for the whole landing page. Elements carry `data-nv-reveal` (see revealProps).
@@ -43,37 +47,45 @@ export function RevealObserver() {
     document.querySelectorAll(SELECTOR).forEach(track);
     root.setAttribute("data-nv-reveal-ready", "");
 
-    let indic: IntersectionObserver | null = root.hasAttribute("data-indic-fonts")
+    let indic: IntersectionObserver | null = indicAllowed
       ? null
       : new IntersectionObserver(
           (entries) => {
             if (!entries.some((e) => e.isIntersecting)) return;
-            allowIndicFonts();
+            indicAllowed = true;
+            document.querySelectorAll(INDIC).forEach(markIndic);
             indic?.disconnect();
             indic = null;
           },
           { rootMargin: "150% 0px" },
         );
-    document.querySelectorAll(INDIC).forEach((el) => indic?.observe(el));
+    // Indic text that is here now, arrives later or gains its lang (the form's language select).
+    const indicText = (el: Element) => {
+      if (!el.matches(INDIC)) return;
+      if (indicAllowed) markIndic(el);
+      else indic?.observe(el);
+    };
+    document.querySelectorAll(INDIC).forEach(indicText);
 
     // Late arrivals: new elements, and existing elements that gain data-nv-reveal (React can reuse a node).
     const mo = new MutationObserver((records) => {
       for (const r of records) {
         if (r.type === "attributes") {
-          if (r.target instanceof Element && r.target.matches(SELECTOR)) track(r.target);
+          if (!(r.target instanceof Element)) continue;
+          if (r.attributeName === "lang") indicText(r.target);
+          else if (r.target.matches(SELECTOR)) track(r.target);
           continue;
         }
         r.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return;
           if (node.matches(SELECTOR)) track(node);
           node.querySelectorAll(SELECTOR).forEach(track);
-          if (!indic) return;
-          if (node.matches(INDIC)) indic.observe(node);
-          node.querySelectorAll(INDIC).forEach((el) => indic?.observe(el));
+          indicText(node);
+          node.querySelectorAll(INDIC).forEach(indicText);
         });
       }
     });
-    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-nv-reveal"] });
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-nv-reveal", "lang"] });
 
     return () => {
       mo.disconnect();

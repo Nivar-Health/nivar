@@ -6,7 +6,9 @@
    override. */
 @layer components {
   .nv-minute-popup {
-    --nv-d: min(280px, 34vh);
+    /* The orb gives way on short windows (a laptop at 1366×625), so the options clear the dock. What it
+       gives way to is words, so that share is in rem: a larger text size shrinks the orb, not the words. */
+    --nv-d: min(280px, 34vh, max(180px, 100dvh - 27.5rem));
     --nv-k: 1;
     /* One line of tab, set in rem like the type inside it: the phone layout's height sums read it. */
     --nv-tabs-h: 2.875rem;
@@ -23,8 +25,9 @@
   @media (width < 40rem) {
     .nv-minute-popup {
       /* The orb gives way on short phones, so the first screen (the orb, one line, the options and
-         Start) fits with nothing under the dock: 440px is what that screen needs beside the orb. */
-      --nv-d: min(268px, 100vw - 96px, 34dvh, max(180px, 100dvh - 440px));
+         Start) fits with nothing under the dock: 27.5rem (440px at the default size) is what that screen
+         needs beside the orb. */
+      --nv-d: min(268px, 100vw - 96px, 34dvh, max(180px, 100dvh - 27.5rem));
       --nv-k: 0.85;
     }
   }
@@ -316,20 +319,21 @@
   .nv-minute-sheet .nv-minute-tab:focus-visible {
     outline-offset: -2px;
   }
-  /* The pill, inset 4px in the tab (radius 12 in the track's 16). */
+  /* The pill, inset 4px in the tab (radius 12 in the track's 16): a mint tint with a mint edge, as a
+     chosen chip, never solid, so Start stays the one solid control and the orb the one bright thing. */
   .nv-minute-tab::before {
     content: "";
     position: absolute;
     inset: 4px;
     z-index: -1;
     border-radius: 12px;
-    background: var(--on-pine);
-    box-shadow: 0 10px 22px -12px rgb(0 0 0 / 0.6);
+    background: rgb(142 211 224 / 0.16);
+    box-shadow: inset 0 0 0 1px rgb(142 211 224 / 0.55);
     opacity: 0;
     transition: opacity 220ms var(--curve-standard);
   }
   .nv-minute-tab[data-active] {
-    color: var(--ink);
+    color: var(--on-pine);
   }
   .nv-minute-tab[data-active]::before {
     opacity: 1;
@@ -561,7 +565,7 @@
     color: var(--on-pine-2);
     text-wrap: pretty;
   }
-  /* Chips, mode radios, Rest's ticks. */
+  /* Chips, mode radios, Before BP's posture list. */
   .nv-minute-options {
     display: flex;
     flex-direction: column;
@@ -623,6 +627,13 @@
     opacity: 1;
     transition-duration: 0s;
   }
+  /* A session fits above its dock, so nothing passes under it; and the eye break dims the field below the
+     backdrop's pond, where it would show as a lighter band. Unless its words do run under the dock (a large
+     text size on a phone, data-over in experience.tsx Layout): legible words come first. */
+  .nv-minute-sheet[data-session] .nv-minute-controls:not([data-over])::before {
+    opacity: 0;
+    transition-duration: 160ms;
+  }
   /* The one quiet line under the buttons. It leaves with them for the stillness that ends a session. */
   .nv-minute-quietline {
     width: 100%;
@@ -634,6 +645,11 @@
     transition:
       opacity 300ms var(--curve-exit),
       visibility 0s linear 300ms;
+  }
+  /* Fixed chrome never takes more than a quarter of the screen: a dock grown that tall by a large text size
+     (data-tall, experience.tsx Layout) follows the content instead. */
+  .nv-minute-controls[data-tall] {
+    position: relative;
   }
   /* Done, entry and result states: the controls follow the content, so the result is read before the
      buttons are reached. Nothing floats, so there is no fade and no backdrop. */
@@ -647,10 +663,13 @@
   .nv-minute-layout[data-dock="flow"] .nv-minute-controls::after {
     content: none;
   }
-  /* Anything focused above a docked dock scrolls clear of it (WCAG 2.4.11); what is in it always shows. */
+  /* Anything focused above a docked dock scrolls clear of its solid part, 8px under the 24px fade (WCAG
+     2.4.11), and so does a safety line opened there; what is in the dock always shows. */
   .nv-minute-main
-    :is(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):not(.nv-minute-controls *) {
-    scroll-margin-bottom: calc(var(--nv-dock-h, 0px) + 8px);
+    :is(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"]), .nv-tool-more-body):not(
+      .nv-minute-controls *
+    ) {
+    scroll-margin-bottom: calc(var(--nv-dock-h, 0px) - 16px);
   }
   .nv-minute-after {
     display: flex;
@@ -698,8 +717,9 @@
      to start and to finish: the one solid control on the screen. */
   .nv-minute-primary {
     min-width: 168px;
-    height: 56px;
-    padding-inline: 2rem;
+    /* min-height, not height: with a large text size the label wraps inside the button, never past it. */
+    min-height: 56px;
+    padding: 0.5rem 2rem;
     border: 1px solid transparent;
     border-radius: 9999px;
     background: var(--on-pine);
@@ -721,9 +741,11 @@
     color: var(--on-pine);
     box-shadow: none;
   }
-  /* One row of session controls: the main button and one more, 12px apart. */
+  /* One row of session controls: the main button and one more, 12px apart (two rows if a large text size
+     needs them). */
   .nv-minute-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     justify-content: center;
     align-items: center;
@@ -734,8 +756,8 @@
     align-items: center;
     justify-content: center;
     flex: none;
-    height: 48px;
-    padding-inline: 20px;
+    min-height: 48px;
+    padding: 0.375rem 20px;
     border-radius: 9999px;
     border: 1px solid rgb(255 255 255 / 0.22);
     font-size: 1rem;
@@ -893,6 +915,36 @@
     transition:
       opacity 220ms var(--curve-exit),
       visibility 0s linear 220ms;
+  }
+
+  /* A session keeps the place its controls had when Start was pressed (experience.tsx holdPlace), so the
+     button does not jump as the chips, the list or the dock's note leave. The dock keeps its height, the
+     button at its top. From 640px, where the controls follow the content, the content keeps its height
+     too, the room going above the controls; phones pin the dock to the bottom edge instead, and short
+     landscape gives the stage its own column (both below). */
+  .nv-minute-sheet[data-session] .nv-minute-controls {
+    min-height: var(--nv-hold-dock, 0px);
+  }
+  @media (width >= 40rem) {
+    .nv-minute-sheet[data-session] .nv-minute-main {
+      min-height: var(--nv-hold, 0px);
+    }
+    .nv-minute-sheet[data-session] .nv-minute-main::before {
+      content: "";
+      flex: 1 0 0;
+      order: 1;
+    }
+    .nv-minute-sheet[data-session] :is(.nv-minute-controls, .nv-minute-dock-end) {
+      order: 1;
+    }
+  }
+  /* The controls of a done screen (or a result) come in softly where they now sit, below the content. */
+  .nv-minute-layout[data-dock="flow"] .nv-minute-controls {
+    animation: nv-minute-panel-in calc(360ms * var(--nv-k)) var(--curve-calm) backwards;
+  }
+  /* And back from there into a session (Stay a little longer, Again): the same soft entrance in the dock. */
+  .nv-minute-controls[data-rejoin] {
+    animation: nv-minute-panel-in calc(360ms * var(--nv-k)) var(--curve-calm) backwards;
   }
 
   @keyframes nv-minute-panel-in {
@@ -1075,12 +1127,15 @@
       grid-column: 2;
       grid-row: 2;
     }
-    /* The stage has its own column here: the content starts under the tabs and is as tall as it is. */
-    .nv-minute-main {
+    /* The stage has its own column here: the content starts under the tabs and is as tall as it is, in a
+       session too. */
+    .nv-minute-main,
+    .nv-minute-sheet[data-session] .nv-minute-main {
       min-height: 0;
       margin-top: 0;
     }
-    .nv-minute-main::before {
+    .nv-minute-main::before,
+    .nv-minute-sheet[data-session] .nv-minute-main::before {
       content: none;
     }
     /* The controls dock to the screen's right edge; the backdrop fades out towards the stage. */
@@ -1183,4 +1238,13 @@
       border: 1px solid ButtonText;
     }
   }
+}
+
+/* While the sheet is open the page under it is covered: its decorative loops pause, and resume where
+   they were on close. The corner marks the page's [data-landing] (not <html>, whose restyle would
+   reach the whole document). Outside the layer, so it wins over the loops' own unlayered shorthands;
+   the popup carries data-landing too, but holds no loops. */
+[data-landing][data-nv-minute] :is(.motion-loop, .live-dot),
+[data-landing][data-nv-minute] .live-dot::after {
+  animation-play-state: paused;
 }

@@ -206,10 +206,11 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
       if (disposed) return;
       halt();
       total = Math.max(0, totalMs);
-      banked = 0;
+      const at = Math.min(total, Math.max(0, o?.at ?? 0));
+      banked = at;
       pausedFrom = null;
       byVisibility = false;
-      withLeadIn = o?.leadIn !== false && leadMs() > 0;
+      withLeadIn = !at && o?.leadIn !== false && leadMs() > 0;
       const now = performance.now();
       if (withLeadIn) {
         phase = "leadin";
@@ -226,8 +227,8 @@ function createClock(options: () => SessionOptions, publish: (view: View) => voi
       } else {
         phase = "running";
         since = now;
-        show({ phase, totalMs: total, secondsLeft: secondsIn(total), leadInLeft: 0, pausedByVisibility: false, screenHeld: null });
-        options().onFrame?.(0, total);
+        show({ phase, totalMs: total, secondsLeft: secondsIn(total - at), leadInLeft: 0, pausedByVisibility: false, screenHeld: null });
+        options().onFrame?.(at, total);
       }
       holdScreen(true);
       run();
@@ -323,7 +324,7 @@ export function useSession(o: SessionOptions): Session {
     };
   }, []);
 
-  const start = useCallback((totalMs: number, so?: { leadIn?: boolean }) => clock.current?.start(totalMs, so), []);
+  const start = useCallback((totalMs: number, so?: { leadIn?: boolean; at?: number }) => clock.current?.start(totalMs, so), []);
   const pause = useCallback(() => clock.current?.pause(), []);
   const resume = useCallback(() => clock.current?.resume(), []);
   const stop = useCallback(() => clock.current?.stop(), []);

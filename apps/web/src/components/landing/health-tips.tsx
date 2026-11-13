@@ -153,7 +153,7 @@ export async function HealthTips() {
   );
 
   return (
-    // A sage band of its own: it sets the coda apart from the callback's light band above, and the dark
+    // A pale wash band of its own: it sets the coda apart from the callback's white band above, and the dark
     // footer follows without a seam to draw.
     <Section id="health-tips" tone="wash" titleId="health-tips-title">
       <Container>

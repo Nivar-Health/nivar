@@ -8,6 +8,7 @@ import {
   createContext,
   memo,
   startTransition,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -27,6 +28,7 @@ import { bindStyle, settle, spring, stopAll, tween, type Ease } from "./anim";
 import { ENABLED_TOOLS, READING_TOOLS, TOOL_ENABLED, TOOL_LABEL, TOOL_SPOKEN, TOOL_TONE, isToolId } from "./config";
 import { onSessionDone } from "./engine";
 import { Field } from "./field";
+import { DockOpenContext } from "./layout-context";
 import { canVibrate, vibrate } from "./haptics";
 import { isMinuteEntry, pushMinuteEntry } from "./history";
 import { Stage, TONES } from "./orb";
@@ -92,8 +94,12 @@ const TONE_LIGHT = 0.24;
 const ANNOUNCE_GAP_MS = 5000;
 /** After a session ends by itself the tabs and the fine print stay away this long, so the ending has the screen to itself. */
 const SETTLE_MS = 2500;
-/** How far the resting orb dims at an empty breath when its light, not its size, paces Breathe (reduced motion). */
-const ORB_DIM = 0.72;
+/**
+ * How far the resting orb dims at an empty breath when its light, not its size, paces Breathe (reduced
+ * motion): about 2.5 times brighter full than empty, while its word keeps 5:1 against it. Dimmer than
+ * this, the word falls under 4.5:1.
+ */
+const ORB_DIM = 0.6;
 /** The orb gives a little under a press on it (the idle tap that starts a session). */
 const PRESS_SCALE = 0.97;
 /** Closing (×0.85 on phones): the orb is checked against its pearl from LAND_MS, handed off by CLOSE_MS. */
@@ -233,6 +239,28 @@ const FIRST_READING = ENABLED_TOOLS.find((id) => READING_TOOLS.includes(id));
 /** Sound left on starts with the first press inside the sheet (a touch grants it at the click). */
 const wakeSound = () => sound.wake();
 
+/**
+ * Before any click in the sheet outside a session (Start is one), notes where the tool's dock ends, from
+ * the top of its content and at most at the screen's bottom edge (--nv-hold), and how tall the dock is
+ * (--nv-hold-dock). The session that may follow keeps both, so the button that was Start stays where it
+ * was as Pause or Stop while the options and the dock's note step aside (experience.css).
+ */
+function holdPlace(sheet: HTMLElement) {
+  const main = sheet.querySelector<HTMLElement>(".nv-minute-panel:not([hidden]) .nv-minute-main");
+  const dock = main?.querySelector<HTMLElement>(".nv-minute-controls");
+  if (!main || !dock) return;
+  const m = main.getBoundingClientRect();
+  const d = dock.getBoundingClientRect();
+  // Where the content starts once the sheet is back at its top, as a session's start puts it.
+  const top = m.top - sheet.getBoundingClientRect().top + sheet.scrollTop;
+  // The dock reaches past the content's end by its own negative bottom margin.
+  const past = parseFloat(getComputedStyle(dock).marginBottom) || 0;
+  const hold = Math.min(d.bottom - m.top, sheet.clientHeight - top) + past;
+  sheet.style.setProperty("--nv-hold", `${Math.max(0, Math.round(hold))}px`);
+  // A dock too tall to stick (data-tall) has no place on screen to keep.
+  sheet.style.setProperty("--nv-hold-dock", dock.hasAttribute("data-tall") ? "0px" : `${Math.round(d.height)}px`);
+}
+
 /** The tools re-render only when the api or the shell changes, not when the dialog opens. */
 const TOOL_VIEWS: Partial<Record<ToolId, FC<ToolProps>>> = Object.fromEntries(
   ENABLED_TOOLS.map((id) => [id, memo(TOOLS[id])]),
@@ -301,9 +329,47 @@ function Layout({
 }: LayoutSlots) {
   const { textHost, compactHeight, phone, setArmed, pressOrb } = useContext(ShellContext);
   const aboutId = useId();
+  // A safety line opened in full from the dock: the controls follow the content while it shows.
+  const [quietOpen, setQuietOpen] = useState(false);
   const padRef = useRef<HTMLButtonElement>(null);
   const pressRef = useRef(orbButton?.onPress);
   const armed = Boolean(orbButton);
+  const dockRef = useRef<HTMLDivElement | null>(null);
+  const attachControls = useCallback((el: HTMLDivElement | null) => {
+    dockRef.current = el;
+    return attachDock(el);
+  }, []);
+
+  // Two checks after each render, for a large text size on a phone (experience.css). data-tall: the dock
+  // would cover more than a quarter of the screen, so it stops sticking and follows the content. data-over:
+  // a session's words, which normally fit above the dock, run under it (with the sheet at its top), so the
+  // dock keeps its backdrop through the session.
+  useLayoutEffect(() => {
+    const el = dockRef.current;
+    const sheet = el?.closest<HTMLElement>(".nv-minute-sheet");
+    if (!el || !sheet) return;
+    el.toggleAttribute("data-tall", el.offsetWidth * el.offsetHeight > 0.25 * sheet.clientWidth * sheet.clientHeight);
+    const above = el.previousElementSibling?.getBoundingClientRect().bottom ?? 0;
+    const over = el.hasAttribute("data-stuck") && above + sheet.scrollTop > el.getBoundingClientRect().top + 16;
+    el.toggleAttribute("data-over", over);
+  });
+
+  // From a done screen straight into a session (Stay a little longer, Again): the controls leave the flow
+  // for the dock at the screen's foot. They come in there softly, as the done screen's came in below the
+  // content, rather than the button jumping down under the finger. Before paint, so no frame shows the jump.
+  const shownDock = quietOpen ? "flow" : dock;
+  const lastDock = useRef(shownDock);
+  useLayoutEffect(() => {
+    const el = dockRef.current;
+    const from = lastDock.current;
+    lastDock.current = shownDock;
+    if (!el || from !== "flow" || shownDock !== "sticky") return;
+    el.setAttribute("data-rejoin", "");
+    const done = () => el.removeAttribute("data-rejoin");
+    el.addEventListener("animationend", done, { once: true });
+    const timer = window.setTimeout(done, 600);
+    return () => window.clearTimeout(timer);
+  }, [shownDock]);
 
   useLayoutEffect(() => {
     pressRef.current = orbButton?.onPress;
@@ -333,6 +399,11 @@ function Layout({
           pressRef.current?.();
         }
       }}
+      // Screen readers, voice and switch access send a click with no pointer and no key before it
+      // (detail 0). A real press already counted on pointerdown, and Space and Enter make no click here.
+      onClick={(e) => {
+        if (e.detail === 0) pressRef.current?.();
+      }}
     >
       {orb}
     </button>
@@ -359,7 +430,7 @@ function Layout({
   );
 
   return (
-    <div className="nv-minute-layout" data-dock={dock}>
+    <div className="nv-minute-layout" data-dock={shownDock}>
       {textHost ? createPortal(face, textHost) : null}
       {/* Everything down to the controls. On portrait phones it reaches the screen's bottom edge while the
           controls dock, so they rest there in the thumb zone and what follows starts below the fold. */}
@@ -387,9 +458,13 @@ function Layout({
         {/* The dock: the controls and one quiet line, never a box. It sticks to the bottom of the sheet
             whenever the content runs past it (portrait phones rest it there); in "flow" it simply follows
             the content (experience.css). */}
-        <div ref={attachDock} data-nv-in="controls" className="nv-minute-controls">
+        <div ref={attachControls} data-nv-in="controls" className="nv-minute-controls">
           {controls}
-          {quiet ? <div className="nv-minute-quietline">{quiet}</div> : null}
+          {quiet ? (
+            <div className="nv-minute-quietline">
+              <DockOpenContext.Provider value={setQuietOpen}>{quiet}</DockOpenContext.Provider>
+            </div>
+          ) : null}
         </div>
         <span aria-hidden className="nv-minute-dock-end" />
       </div>
@@ -477,13 +552,15 @@ function Sheet({
   const armedRef = useRef(false);
   const sessionRef = useRef(false);
   const completedRef = useRef(false);
-  /** When the last session ended by itself (performance.now()), 0 once its quiet seconds are spent. */
+  /** When the last session ended by itself (performance.now()); 0 since the sheet opened. */
   const doneAtRef = useRef(0);
   const hintTimerRef = useRef(0);
   const hiddenPearlRef = useRef<{ el: HTMLElement; visibility: string } | null>(null);
   const lastAnnounceRef = useRef({ text: "", at: 0 });
   const timersRef = useRef<number[]>([]);
   const closeTokenRef = useRef(0);
+  /** The tools' api.onOpen listeners. */
+  const openListenersRef = useRef(new Set<() => void>());
 
   useLayoutEffect(() => {
     sessionRef.current = sessionActive;
@@ -557,6 +634,8 @@ function Sheet({
       ui.scrollLeft = 0;
       ui.removeAttribute("data-scrolled");
       ui.removeAttribute("data-settling");
+      ui.style.removeProperty("--nv-hold");
+      ui.style.removeProperty("--nv-hold-dock");
       doneAtRef.current = 0;
 
       // The same choreography on every open, a little quicker after the first (the CSS stagger reads --nv-k).
@@ -609,6 +688,7 @@ function Sheet({
         ui.dataset.ui = "in";
         ui.dataset.ready = "";
         phaseRef.current = "open";
+        if (!retarget) openListenersRef.current.forEach((listener) => listener());
         return;
       }
 
@@ -706,6 +786,9 @@ function Sheet({
         phaseRef.current = "open";
         ui.dataset.ready = "";
       });
+      // Last, on a stage that is fresh again: a tool may pick up where it was (a rest still running). A
+      // retarget never closed, so its tools carry on as they were.
+      if (!retarget) openListenersRef.current.forEach((listener) => listener());
     },
     [clearTimers, later, origin, quietOpen, reducedMotion, ring, ripple, scene, titleRef, v],
   );
@@ -904,24 +987,26 @@ function Sheet({
   // A session's start and its end both bring the sheet back to the top: the session view is the stage and
   // its controls, and a result is read from its first line. After a session that ended by itself (not
   // Stop), the tabs, the fine print and the sign-off stay away for SETTLE_MS from that end, so the ending
-  // has the screen to itself; data-settling carries that (experience.css). A layout effect, so the tabs
-  // never show for a frame between the two attributes.
+  // has the screen to itself; data-settling carries that (experience.css). A layout effect, and the
+  // attribute is set before the scroll reads the layout, so the tabs never show between the two.
   const sessionWasRef = useRef(false);
   useLayoutEffect(() => {
     const was = sessionWasRef.current;
     sessionWasRef.current = sessionActive;
     const sheet = uiRef.current;
     if (!sheet || was === sessionActive || (phaseRef.current !== "opening" && phaseRef.current !== "open")) return;
-    scrollSheet(0);
     if (sessionActive) {
       sheet.removeAttribute("data-settling");
-      return;
+    } else {
+      // Measured from the end itself, however many times the flag has turned since (a tool can hold its
+      // session a moment longer, as Breathe does for its stillness).
+      const wait = doneAtRef.current ? SETTLE_MS - (performance.now() - doneAtRef.current) : 0;
+      if (wait > 0) {
+        sheet.setAttribute("data-settling", "");
+        later(wait, () => sheet.removeAttribute("data-settling"));
+      }
     }
-    const wait = doneAtRef.current ? SETTLE_MS - (performance.now() - doneAtRef.current) : 0;
-    doneAtRef.current = 0;
-    if (wait <= 0) return;
-    sheet.setAttribute("data-settling", "");
-    later(wait, () => sheet.removeAttribute("data-settling"));
+    scrollSheet(0);
   }, [sessionActive, scrollSheet, later]);
 
   // A new tool gets a fresh stage: its tone, the bare ring and the orb at rest, from the top of the
@@ -1085,6 +1170,17 @@ function Sheet({
       compactHeight,
       prefs,
       setPrefs,
+      scrollToTop() {
+        scrollSheet(0);
+      },
+      onOpen(listener) {
+        const listeners = openListenersRef.current;
+        listeners.add(listener);
+        if (live()) listener();
+        return () => {
+          listeners.delete(listener);
+        };
+      },
       switchTool(id) {
         if (!TOOL_ENABLED[id] || sessionRef.current) return;
         onToolChange(id);
@@ -1108,6 +1204,7 @@ function Sheet({
     requestClose,
     ring,
     ripple,
+    scrollSheet,
     setBack,
     setPrefs,
     soundOn,
@@ -1217,7 +1314,10 @@ function Sheet({
           className="theme-pine nv-minute-sheet"
           data-session={sessionActive ? "" : undefined}
           onPointerDownCapture={wakeSound}
-          onClickCapture={wakeSound}
+          onClickCapture={(e) => {
+            wakeSound();
+            if (!sessionRef.current) holdPlace(e.currentTarget);
+          }}
           onKeyDownCapture={wakeSound}
         >
           <div ref={zoneRef} data-nv-in="top" className="nv-minute-top">
@@ -1289,7 +1389,10 @@ function Sheet({
                   const Tool = TOOL_VIEWS[id] ?? TOOLS[id];
                   return (
                     <Tabs.Panel key={id} value={id} className="nv-minute-panel">
-                      <Tool key={generation} api={api} Layout={Layout} />
+                      {/* A tool that is its own chunk (Pulse) shows nothing until it arrives. */}
+                      <Suspense fallback={null}>
+                        <Tool key={generation} api={api} Layout={Layout} />
+                      </Suspense>
                     </Tabs.Panel>
                   );
                 })}

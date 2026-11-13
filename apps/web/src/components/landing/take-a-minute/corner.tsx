@@ -2,7 +2,7 @@
 
 import { startTransition, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { useChromeSignals } from "../chrome-signals";
-import { ENABLED_TOOLS, HASH, TOOL_LABEL, enabledTool, isToolId } from "./config";
+import { ENABLED_TOOLS, HASH, LOAD_FAILED, TOOL_LABEL, enabledTool, hashFor, isToolId } from "./config";
 import type { ExperienceProps } from "./experience";
 import { keepRouterState, stripHash } from "./history";
 import { MINUTE_OPEN_EVENT, MINUTE_WARM_EVENT, prefetchTakeAMinute, reportMinuteState } from "./open";
@@ -16,22 +16,36 @@ import type { MinuteOpenDetail, ToolId } from "./types";
    Take a minute for every launcher, prefetches it as a launcher nears, and marks the launcher a visitor
    tapped while the chunk loads or fails (§1.17). */
 
-/** The config names (mobile spec §1.16), as every launcher uses them: "Take a minute: Breathe, BP rest, Eyes". */
+/** The config names, as every launcher uses them: "Take a minute: Breathe, Eye break, Before BP". */
 const NAME = `Take a minute: ${ENABLED_TOOLS.map((t) => TOOL_LABEL[t]).join(", ")}`;
 const LABEL = "Take a minute";
-const FAILED = "Couldn't open. Try again.";
 /** How long the failure note (and the launcher's danger outline) shows. */
 const FAILED_MS = 4000;
+/** A tap that has waited this long on the chunk marks its launcher data-minute-slow (the tile says "Opening…"). */
+const SLOW_MS = 400;
 
 let loaded: ComponentType<ExperienceProps> | null = null;
 const load = () => prefetchTakeAMinute().then((mod) => (loaded = mod.Experience));
 
-/** The tool used last time (prefs.ts keeps it in nivar.minute.v1). */
-function storedTool(): ToolId {
+/**
+ * A load failed once in this page view. The bundler's runtime remembers a failed chunk, so importing
+ * again keeps failing even once the network is back: the next tap reloads the page into the deep link
+ * for the tool it asked for instead, and the deep link opens it.
+ */
+let loadFailed = false;
+function reloadInto(tool: ToolId | "") {
+  const hash = hashFor(tool);
+  // A full page load on purpose: the client router would ask the same runtime for the chunk.
+  if (location.pathname !== "/") {
+    location.href = new URL(`/${hash}`, location.origin).href;
+    return;
+  }
   try {
-    return enabledTool(JSON.parse(localStorage.getItem("nivar.minute.v1") ?? "{}").tool);
+    // replaceState, not a hash change: hashchange would ask for the chunk again before the reload.
+    window.history.replaceState(window.history.state, "", `/${location.search}${hash}`);
+    location.reload();
   } catch {
-    return "breathe";
+    location.href = new URL(`/${location.search}${hash}`, location.origin).href;
   }
 }
 
@@ -83,6 +97,31 @@ function whenStill(run: () => void, ms: number): () => void {
   };
 }
 
+/** How far past the hero the visitor must have read before the label first peeks: a screen and a half. */
+const PEEK_PAST_HERO = 1.5;
+
+/**
+ * Runs `run` once the page is scrolled at least PEEK_PAST_HERO screens past the hero (#top), at once if it
+ * already is; returns a cancel. Without a hero, the page's top stands in for its end.
+ */
+function whenPastHero(run: () => void): () => void {
+  const far = () => {
+    const end = document.getElementById("top")?.getBoundingClientRect().bottom ?? 0;
+    return -end >= innerHeight * PEEK_PAST_HERO;
+  };
+  if (far()) {
+    run();
+    return () => {};
+  }
+  function onScroll() {
+    if (!far()) return;
+    removeEventListener("scroll", onScroll);
+    run();
+  }
+  addEventListener("scroll", onScroll, { passive: true });
+  return () => removeEventListener("scroll", onScroll);
+}
+
 /** Runs `run` when the next scroll has settled; returns a cancel. */
 function afterNextScroll(run: () => void, ms: number): () => void {
   let cancel = () => removeEventListener("scroll", onScroll);
@@ -95,7 +134,63 @@ function afterNextScroll(run: () => void, ms: number): () => void {
 }
 
 const shown = (button: HTMLElement) =>
-  !button.matches("[data-hidden], [data-open]") && !button.closest("[data-hidden]");
+  !button.matches("[data-hidden], [data-open], [data-under]") && !button.closest("[data-hidden]");
+
+/** What the corner never sits over: something to press, a picture, or an illustration in the page's flow. */
+const NEEDED = "a[href], button, summary, label, input, select, textarea, [role=button], [role=tab], img, svg, video, canvas, iframe";
+
+/** Whether `(x, y)` lies on a glyph of text (not just inside a paragraph's box). */
+function onText(x: number, y: number): boolean {
+  let node: Node | undefined;
+  let offset = 0;
+  if ("caretPositionFromPoint" in document) {
+    const at = document.caretPositionFromPoint(x, y);
+    node = at?.offsetNode;
+    offset = at?.offset ?? 0;
+  } else {
+    const at = (document as Document).caretRangeFromPoint?.(x, y);
+    node = at?.startContainer;
+    offset = at?.startOffset ?? 0;
+  }
+  if (!(node instanceof Text) || !node.data.trim()) return false;
+  const range = document.createRange();
+  for (const i of [offset - 1, offset]) {
+    if (i < 0 || i >= node.data.length || !node.data[i].trim()) continue;
+    range.setStart(node, i);
+    range.setEnd(node, i + 1);
+    const r = range.getBoundingClientRect();
+    if (x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 6 && y <= r.bottom + 6) return true;
+  }
+  return false;
+}
+
+/**
+ * Whether the page has something people need under the corner button (and 6px around it): a control, a
+ * picture, an illustration or words. From 640px the page's gutter is narrower than the button, so then it
+ * steps back (cluster.css) rather than cover them.
+ */
+function overContent(button: HTMLElement): boolean {
+  const r = button.getBoundingClientRect();
+  const cluster = button.parentElement;
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  const reach = r.width / 2 + 6;
+  const points: [number, number][] = [[cx, cy]];
+  for (let a = 0; a < 8; a++) {
+    const t = (a * Math.PI) / 4;
+    points.push([cx + Math.cos(t) * reach, cy + Math.sin(t) * reach], [cx + (Math.cos(t) * reach) / 2, cy + (Math.sin(t) * reach) / 2]);
+  }
+  for (const [x, y] of points) {
+    const hit = document.elementsFromPoint(x, y).find((el) => !cluster?.contains(el));
+    if (!hit) continue;
+    if (hit.closest(NEEDED)) return true;
+    // A drawn scene (aria-hidden, in the flow), not a backdrop glow (absolutely placed).
+    const art = hit.closest<HTMLElement>("[aria-hidden=true]");
+    if (art && art !== document.body && getComputedStyle(art).position !== "absolute") return true;
+    if (onText(x, y)) return true;
+  }
+  return false;
+}
 
 /**
  * Whether the label, peeking, would lie over or against a control of the page: then it leaves that spot
@@ -149,8 +244,14 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
   const openRef = useRef(false);
   const [Experience, setExperience] = useState<ComponentType<ExperienceProps> | null>(null);
   const [open, setOpen] = useState(false);
-  // Tells the live ECG (live-dashboard.tsx) to rest while the sheet covers the page.
-  useEffect(() => reportMinuteState(open), [open]);
+  // Tells the live ECG (live-dashboard.tsx) to rest while the sheet covers the page, and marks the page's
+  // [data-landing] (never <html>) so its decorative loops pause under the sheet (experience.css).
+  useEffect(() => {
+    reportMinuteState(open);
+    const page = document.querySelector("[data-landing]");
+    page?.toggleAttribute("data-nv-minute", open);
+    return () => page?.removeAttribute("data-nv-minute");
+  }, [open]);
   const [tool, setTool] = useState<ToolId | null>(null);
   const [failed, setFailed] = useState(false);
   // Hidden at the hero (the store reports "hero" until its first report, so the pearl never flashes
@@ -182,7 +283,7 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
       (Loaded) =>
         startTransition(() => {
           setExperience((current: ComponentType<ExperienceProps> | null) => current ?? Loaded);
-          setTool((last) => last ?? storedTool());
+          setTool((last) => last ?? "breathe");
         }),
       () => {},
     );
@@ -198,12 +299,18 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
   }, [warm]);
 
   // §1.17: the corner button's own data-loading / data-failed, mirrored on the launcher that was tapped
-  // (namespaced, as it may be another component's element), set and cleared together.
+  // (namespaced, as it may be another component's element), set and cleared together. A load still
+  // waiting after SLOW_MS also marks the launcher data-minute-slow.
+  const slowTimer = useRef(0);
   const setLoading = useCallback((on: boolean) => {
     const button = buttonRef.current;
     const opener = openerRef.current;
     flag(button, "data-loading", on);
-    if (opener !== button) flag(opener, "data-minute-loading", on);
+    window.clearTimeout(slowTimer.current);
+    if (opener === button) return;
+    flag(opener, "data-minute-loading", on);
+    if (on) slowTimer.current = window.setTimeout(() => flag(opener, "data-minute-slow", true), SLOW_MS);
+    else flag(opener, "data-minute-slow", false);
   }, []);
   const clearFailed = useCallback(() => {
     flag(failedOnRef.current, "data-minute-failed", false);
@@ -222,16 +329,22 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
       originRef.current = originOf(opener);
       const go = (Loaded: ComponentType<ExperienceProps>) => {
         openRef.current = true;
+        // It is opening: the tile's "Opening…" gives way (the loading flags stay until it closes).
+        window.clearTimeout(slowTimer.current);
+        flag(opener, "data-minute-slow", false);
         // The button fades under the pond: its first-appearance breath and peek end here.
         flag(buttonRef.current, "data-intro", false);
         flag(buttonRef.current, "data-peek", false);
         setExperience(() => Loaded);
-        setTool((last) => (wanted ? enabledTool(wanted) : (last ?? storedTool())));
+        // A launcher or deep link that names a tool opens it; every general entry opens Breathe.
+        setTool(wanted ? enabledTool(wanted) : "breathe");
         setOpen(true);
       };
       if (loaded) return go(loaded);
+      if (loadFailed) return reloadInto(wanted ? enabledTool(wanted) : "");
       setLoading(true);
       load().then(go, () => {
+        loadFailed = true;
         if (openerRef.current !== opener) return;
         setLoading(false);
         if (opener && opener !== buttonRef.current) {
@@ -305,19 +418,20 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
   }, [warmWhenStill]);
 
   // First appearance on this page load (from 640px, where the corner is laid out), armed once: one
-  // breath and one ripple; the label peeks for 4 s once the page is still (so it is seen, and checked
-  // against what lies under it), unless it would cover a control there, when it waits for the next
-  // scroll to settle, once, within 8 s; and the experience downloads when the browser is idle. The peek
-  // ends early on the first scroll or touch, and while it shows its label takes the tap (cluster.css).
+  // breath and one ripple, and the experience downloads when the browser is idle. The label peeks once,
+  // for 4 s, and not before the visitor is a screen and a half past the hero (reading, not arriving), once
+  // the page is still (so it is seen, and checked against what lies under it). If it would cover a link
+  // or button there, it waits for the next scroll to settle, once, within 8 s, and else never shows. The
+  // peek ends early on the first scroll or touch, and while it shows its label takes the tap (cluster.css).
   const visible = !atHero && !away && !open;
   const appeared = useRef(false);
   useEffect(() => {
     const button = buttonRef.current;
     if (!visible || appeared.current || !button || !rendered(button)) return;
     appeared.current = true;
-    const since = performance.now();
     flag(button, "data-intro", true);
     later(3600, () => flag(button, "data-intro", false));
+    let since = 0;
     const peek = (retry: boolean) => {
       if (performance.now() - since > 8000) return;
       if (shown(button) && !labelCovers(button)) {
@@ -332,13 +446,49 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
         later(4000, end);
       } else if (retry) pending.current.add(afterNextScroll(() => peek(false), 150));
     };
-    later(400, () => pending.current.add(whenStill(() => peek(true), 150)));
+    pending.current.add(
+      whenPastHero(() => {
+        since = performance.now();
+        later(400, () => pending.current.add(whenStill(() => peek(true), 150)));
+      }),
+    );
     if (frugal()) return;
     if (typeof requestIdleCallback === "function") {
       const idle = requestIdleCallback(() => load().catch(() => {}), { timeout: 2000 });
       pending.current.add(() => cancelIdleCallback(idle));
     } else later(2000, () => load().catch(() => {}));
   }, [visible, later]);
+
+  // From 640px the corner steps back (cluster.css) while something people need lies under it, so it never
+  // covers a control, a picture or words. Checked when the page comes to rest (not on every frame of a
+  // scroll, so it does not flicker), on resize, and after a press that may have opened or moved something.
+  // It stays in the tab order, and keyboard focus brings it back.
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!visible || !button) return;
+    let timer = 0;
+    const check = () => {
+      window.clearTimeout(timer);
+      flag(button, "data-under", rendered(button) && overContent(button));
+    };
+    const soon = (ms: number) => () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(check, ms);
+    };
+    const onScroll = soon(150);
+    const onPress = soon(400);
+    check();
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll, { passive: true });
+    document.addEventListener("click", onPress, { capture: true, passive: true });
+    return () => {
+      window.clearTimeout(timer);
+      removeEventListener("scroll", onScroll);
+      removeEventListener("resize", onScroll);
+      document.removeEventListener("click", onPress, { capture: true });
+      flag(button, "data-under", false);
+    };
+  }, [visible]);
 
   // The failure note shows for 4 s, on the corner and on the launcher that was tapped.
   useEffect(() => {
@@ -378,7 +528,10 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
     const button = buttonRef.current;
     if (el?.isConnected && rendered(el) && !button?.contains(el)) return el;
     const cornerShows =
-      button && rendered(button) && !button.hasAttribute("data-hidden") && !wrapRef.current?.hasAttribute("data-hidden");
+      button &&
+      rendered(button) &&
+      !button.matches("[data-hidden], [data-under]:not(:focus-visible)") &&
+      !wrapRef.current?.hasAttribute("data-hidden");
     return cornerShows ? button.querySelector<HTMLElement>(".nv-minute-pearl") : null;
   }, []);
 
@@ -414,8 +567,8 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
           onPointerEnter={warm}
           onFocus={warm}
         >
-          {[LABEL, FAILED].map((text) => (
-            <span key={text} aria-hidden className="nv-minute-corner-label" data-note={text === FAILED ? "" : undefined}>
+          {[LABEL, LOAD_FAILED].map((text) => (
+            <span key={text} aria-hidden className="nv-minute-corner-label" data-note={text === LOAD_FAILED ? "" : undefined}>
               <span className="nv-minute-corner-shade" />
               <span className="nv-minute-corner-pill">
                 <span>{text}</span>
@@ -429,7 +582,7 @@ export function Corner({ pearl, whatsapp }: { pearl: ReactNode; whatsapp: ReactN
       </div>
       {/* Outside the cluster, so it still announces below 640px, where the cluster is display:none. */}
       <span role="status" className="sr-only">
-        {failed ? FAILED : ""}
+        {failed ? LOAD_FAILED : ""}
       </span>
       {Experience && tool ? (
         <Experience

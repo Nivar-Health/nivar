@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { MenuGlyph } from "./bar-icons";
 import { BottomBar, modified } from "./bottom-bar";
 import { useChromeSignals } from "./chrome-signals";
+import { EMERGENCY_TEL_LABEL, isEmergencyNumber } from "./emergency-tel";
 import { MotionToggle } from "./motion-toggle";
 import {
   arrivedAt,
@@ -626,9 +627,9 @@ export function SiteNav() {
 function EmergencyLine() {
   return (
     <p className="nv-nav-sos">
-      {SITE.emergency.short.split(/\b(112|108)\b/).map((part, i) =>
-        i % 2 ? (
-          <a key={part} href={`tel:${part}`} className="nv-nav-tel focus-ring">
+      {SITE.emergency.short.split(/\b(112|108)\b/).map((part) =>
+        isEmergencyNumber(part) ? (
+          <a key={part} href={`tel:${part}`} aria-label={EMERGENCY_TEL_LABEL[part]} className="nv-nav-tel focus-ring">
             {part}
           </a>
         ) : (

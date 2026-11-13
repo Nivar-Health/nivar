@@ -13,6 +13,7 @@ import {
   ORB_REST,
   OrbWord,
   PromptLine,
+  SteadyText,
   ToolControls,
   safetySlots,
   useToolSession,
@@ -43,6 +44,9 @@ const STILL_MS = 1500;
 const LONG_MS = 150_000;
 
 const phaseMs = (counts: Counts) => counts * 1000;
+
+/** About this exercise before and during a session: the safety line already shows under the button then. */
+const FINE_BEFORE = BREATHE.fine.filter((line) => line[0] !== BREATHE.always);
 
 /** A session of `minutes` as whole breaths at this pace: 6, 18 and 30 at five counts; 8, 23 and 38 at four. */
 function lengthMs(minutes: Minutes, counts: Counts): number {
@@ -353,7 +357,7 @@ export function Breathe({ api, Layout }: ToolProps) {
       <>
         <HiddenTimer seconds={s.secondsLeft} />
         <p aria-hidden className="nv-tool-left" data-on={paused ? "" : undefined}>
-          {paused ? COMMON.left(formatClock(s.secondsLeft)) : " "}
+          {paused ? <SteadyText text={COMMON.left(formatClock(s.secondsLeft))} /> : " "}
         </p>
       </>
     );
@@ -391,7 +395,7 @@ export function Breathe({ api, Layout }: ToolProps) {
       controls={<ToolControls main={main} mainRef={primary} beside={beside} under={under} hushed={view === "ending"} />}
       dock={view === "done" ? "flow" : "sticky"}
       after={after}
-      fine={<FineLines lines={BREATHE.fine} />}
+      fine={<FineLines lines={view === "done" ? BREATHE.fine : FINE_BEFORE} />}
     />
   );
 }

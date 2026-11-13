@@ -32,6 +32,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={cn(generalSans.variable, notoKannada.variable, notoDevanagari.variable, "h-full antialiased")}
       // The public site marks <html> before React hydrates (SiteRoot in landing/chrome-signals.ts).
       suppressHydrationWarning
+      // The site glides in-page jumps (globals.css); this asks Next to jump, not glide, when it changes
+      // page. Where nothing sets smooth scrolling (the product app) it changes nothing.
+      data-scroll-behavior="smooth"
     >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>

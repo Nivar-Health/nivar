@@ -38,8 +38,10 @@
       scale 360ms var(--curve-calm),
       visibility 0s;
   }
-  .nv-minute-cluster[data-hidden] > *,
-  .nv-minute-cluster > [data-hidden] {
+  /* A button that holds keyboard focus stays until focus moves on (tabbing past the last footer link
+     lands on it just as the footer hides the corner). */
+  .nv-minute-cluster[data-hidden] > :not(:focus-within),
+  .nv-minute-cluster > [data-hidden]:not(:focus-within) {
     visibility: hidden;
     opacity: 0;
     translate: 0 8px;
@@ -60,6 +62,25 @@
     transition:
       opacity 200ms var(--curve-exit),
       visibility 0s linear 200ms;
+  }
+  /* Something people need lies under the button (corner.tsx): it steps back and lets taps through to it.
+     Only opacity and scale move; it keeps its place and stays in the tab order, and keyboard focus or its
+     failure note brings it back. */
+  .nv-minute-cluster > .nv-minute-corner[data-under]:not(:focus-visible, [data-failed], [data-loading]) {
+    opacity: 0;
+    scale: 0.9;
+    pointer-events: none;
+    transition:
+      opacity 240ms var(--curve-exit),
+      scale 240ms var(--curve-exit);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nv-minute-cluster > .nv-minute-corner[data-under]:not(:focus-visible, [data-failed], [data-loading]) {
+      scale: none;
+    }
+  }
+  html[data-motion="paused"] .nv-minute-cluster > .nv-minute-corner[data-under]:not(:focus-visible, [data-failed], [data-loading]) {
+    scale: none;
   }
   .nv-minute-wa {
     display: flex;
@@ -91,9 +112,10 @@
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  /* 64–85rem: the page's gutter is narrower than the button, so it shrinks to 48px and sits closer to
-     the edge (centred over a WhatsApp button, when there is one). */
-  @media (64rem <= width <= 85rem) {
+  /* 40–85rem (tablets and laptops): the page's gutter is narrower than the button, so it shrinks to 48px
+     and sits closer to the edge, over less of the reading column (centred over a WhatsApp button, when
+     there is one). */
+  @media (40rem <= width <= 85rem) {
     .nv-minute-cluster {
       right: max(0.75rem, calc(env(safe-area-inset-right) + 0.75rem));
       bottom: max(0.75rem, env(safe-area-inset-bottom));
@@ -367,8 +389,8 @@
       animation: none !important;
     }
     .nv-minute-cluster > *,
-    .nv-minute-cluster[data-hidden] > *,
-    .nv-minute-cluster > [data-hidden] {
+    .nv-minute-cluster[data-hidden] > :not(:focus-within),
+    .nv-minute-cluster > [data-hidden]:not(:focus-within) {
       translate: none;
       scale: none;
     }
@@ -377,8 +399,8 @@
         opacity 200ms linear,
         visibility 0s !important;
     }
-    .nv-minute-cluster[data-hidden] > *,
-    .nv-minute-cluster > :is([data-hidden], [data-open]) {
+    .nv-minute-cluster[data-hidden] > :not(:focus-within),
+    .nv-minute-cluster > :is([data-hidden]:not(:focus-within), [data-open]) {
       transition:
         opacity 200ms linear,
         visibility 0s linear 200ms !important;

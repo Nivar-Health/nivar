@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { SITE } from "@/lib/site-facts";
 import { cn } from "@/lib/utils";
+import { EMERGENCY_TEL_LABEL, isEmergencyNumber } from "./emergency-tel";
 import { FaqAccordion, type FaqItem } from "./faq";
 import { buttonClass, CALLBACK_HREF, Container, inr, revealProps, Section, SectionTitle } from "./primitives";
 import { WhatsAppIcon, WhatsAppLink, whatsappHref } from "./whatsapp";
@@ -19,8 +20,8 @@ const TEL_LINK =
 /** A sentence with its emergency numbers as tel: links. */
 function withCallLinks(sentence: string): ReactNode {
   return sentence.split(/\b(112|108)\b/).map((part, i) =>
-    i % 2 ? (
-      <a key={i} href={`tel:${part}`} className={TEL_LINK}>
+    isEmergencyNumber(part) ? (
+      <a key={i} href={`tel:${part}`} aria-label={EMERGENCY_TEL_LABEL[part]} className={TEL_LINK}>
         {part}
       </a>
     ) : (

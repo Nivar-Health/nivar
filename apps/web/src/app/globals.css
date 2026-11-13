@@ -56,13 +56,11 @@
   --color-ink-3: var(--ink-3);
   --color-mist: var(--mist);
   --color-wash: var(--wash);
-  --color-mint: var(--mint);
   --color-sand: var(--sand);
   --color-blush: var(--blush);
   --color-sky: var(--sky);
   --color-sage: var(--sage);
   --color-teal: var(--teal);
-  --color-teal-deep: var(--teal-deep);
   --color-signal: var(--signal);
   --color-signal-ink: var(--signal-ink);
   --color-trace: var(--trace);
@@ -229,7 +227,6 @@
   --wash: #edf4f6; /* quiet fills, secondary buttons */
   --aqua: #e4eff2; /* muted and accent fills, chips, selected, tinted bands */
   --aqua-2: #cbe0e6; /* tracks and pressed tints; never under ink-3 */
-  --mint: var(--aqua); /* older name for the selected tint */
   --sand: #f4efe4; /* warm tint */
   --blush: #f6ece9; /* heart tint */
   --sky: #e7eef4; /* vitals tint */
@@ -243,7 +240,6 @@
   --jade: #014c5e; /* the action colour (the logo tile) */
   --jade-hover: #013f4e;
   --jade-active: #01323e;
-  --teal-deep: var(--jade);
   --primary-hover: var(--jade-hover);
   --primary-active: var(--jade-active);
 
@@ -357,28 +353,6 @@
   --signal: #1e9563; /* live dots on light surfaces: 3.79 on white, 3.61 on mist */
 }
 
-/* The public site was tuned with these earlier values (its field borders, the form's tick, two
-   programme glyphs, status text, the faint shadow-xs). It keeps them until each of those pieces is
-   checked against the shared values above; then this block goes. */
-[data-landing] {
-  --shade-ink: 16 32 27;
-  --wash: #edf3ef;
-  --mint: #e1eee7;
-  --sage: #8db5a4;
-  --teal-deep: #0e4f45;
-  --input-line: #788d85;
-  --input-hover: #5b7068;
-  --success: #16704a;
-  --warning: #8f5b0c;
-  --warning-ink: #7a4d08;
-  --danger: #b23a30;
-  --danger-hover: #9a3129;
-  --saffron: var(--warning);
-  --secondary: var(--wash);
-  --input: var(--input-line);
-  --destructive: var(--danger);
-}
-
 /* ---- Semantic tokens: deep teal panels (Live band, footer, sign-in brand panel) ---- */
 .theme-pine {
   --background: var(--pine);
@@ -449,8 +423,9 @@
 
 /* Indic text: General Sans stays first so every language shares one baseline; Noto supplies
    the Kannada / Devanagari glyphs. Unlayered on purpose so it beats tracking utilities. Noto applies
-   only once <html data-indic-fonts> is set, just before Indic text is seen (reveal.tsx), so a first
-   load never fetches it; until then the system's own Indic fonts draw that far-off text.
+   only to Indic elements marked data-indic-fonts, just before Indic text is seen (reveal.tsx), so a
+   first load never fetches it; until then the system's own Indic fonts draw that far-off text. The
+   mark sits on those elements, not on <html>, so the switch restyles a few lines, not the page.
    The "Nivar ... local" faces come first: most Android phones carry Noto Sans Kannada and Devanagari
    already, so they draw with the phone's own copy (the same design and metrics, so nothing moves) and
    never download the webfont. Where the phone has no such font (iPhone, most desktops) the face
@@ -480,10 +455,12 @@
   src: local("Noto Sans Devanagari SemiBold"), local("NotoSansDevanagari-SemiBold"), local("Noto Sans Devanagari Bold"), local("NotoSansDevanagari-Bold"), local("Noto Sans Devanagari"), local("NotoSansDevanagari-Regular");
   unicode-range: U+0900-097F, U+1CD0-1CFF, U+200C-200D, U+25CC, U+A8E0-A8FF;
 }
-html[data-indic-fonts] :lang(kn) {
+[data-indic-fonts]:lang(kn),
+[data-indic-fonts] :lang(kn) {
   font-family: var(--font-general), "Nivar Kannada local", var(--font-noto-kn), "Kannada Sangam MN", "Tunga", "Nirmala UI", sans-serif;
 }
-html[data-indic-fonts] :lang(hi) {
+[data-indic-fonts]:lang(hi),
+[data-indic-fonts] :lang(hi) {
   font-family: var(--font-general), "Nivar Devanagari local", var(--font-noto-deva), "Kohinoor Devanagari", "Devanagari Sangam MN", "Nirmala UI", "Mangal", sans-serif;
 }
 :lang(kn),

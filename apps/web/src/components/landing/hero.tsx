@@ -289,14 +289,15 @@ function BpCard() {
 /*
  * Where the reading falls, on a systolic scale from 90 to 160 mmHg: normal below 120, elevated 120–129,
  * high from 130 (AHA/ACC 2025). 118 sits at 40%. The bands draw in, then the marker slides to the
- * reading (hero.css), once.
+ * reading (hero.css), once. The elevated band is the decorative amber: the warning colour is made for
+ * text and turns a muddy grey-brown as a light tint.
  */
 function BpScale() {
   return (
     <span className="relative mt-3 block h-3.5">
       <span className="nv-hero-bp-bands absolute inset-x-0 top-1/2 flex h-1.5 -translate-y-1/2 gap-0.5 overflow-hidden rounded-full">
         <span className="basis-[43%] bg-signal" />
-        <span className="basis-[14%] bg-saffron/45" />
+        <span className="basis-[14%] bg-glyph-amber/45" />
         <span className="flex-1 bg-rose/55" />
       </span>
       <span className="nv-hero-bp-slide absolute inset-0">

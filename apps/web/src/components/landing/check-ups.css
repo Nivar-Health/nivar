@@ -430,7 +430,7 @@
     inset-block: 0;
     left: 0;
     width: 36px;
-    background: linear-gradient(90deg, rgb(7 27 24 / 0.9), rgb(7 27 24 / 0));
+    background: linear-gradient(90deg, rgb(10 10 10 / 0.9), rgb(10 10 10 / 0));
   }
   /* Whole pixels where the browser can round, so the lines are as crisp as the canvas's. */
   @supports (top: round(1.5px, 1px)) {

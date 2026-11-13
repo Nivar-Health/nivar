@@ -77,8 +77,11 @@ export type Session = {
    * it (the screen may switch off mid-session), null before it answers and while idle.
    */
   screenHeld: boolean | null;
-  /** Starts from idle or done (or restarts). leadIn defaults to true. */
-  start(totalMs: number, o?: { leadIn?: boolean }): void;
+  /**
+   * Starts from idle or done (or restarts). leadIn defaults to true. `at`: already this far in (ms), so
+   * it runs at once from there (a rest that kept its time while the sheet was closed).
+   */
+  start(totalMs: number, o?: { leadIn?: boolean; at?: number }): void;
   pause(): void;
   resume(): void;
   /** Back to idle. */
@@ -129,6 +132,14 @@ export type ExperienceApi = {
   prefs: Prefs;
   setPrefs(p: Partial<Prefs>): void;
   switchTool(id: ToolId): void;
+  /** Brings the sheet back to its top, as a session's start and end do: a result is read from its first line. */
+  scrollToTop(): void;
+  /**
+   * Runs `listener` each time the sheet opens, and at once if it is open now. Every close mounts fresh
+   * tools, hidden, for the next open, so this is how one picks up on reopening (a rest still running).
+   * Returns a cancel.
+   */
+  onOpen(listener: () => void): () => void;
   close(): void;
 };
 
@@ -144,13 +155,16 @@ export type LayoutSlots = {
   onOrbTap?(): void;
   readout?: ReactNode;
   prompt?: ReactNode;
-  /** Chips, mode radios, Rest's ticks. Leaves the layout during a session. */
+  /** Chips, mode radios, Before BP's posture list. Leaves the layout during a session. */
   options?: ReactNode;
-  /** Safety guidance shown in full, in the flow before the controls (parts.tsx safetySlots). */
+  /**
+   * Safety guidance in the flow before the controls (parts.tsx safetySlots): in full, or quiet where the
+   * dock's one line is the tool's own note.
+   */
   safety?: ReactNode;
   /** Start, or Pause/Resume and Stop in one .nv-minute-row. Docked at the bottom on portrait phones. */
   controls: ReactNode;
-  /** The one quiet line under the controls, docked with them: a safety line or a text button, never a box. */
+  /** The one quiet line under the controls, docked with them: a note, a safety line or a text button, never a box. */
   quiet?: ReactNode;
   /**
    * "sticky" (default): the controls dock at the bottom of the sheet while content runs past them.

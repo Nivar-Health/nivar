@@ -4,6 +4,7 @@ import { Phone } from "lucide-react";
 import {
   Fragment,
   useCallback,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -14,9 +15,11 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { Digits } from "@/components/ui/digits";
 import { cn } from "@/lib/utils";
 import { SAFETY_DISPLAY } from "../config";
 import { formatClock, useSession } from "../engine";
+import { DockOpenContext } from "../layout-context";
 import type { ExperienceApi, LayoutSlots, Session, Tone } from "../types";
 import { ANNOUNCE, COMMON, type Rich } from "./copy";
 import "./tools.css";
@@ -65,8 +68,11 @@ export type ToolSession = Session & {
   active: boolean;
   /** The session paused because Back was pressed ("Paused. Go back again to close."). */
   pausedByBack: boolean;
-  /** Starts a session. The ring's arc draws in first, so it shows the whole length through the lead-in. */
-  begin(totalMs: number, o?: { leadIn?: boolean; refill?: boolean }): void;
+  /**
+   * Starts a session. The ring's arc draws in first, so it shows the whole length through the lead-in.
+   * `at`: already this far in, so it runs at once from there and the arc draws in to what is left.
+   */
+  begin(totalMs: number, o?: { leadIn?: boolean; refill?: boolean; at?: number }): void;
   /** Stop: back to idle, with the ring, orb and field put back. */
   halt(): void;
   /** Pause or Resume, announced. */
@@ -126,11 +132,12 @@ export function useToolSession(o: ToolSessionOptions): ToolSession {
   }, [refillRing]);
 
   const begin = useCallback(
-    (totalMs: number, b?: { leadIn?: boolean; refill?: boolean }) => {
+    (totalMs: number, b?: { leadIn?: boolean; refill?: boolean; at?: number }) => {
       touched.current = true;
       setBackPaused(false);
-      if (b?.refill !== false) refillRing(1);
-      start(totalMs, { leadIn: b?.leadIn ?? true });
+      const at = Math.min(totalMs, Math.max(0, b?.at ?? 0));
+      if (b?.refill !== false) refillRing(totalMs > 0 ? 1 - at / totalMs : 1);
+      start(totalMs, { leadIn: b?.leadIn ?? true, at });
     },
     [refillRing, start],
   );
@@ -209,39 +216,30 @@ export function OrbNum({ children, className, ...rest }: ComponentProps<"span">)
   );
 }
 
+/**
+ * A centred line whose numbers change in place ("0:39 left", "12 taps"). The brand font has no tabular
+ * figures, so each digit gets a fixed cell (Digits) and the line does not shift sideways as it counts.
+ */
+export function SteadyText({ text }: { text: string }) {
+  return text.split(/(\d[\d:]*)/).map((part, i) => (i % 2 ? <Digits key={i} value={part} /> : part));
+}
+
 /** "Get ready" with 3, 2, 1: where the start has to be exact (a pulse count). */
 export function LeadInOrb({ left }: { left: number }) {
   return (
     <>
       <OrbWord>{COMMON.getReady}</OrbWord>
-      <OrbNum>{left}</OrbNum>
+      <OrbNum>
+        <Digits value={left} />
+      </OrbNum>
     </>
   );
 }
 
 /**
- * The countdown, 36px: role="timer", not live. Idle shows the length without the role. Not for
- * Breathe, where the ring is the time left and nothing ticks.
+ * The time left for assistive technology alone: role="timer", not live. No tool ticks a clock on screen
+ * (the ring is the time left), so this is where m:ss still is, for anyone who asks.
  */
-export function Clock({ seconds, running = true }: { seconds: number; running?: boolean }) {
-  return (
-    <p role={running ? "timer" : undefined} aria-label={running ? COMMON.timeLeft : undefined} className="nv-tool-clock">
-      {formatClock(seconds)}
-    </p>
-  );
-}
-
-/** Time left as the m:ss countdown under the orb, then "left of …". */
-export function TimeLeft({ seconds, of, running = true }: { seconds: number; of: string; running?: boolean }) {
-  return (
-    <>
-      <Clock seconds={seconds} running={running} />
-      <p className="nv-tool-sub">{of}</p>
-    </>
-  );
-}
-
-/** The time left for assistive technology alone, where the screen shows no clock: role="timer", not live. */
 export function HiddenTimer({ seconds }: { seconds: number }) {
   return (
     <p role="timer" aria-label={COMMON.timeLeft} className="sr-only">
@@ -312,16 +310,29 @@ export function SafetyFull({ text }: { text: string }) {
   );
 }
 
-/** A quiet text button that opens a safety line in place, in full (SafetyFull), and closes it again. */
+/**
+ * A quiet text button that opens a safety line in place, in full (SafetyFull), and closes it again. While
+ * it is open the dock stops sticking (DockOpenContext), and the line is brought into view.
+ */
 export function SafetyMore({ label, text }: { label: string; text: string }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const setDockOpen = useContext(DockOpenContext);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    setDockOpen(open);
+    if (!open) return;
+    // After the Layout has let the dock go, so the line is measured where it now sits.
+    const raf = requestAnimationFrame(() => bodyRef.current?.scrollIntoView({ block: "nearest" }));
+    return () => cancelAnimationFrame(raf);
+  }, [open, setDockOpen]);
+  useEffect(() => () => setDockOpen(false), [setDockOpen]);
   return (
     <div className="nv-tool-more">
       <button type="button" aria-expanded={open} aria-controls={id} className="nv-tool-textlink" onClick={() => setOpen((was) => !was)}>
         {label}
       </button>
-      <div id={id} hidden={!open} className="nv-tool-more-body">
+      <div ref={bodyRef} id={id} hidden={!open} className="nv-tool-more-body">
         <SafetyFull text={text} />
       </div>
     </div>
@@ -333,22 +344,26 @@ export function SafetyMore({ label, text }: { label: string; text: string }) {
  * SAFETY_DISPLAY): the quiet line under the controls (`line`), a text button that opens the sentence in
  * place (`more`), or nothing where it does not apply. "always": the whole of `text`, in full, in the
  * flow, whatever the state. `shown`: the tool sets the full line itself beside a result, in either mode.
+ * `note`: the tool's own quiet line for the dock (one that follows Sound); the guidance then sits in the
+ * flow just before the controls, as quiet as it would have been under them. `flow` puts it there too,
+ * where the dock would otherwise grow over the tool's options.
  */
 export function safetySlots(
   text: string,
-  here: { line?: string; more?: { label: string; text: string }; shown?: boolean } = {},
+  here: { line?: string; more?: { label: string; text: string }; shown?: boolean; flow?: boolean } = {},
+  note?: string,
 ): Pick<LayoutSlots, "safety" | "quiet"> {
-  if (here.shown) return {};
-  if (SAFETY_DISPLAY === "always") return { safety: <SafetyFull text={text} /> };
-  if (!here.line && !here.more) return {};
-  return {
-    quiet: (
-      <>
-        {here.line ? <QuietLine>{here.line}</QuietLine> : null}
-        {here.more ? <SafetyMore label={here.more.label} text={here.more.text} /> : null}
-      </>
-    ),
-  };
+  const own = note ? { quiet: <QuietLine>{note}</QuietLine> } : {};
+  if (here.shown) return own;
+  if (SAFETY_DISPLAY === "always") return { safety: <SafetyFull text={text} />, ...own };
+  if (!here.line && !here.more) return own;
+  const guidance = (
+    <>
+      {here.line ? <QuietLine>{here.line}</QuietLine> : null}
+      {here.more ? <SafetyMore label={here.more.label} text={here.more.text} /> : null}
+    </>
+  );
+  return note || here.flow ? { safety: guidance, ...own } : { quiet: guidance };
 }
 
 /** The main button: the shell's 56px nv-minute-primary, so it matches the shell and enters with it. */
